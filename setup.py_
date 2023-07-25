@@ -1,0 +1,13 @@
+from setuptools import setup
+
+
+setup(
+    name='pytest-analyzer',
+    version='0.6.0',
+    description='this plugin allows to analyze tests in pytest project, collect test metadata and sync it with testomat.io TCM system',
+    author='Oleksii Ostapov',
+    license='MIT',
+    py_modules=['analyzer'],
+    install_requires=["setuptools>=65.5.1", "requests>=2.29.0", "autopep8>=2.0.2", "pytest>=7.3.1"],
+    entry_points={'pytest11': ['analyzer = analyzer', ]},
+)

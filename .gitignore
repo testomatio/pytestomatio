@@ -1,0 +1,8 @@
+.pytest_cache
+.idea
+# file for test and debug
+temp_test.py
+build
+pytest_analyzer.egg-info
+dist
+venv

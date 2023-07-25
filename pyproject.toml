@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=65.5.1", "requests>=2.29.0", "autopep8>=2.0.2", "pytest>=7.3.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pytest-analyzer"
+version = "0.8.4"
+authors = [
+  { name="Oleksii Ostapov" },
+]
+description = "this plugin allows to analyze tests in pytest project, collect test metadata and sync it with testomat.io TCM system"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Framework :: Pytest",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://qamania.org/"
+"Bug Tracker" = "https://qamania.org/"
+
+[project.entry-points.pytest11]
+myproject = "analyzer.analyzer"
