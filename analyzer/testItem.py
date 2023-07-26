@@ -3,11 +3,12 @@ import json
 from pytest import Item
 from inspect import getsource
 
+MARKER = 'testomatio'
 
 class TestItem:
     def __init__(self, item: Item):
         self.uid = uuid.uuid4()
-        self.id: str = None
+        self.id: str = TestItem.get_test_id(item)
         self.title = _clear_param_brackets(item.name)
         self.file_name = item.path.name
         self.abs_path = str(item.path)
@@ -33,6 +34,12 @@ class TestItem:
 
     def json(self) -> str:
         return json.dumps(self.to_dict(), indent=4)
+
+    @staticmethod
+    def get_test_id(item: Item) -> str | None:
+        for marker in item.iter_markers(MARKER):
+            if marker.args:
+                return marker.args[0]
 
     def __str__(self) -> str:
         return f'TestItem: {self.id} - {self.title} - {self.file_name}'

@@ -2,7 +2,7 @@ import sys
 
 import pytest
 import json
-from pytest import Parser, Session, Config, Item
+from pytest import Parser, Session, Config, Item, CallInfo, Request
 from analyzer.testomatio import Connector, update_tests
 from analyzer.testItem import TestItem
 from analyzer.testomatio.code_collector import get_functions_source_by_name
@@ -25,11 +25,19 @@ def pytest_addoption(parser: Parser) -> None:
     parser.addini('testomatio_password', 'testomat.io user password')
 
 
-
 def pytest_configure(config: Config):
     config.addinivalue_line(
         "markers", "testomatio(arg): built in marker to connect test case with testomat.io by unique id"
     )
+
+@pytest.fixture(scope='session')
+def testomatio_connector(request: Request, config: Config) -> Connector:
+    url = config.getini('testomatio_url')
+    project = config.getini('testomatio_project')
+    email = config.getini('testomatio_email')
+    password = config.getini('testomatio_password')
+    config.testomatio_connector = Connector(url, project)
+    yield config.testomatio_connector
 
 
 def pytest_collection_modifyitems(session: Session, config: Config, items: list[Item]) -> None:
@@ -61,11 +69,7 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
     if config.getoption('testomatio') and config.getoption('analyzer'):
         match config.getoption('testomatio'):
             case 'add':
-                url = config.getini('testomatio_url')
-                project = config.getini('testomatio_project')
-                email = config.getini('testomatio_email')
-                password = config.getini('testomatio_password')
-                connector = Connector(url, project)
+
                 connector.connect(email, password)
                 connector.load_tests(meta)
                 connector.enrich_test_with_ids(meta)
@@ -80,8 +84,39 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
             case 'default':
                 # todo any options?
                 pass
+        pytest.exit(
+            f'{len(items)} found. {len(meta)} unique test functions data collected. Exit without test execution')
 
-    pytest.exit(f'{len(items)} found. {len(meta)} unique test functions data collected. Exit without test execution')
+
+def pytest_runtest_makereport(item: Item, call: CallInfo):
+    test_item = TestItem(item)
+    request = {'title': test_item.title,
+               'run_time': call.duration,
+               'suite_title': '',
+               'suite_file': '',
+               'test_id': test_item.id,
+               'message': None,
+               'stack': None,
+               'example': None,
+               'artifacts': None,
+               'steps': None,
+               'code': test_item.source_code,
+               }
+    if call.when == 'setup':
+        if call.excinfo is not None:
+            if call.excinfo.typename == 'Skipped':
+                request['status'] = 'skipped'
+            else:
+                request['message'] = str(call.excinfo.value)
+                request['stack'] = call.excinfo.traceback.format()
+                request['status'] = 'failed'
+    if call.when == 'call':
+        if call.excinfo is not None:
+            request['message'] = str(call.excinfo.value)
+            request['stack'] = call.excinfo.traceback.format()
+            request['status'] = 'failed'
+        else:
+            request['status'] = 'passed'
 
 
 def add_decorators(files, mapping, tests):

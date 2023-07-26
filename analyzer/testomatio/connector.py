@@ -1,6 +1,7 @@
 import requests
 import logging
 from requests import Response
+from helper import safe_request
 
 import analyzer.testomatio
 from analyzer.testItem import TestItem
@@ -10,19 +11,22 @@ log = logging.getLogger(__name__)
 
 
 class Connector:
-    def __init__(self, base_url: str = 'https://app.testomat.io', api_key: str = None):
+    def __init__(self, username: str, password: str, base_url: str = 'https://app.testomat.io', api_key: str = None):
         self.base_url = base_url
         self.session = requests.Session()
         self.session.verify = False
         self.jwt: str = ''
         self.api_key = api_key
+        self.username = username
+        self.password = password
 
-    def connect(self, email: str, password: str):
-        try:
-            response = self.session.post(f'{self.base_url}/api/login', json={'email': email, 'password': password})
-        except Exception as e:
-            log.error(f'Failed to connect to {self.base_url}. Exception: {e}')
-            return
+    def connect(self, email: str = None, password: str = None):
+        request = {'email': email if email else self.username,
+                   'password': password if password else self.password}
+
+        with safe_request('Failed to connect to testomat.io'):
+            response = self.session.post(f'{self.base_url}/api/login', json=request)
+
         if response.status_code == 200:
             log.info(f'Connected to {self.base_url}')
             self.jwt = response.json()['jwt']
@@ -50,36 +54,30 @@ class Connector:
                 "code": test.source_code,
                 "file": test.file_name
             })
-        try:
+
+        with safe_request('Failed to load tests to testomat.io'):
             response = self.session.post(f'{self.base_url}/api/load?api_key={self.api_key}', json=request)
-            log.info(f'test upload to testomat.io response: {response.status_code}')
-        except Exception as e:
-            log.error(f'Failed to load tests to {self.base_url}. Exception: {e}')
-            return
+
         if response.status_code == 200:
             log.info(f'Tests loaded to {self.base_url}')
         else:
             log.error(f'Failed to load tests to {self.base_url}. Status code: {response.status_code}')
 
     def enrich_test_with_ids(self, test_metadata: list[TestItem]) -> None:
-        try:
+        with safe_request('Failed to get test ids from testomat.io'):
             response = self.session.get(f'{self.base_url}/api/test_data?api_key={self.api_key}')
-            response_data = response.json()
-        except Exception as e:
-            log.error(f'Failed to get test ids from {self.base_url}. Exception: {e}')
-            return
+        response_data = response.json()
 
         # set test ids from testomatio to test metadata
-        tcm_test_data = parse_test_list(response_data)
-        log.debug(f'there are {len(tcm_test_data)} tests in testomat.io')
-        log.debug(f'there are {len(test_metadata)} tests in test metadata')
-        for test in test_metadata:
-            for tcm_test in tcm_test_data:
-                if test.title == tcm_test.title and test.file_name == tcm_test.file_name:
-                    test.id = tcm_test.id
-                    tcm_test_data.remove(tcm_test)
-                    log.debug(f'test {test.id} matched. There are {len(tcm_test_data)} tests left')
-                    break
+        if response.status_code == 200:
+            tcm_test_data = parse_test_list(response_data)
+            for test in test_metadata:
+                for tcm_test in tcm_test_data:
+                    if test.title == tcm_test.title and test.file_name == tcm_test.file_name:
+                        test.id = tcm_test.id
+                        tcm_test_data.remove(tcm_test)
+                        log.debug(f'test {test.id} matched. There are {len(tcm_test_data)} tests left')
+                        break
 
     def create_test_run(self, title: str, tags: list[str], env: str, group_title, parallel) -> str:
         request = {
@@ -89,14 +87,12 @@ class Connector:
             "group_title": group_title,
             "parallel": parallel
         }
-        try:
+        with safe_request('Failed to create test run'):
             response = self.session.post(f'{self.base_url}/api/reporter/?api_key={self.api_key}',
                                          json=request)
-            log.debug(f'test run created: {response.status_code}')
+        if response.status_code == 200:
+            log.info(f'Test run created {response.json()["uid"]}')
             return response.json()['uid']
-        except Exception as e:
-            log.error(f'Test run creation failed. Exception: {e}')
-            return ''
 
     def update_test_status(self, run_id: str,
                            status: str,
@@ -125,13 +121,8 @@ class Connector:
             "steps": steps,
             "code": code
         }
-        try:
-            response = self.session.post(f'{self.base_url}/api/reporter/{run_id}/testrun?api_key={self.api_key}',
-                                         json=request)
-            log.debug(f'test status update response: {response.status_code}')
-        except Exception as e:
-            log.error(f'test id {test_id} status update failed. Exception: {e}')
-            return
+        with safe_request(f'Failed to update test status for test id {test_id}'):
+            self.session.post(f'{self.base_url}/api/reporter/{run_id}/testrun?api_key={self.api_key}', json=request)
 
     def disconnect(self):
         self.session.close()

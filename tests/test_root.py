@@ -1,7 +1,14 @@
-from pytest import mark
+from pytest import mark, fixture
 
 
-def test_pass():
+@fixture
+def some_fixture():
+    yield
+
+
+@mark.testomatio('@T96c700e6')
+def test_pass(some_fixture):
+    import time
     assert 2 + 2 == 4
 
 
