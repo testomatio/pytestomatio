@@ -7,7 +7,7 @@ from inspect import getsource
 class TestItem:
     def __init__(self, item: Item):
         self.uid = uuid.uuid4()
-        self.id: int = None
+        self.id: str = None
         self.title = _clear_param_brackets(item.name)
         self.file_name = item.path.name
         self.abs_path = str(item.path)
@@ -33,6 +33,12 @@ class TestItem:
 
     def json(self) -> str:
         return json.dumps(self.to_dict(), indent=4)
+
+    def __str__(self) -> str:
+        return f'TestItem: {self.id} - {self.title} - {self.file_name}'
+
+    def __repr__(self):
+        return f'TestItem: {self.id} - {self.title} - {self.file_name}'
 
 
 def _clear_param_brackets(name: str) -> str:

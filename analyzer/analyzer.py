@@ -61,9 +61,14 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
     if config.getoption('testomatio') and config.getoption('analyzer'):
         match config.getoption('testomatio'):
             case 'add':
-                connector = Connector()
-                connector.connect('oleksii.ostapov@gmail.com', 'bv!23L8Wgd9Vwb!')
-                connector.enrich_test_with_ids(api_key='70t3da349fte', test_metadata=meta)
+                url = config.getini('testomatio_url')
+                project = config.getini('testomatio_project')
+                email = config.getini('testomatio_email')
+                password = config.getini('testomatio_password')
+                connector = Connector(url, project)
+                connector.connect(email, password)
+                connector.load_tests(meta)
+                connector.enrich_test_with_ids(meta)
                 connector.disconnect()
                 mapping = get_test_mapping(meta)
                 for test_file in test_files:

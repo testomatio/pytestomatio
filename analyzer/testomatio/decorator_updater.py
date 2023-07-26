@@ -35,7 +35,7 @@ class DecoratorUpdater(ast.NodeTransformer):
                            decorator.func.attr == self.decorator_name
                            for decorator in node.decorator_list):
                     test_id = self._get_id_by_title(node.name)
-                    deco_name = f'mark.{self.decorator_name}({test_id})'
+                    deco_name = f'mark.{self.decorator_name}(\'{test_id}\')'
                     decorator = ast.Name(id=deco_name, ctx=ast.Load())
                     node.decorator_list = [decorator] + node.decorator_list
         return node
