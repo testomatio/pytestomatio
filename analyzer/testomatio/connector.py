@@ -1,7 +1,6 @@
 import requests
 import logging
-from requests import Response
-from helper import safe_request
+from analyzer.testomatio.helper import safe_request
 
 import analyzer.testomatio
 from analyzer.testItem import TestItem
@@ -24,8 +23,8 @@ class Connector:
         request = {'email': email if email else self.username,
                    'password': password if password else self.password}
 
-        with safe_request('Failed to connect to testomat.io'):
-            response = self.session.post(f'{self.base_url}/api/login', json=request)
+        # with safe_request('Failed to connect to testomat.io'):
+        response = self.session.post(f'{self.base_url}/api/login', json=request)
 
         if response.status_code == 200:
             log.info(f'Connected to {self.base_url}')
@@ -55,8 +54,8 @@ class Connector:
                 "file": test.file_name
             })
 
-        with safe_request('Failed to load tests to testomat.io'):
-            response = self.session.post(f'{self.base_url}/api/load?api_key={self.api_key}', json=request)
+        # with safe_request('Failed to load tests to testomat.io'):
+        response = self.session.post(f'{self.base_url}/api/load?api_key={self.api_key}', json=request)
 
         if response.status_code == 200:
             log.info(f'Tests loaded to {self.base_url}')
@@ -64,8 +63,8 @@ class Connector:
             log.error(f'Failed to load tests to {self.base_url}. Status code: {response.status_code}')
 
     def enrich_test_with_ids(self, test_metadata: list[TestItem]) -> None:
-        with safe_request('Failed to get test ids from testomat.io'):
-            response = self.session.get(f'{self.base_url}/api/test_data?api_key={self.api_key}')
+        # with safe_request('Failed to get test ids from testomat.io'):
+        response = self.session.get(f'{self.base_url}/api/test_data?api_key={self.api_key}')
         response_data = response.json()
 
         # set test ids from testomatio to test metadata
@@ -87,8 +86,8 @@ class Connector:
             "group_title": group_title,
             "parallel": parallel
         }
-        with safe_request('Failed to create test run'):
-            response = self.session.post(f'{self.base_url}/api/reporter/?api_key={self.api_key}',
+        # with safe_request('Failed to create test run'):
+        response = self.session.post(f'{self.base_url}/api/reporter/?api_key={self.api_key}',
                                          json=request)
         if response.status_code == 200:
             log.info(f'Test run created {response.json()["uid"]}')
@@ -121,8 +120,8 @@ class Connector:
             "steps": steps,
             "code": code
         }
-        with safe_request(f'Failed to update test status for test id {test_id}'):
-            self.session.post(f'{self.base_url}/api/reporter/{run_id}/testrun?api_key={self.api_key}', json=request)
+        # with safe_request(f'Failed to update test status for test id {test_id}'):
+        self.session.post(f'{self.base_url}/api/reporter/{run_id}/testrun?api_key={self.api_key}', json=request)
 
     def disconnect(self):
         self.session.close()

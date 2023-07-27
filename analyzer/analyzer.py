@@ -2,7 +2,7 @@ import sys
 
 import pytest
 import json
-from pytest import Parser, Session, Config, Item, CallInfo, Request
+from pytest import Parser, Session, Config, Item, CallInfo, FixtureRequest
 from analyzer.testomatio import Connector, update_tests
 from analyzer.testItem import TestItem
 from analyzer.testomatio.code_collector import get_functions_source_by_name
@@ -29,15 +29,13 @@ def pytest_configure(config: Config):
     config.addinivalue_line(
         "markers", "testomatio(arg): built in marker to connect test case with testomat.io by unique id"
     )
-
-@pytest.fixture(scope='session')
-def testomatio_connector(request: Request, config: Config) -> Connector:
     url = config.getini('testomatio_url')
     project = config.getini('testomatio_project')
     email = config.getini('testomatio_email')
     password = config.getini('testomatio_password')
-    config.testomatio_connector = Connector(url, project)
-    yield config.testomatio_connector
+    connector = Connector(email, password, url, project)
+    connector.connect()
+    pytest.connector = connector
 
 
 def pytest_collection_modifyitems(session: Session, config: Config, items: list[Item]) -> None:
@@ -69,8 +67,7 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
     if config.getoption('testomatio') and config.getoption('analyzer'):
         match config.getoption('testomatio'):
             case 'add':
-
-                connector.connect(email, password)
+                connector = pytest.connector
                 connector.load_tests(meta)
                 connector.enrich_test_with_ids(meta)
                 connector.disconnect()
