@@ -4,7 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pytest-analyzer"
-version = "1.0.6"
+version = "1.0.8"
+
+dependencies = [
+  "requests>=2.29.0",
+  "autopep8>=2.0.2",
+  "pytest>=7.3.1",]
+
 authors = [
   { name="Oleksii Ostapov" },
 ]
@@ -24,4 +30,4 @@ classifiers = [
 "Bug Tracker" = "https://github.com/Ypurek/pytest-analyzer/issues"
 
 [project.entry-points.pytest11]
-myproject = "analyzer.analyzer"
+analyzer = "analyzer.analyzer"

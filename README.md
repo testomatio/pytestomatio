@@ -99,4 +99,4 @@ def test_example():
 
 - handle REST API exceptions
 - support screenshot attachments
-- 
+- improve logging

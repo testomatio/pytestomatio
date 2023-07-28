@@ -38,6 +38,8 @@ def pytest_configure(config: Config):
         "markers", "testomatio(arg): built in marker to connect test case with testomat.io by unique id"
     )
 
+    pytest.analyzer_test_run_config = TestRunConfig()
+
     if config.getoption(analyzer_option):
         url = config.getini('testomatio_url')
         project = config.getini('testomatio_project')
@@ -46,7 +48,7 @@ def pytest_configure(config: Config):
         connector = Connector(email, password, url, project)
         connector.connect()
         pytest.connector = connector
-        pytest.analyzer_test_run_config = TestRunConfig()
+
 
 
 @pytest.fixture(scope='session')
