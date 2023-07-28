@@ -2,10 +2,11 @@ import pytest
 import json
 
 from pytest import Parser, Session, Config, Item, CallInfo
-from analyzer.testomatio import Connector, update_tests
-from analyzer.testRunConfig import TestRunConfig
-from analyzer.testItem import TestItem
-from analyzer.testomatio.code_collector import get_functions_source_by_name
+from .connector import Connector
+from .decorator_updater import update_tests
+from .testRunConfig import TestRunConfig
+from .testItem import TestItem
+from .code_collector import get_functions_source_by_name
 import logging
 
 log = logging.getLogger('analyzer')

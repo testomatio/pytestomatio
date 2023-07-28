@@ -76,6 +76,11 @@ def get_web_browser(playwright_fixture, analyzer_test_config):
     browser.close()
 ```
 
+### Clarifications
+- tests can be synced even without `@mark.testomatio('@T96c700e6')` decorator.
+- test title in testomat.io == test name in pytest
+- test suit title in testomat.io == test file name in pytest
+
 ## Example of test
 
 To make analyzer experience more consistent, it uses standard pytest markers.  

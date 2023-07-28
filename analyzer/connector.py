@@ -1,8 +1,8 @@
 import requests
 import logging
 
-from analyzer.testItem import TestItem
-from analyzer.testomatio.testomat_item import parse_test_list
+from .testItem import TestItem
+from .testomat_item import parse_test_list
 
 log = logging.getLogger('analyzer')
 
