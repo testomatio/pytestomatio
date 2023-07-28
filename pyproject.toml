@@ -19,8 +19,9 @@ classifiers = [
 ]
 
 [project.urls]
-"Homepage" = "https://qamania.org/"
-"Bug Tracker" = "https://qamania.org/"
+"Author's Blog" = "https://qamania.org"
+"Homepage" = "https://github.com/Ypurek/pytest-analyzer"
+"Bug Tracker" = "https://github.com/Ypurek/pytest-analyzer/issues"
 
 [project.entry-points.pytest11]
 myproject = "analyzer.analyzer"
