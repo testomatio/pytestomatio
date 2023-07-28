@@ -6,3 +6,4 @@ build
 pytest_analyzer.egg-info
 dist
 venv
+pytest.ini

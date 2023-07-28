@@ -1,9 +1,9 @@
 import uuid
 import json
 from pytest import Item
-from inspect import getsource
 
 MARKER = 'testomatio'
+
 
 class TestItem:
     def __init__(self, item: Item):

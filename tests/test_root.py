@@ -6,7 +6,6 @@ def some_fixture():
     yield
 
 
-@mark.testomatio('@T96c700e6')
 def test_pass(some_fixture):
     import time
     assert 2 + 2 == 4
@@ -20,7 +19,7 @@ def test_fail():
     assert 2 + 2 == 11
 
 
-@mark.parametrize('data', [1, 2, 3, 4, 5])
+@mark.parametrize('data', [1, 2, 3, 4, 5, 'a'])
 def test_ddt_parametrized(data):
     assert str(data).isnumeric()
 

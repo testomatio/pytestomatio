@@ -1,19 +1,17 @@
 import requests
 import logging
-from analyzer.testomatio.helper import safe_request
 
-import analyzer.testomatio
 from analyzer.testItem import TestItem
 from analyzer.testomatio.testomat_item import parse_test_list
 
-log = logging.getLogger(__name__)
+log = logging.getLogger('analyzer')
 
 
 class Connector:
     def __init__(self, username: str, password: str, base_url: str = 'https://app.testomat.io', api_key: str = None):
         self.base_url = base_url
         self.session = requests.Session()
-        self.session.verify = False
+        self.session.verify = True
         self.jwt: str = ''
         self.api_key = api_key
         self.username = username
@@ -33,7 +31,7 @@ class Connector:
         else:
             log.error(f'Failed to connect to {self.base_url}. Status code: {response.status_code}')
 
-    def load_tests(self, tests: list[TestItem], no_empty: bool = True, no_detach: bool = False):
+    def load_tests(self, tests: list[TestItem], no_empty: bool = True, no_detach: bool = True):
         request = {
             "framework": "pytest",
             "language": "python",
@@ -78,17 +76,16 @@ class Connector:
                         log.debug(f'test {test.id} matched. There are {len(tcm_test_data)} tests left')
                         break
 
-    def create_test_run(self, title: str, tags: list[str], env: str, group_title, parallel) -> str:
+    def create_test_run(self, title: str, env: str, group_title, parallel) -> str:
         request = {
             "title": title,
-            "tags": tags,
             "env": env,
             "group_title": group_title,
             "parallel": parallel
         }
+        filtered_request = {k: v for k, v in request.items() if v is not None}
         # with safe_request('Failed to create test run'):
-        response = self.session.post(f'{self.base_url}/api/reporter/?api_key={self.api_key}',
-                                         json=request)
+        response = self.session.post(f'{self.base_url}/api/reporter?api_key={self.api_key}', json=filtered_request)
         if response.status_code == 200:
             log.info(f'Test run created {response.json()["uid"]}')
             return response.json()['uid']
@@ -104,7 +101,8 @@ class Connector:
                            run_time: float,
                            artifacts: list[str],
                            steps: str,
-                           code: str) -> None:
+                           code: str,
+                           example: dict) -> None:
 
         request = {
             "status": status,  # Enum: "passed" "failed" "skipped"
@@ -115,13 +113,21 @@ class Connector:
             "message": message,
             "stack": stack,
             "run_time": run_time,
-            "example": {},
+            "example": example,
             "artifacts": artifacts,
             "steps": steps,
             "code": code
         }
+        filtered_request = {k: v for k, v in request.items() if v is not None}
         # with safe_request(f'Failed to update test status for test id {test_id}'):
-        self.session.post(f'{self.base_url}/api/reporter/{run_id}/testrun?api_key={self.api_key}', json=request)
+        response = self.session.post(f'{self.base_url}/api/reporter/{run_id}/testrun?api_key={self.api_key}',
+                                     json=filtered_request)
+        if response.status_code == 200:
+            log.info('Test status updated')
+
+    def finish_test_run(self, run_id: str) -> None:
+        self.session.put(f'{self.base_url}/api/reporter/{run_id}?api_key={self.api_key}',
+                         json={"status_event": "finish"})
 
     def disconnect(self):
         self.session.close()
