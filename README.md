@@ -38,7 +38,8 @@ Run pytest with analyzer remove parameter to remove all test ids from your tests
 pytest --analyzer remove
 ```
 
-Run pytest with analyzer sync parameter to execute tests and send the execution status to testomat.io
+Run pytest with analyzer sync parameter to execute tests and send the execution status to testomat.io.  
+Sync can be executed even without marking tests with ids. If testomat.io failed to match tests by title, it will create new tests for the run
 
 ```bash
 pytest --analyzer sync
@@ -52,31 +53,16 @@ pytest --analyzer debug
 
 ### Advanced usage
 
-to configure additional test run parameters call `analyzer_test_config` fixture.  
-This fixture return `TestRunConfig` object with next parameters:
+to configure test environment, you can use additional option:
 
-- **test_run_id** - do not modify. this parameter is set automatically
-- **title** - test run title. Leave empty to have generic run title like "pytest run at 2020-01-01 00:00:00"
-- **environment** - test environment. Empty by default. Set any suitable: "staging", "production", "test", "Winddows
-  11", "Chrome 115", etc
-- **group_title** - Empty by default. Creates folder in testomat.io for test runs with specified name
-- **parallel** - False by default. Set to True if you run tests in parallel
-
-Example:
-
-```python
-import pytest
-
-
-@pytest.fixture(scope="session")
-def get_web_browser(playwright_fixture, analyzer_test_config):
-    browser = playwright_fixture.chromium.launch()
-    analyzer_test_config.environment = 'chromium'
-    yield browser
-    browser.close()
+```bash
+pytest --analyzer sync --testRunEnv windows11,chrome,1920x1080
 ```
 
+Eny environments used in test run. Should be placed in comma separated list, NO SPACES ALLOWED.
+
 ### Clarifications
+
 - tests can be synced even without `@mark.testomatio('@T96c700e6')` decorator.
 - test title in testomat.io == test name in pytest
 - test suit title in testomat.io == test file name in pytest

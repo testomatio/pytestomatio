@@ -26,6 +26,9 @@ def pytest_addoption(parser: Parser) -> None:
     parser.addoption(f'--{analyzer_option}',
                      action='store',
                      help=help_text)
+    parser.addoption(f'--testRunEnv',
+                     action='store',
+                     help='specify test run environment for testomat.io. Works only with --analyzer sync')
 
     parser.addini('testomatio_url', 'testomat.io base url', default='https://app.testomat.io')
     parser.addini('testomatio_project', 'testomat.io project api key')
@@ -40,6 +43,7 @@ def pytest_configure(config: Config):
 
     pytest.analyzer_test_run_config = TestRunConfig()
 
+
     if config.getoption(analyzer_option):
         url = config.getini('testomatio_url')
         project = config.getini('testomatio_project')
@@ -48,12 +52,9 @@ def pytest_configure(config: Config):
         connector = Connector(email, password, url, project)
         connector.connect()
         pytest.connector = connector
+        if config.getoption('testRunEnv'):
+            pytest.analyzer_test_run_config.environment = config.getoption('testRunEnv')
 
-
-
-@pytest.fixture(scope='session')
-def analyzer_test_config():
-    yield pytest.analyzer_test_run_config
 
 
 def collect_tests(items: list[Item]):
@@ -132,7 +133,7 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         'run_time': call.duration,
         'suite_title': test_item.file_name,
         'suite_id': None,
-        'test_id': test_item.id[2:],  # remove @T
+        'test_id': test_item.id[2:] if test_item.id else None,  # remove @T if exists
         'message': None,
         'stack': None,
         'example': None,
