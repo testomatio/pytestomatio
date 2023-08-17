@@ -1,5 +1,6 @@
 import boto3
 import logging
+from io import BytesIO
 
 log = logging.getLogger('analyzer.s3_connector')
 log.setLevel('INFO')
@@ -37,12 +38,13 @@ class S3Connector:
         log.info(f'artifact {file_path} uploaded to s3://{bucket_name}/{key}')
         return f'https://{bucket_name}.{self.endpoint}/{key}'
 
-    def upload_file_object(self, file_object, key: str, bucket_name: str = None):
+    def upload_file_object(self, file_bytes: bytes, key: str, bucket_name: str = None):
+        file = BytesIO(file_bytes)
         if not bucket_name:
             bucket_name = self.bucket_name
         if bucket_name is None:
             raise Exception('bucket name is not defined')
         log.info(f'uploading artifact {key} to s3://{bucket_name}/{key}')
-        self.client.upload_fileobj(file_object, bucket_name, key)
+        self.client.upload_fileobj(file, bucket_name, key)
         log.info(f'artifact {key} uploaded to s3://{bucket_name}/{key}')
         return f'https://{bucket_name}.{self.endpoint}/{key}'

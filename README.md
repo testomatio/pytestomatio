@@ -52,12 +52,42 @@ Run pytest with analyzer debug parameter to get test data collected in metadata.
 pytest --analyzer debug
 ```
 
-### Advanced usage
+### Submitting Test Run Environment 
 
 to configure test environment, you can use additional option:
 
 ```bash
 pytest --analyzer sync --testRunEnv windows11,chrome,1920x1080
+```
+
+### Submitting Test Artifacts (NEW)
+According documentation, Testomat.io does not store any screenshots, 
+logs or other artifacts. In order to manage them it is advised to use S3 Buckets. 
+https://docs.testomat.io/usage/test-artifacts/  
+
+In order to save artifacts, next optional paramenters can be added to pytest.ini:
+```ini
+[pytest]
+testomatio_s3_access_key_id = <access key>
+testomatio_s3_secret_key_id = <secret key>
+testomatio_s3_endpoint = <endpoint>
+testomatio_s3_bucket = <existing bucket> (optional)
+```
+To send artifact to s3 bucket, next code should be added to test:
+```python
+# file_path - path to file to be uploaded
+# file_bytes - bytes of the file to be uploaded
+# key - file name in the s3 bucket
+# bucket_name - name of the bucket to upload file to. If not set, bucket name from pytest.ini will be used, if set, overrides bucket name from pytest.ini
+artifact_url = pytest.s3_connector.upload_file(file_path, key, bucket_name)
+# or
+artifact_url = pytest.s3_connector.upload_file_object(file_bytes, key, bucket_name)
+```
+In conftest.py file next hook can be added. set attribute testomatio_artifacts. This list will be sent to testomat.io
+```python
+def pytest_runtest_makereport(item, call):
+   artifacts = ['url1', 'url2']
+   setattr(item, 'testomatio_artifacts', artifacts)
 ```
 
 Eny environments used in test run. Should be placed in comma separated list, NO SPACES ALLOWED.
