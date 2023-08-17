@@ -1,18 +1,19 @@
 [build-system]
-requires = ["setuptools>=65.5.1", "requests>=2.29.0", "autopep8>=2.0.2", "pytest>=7.3.1"]
+requires = ["setuptools>=65.5.1", "requests>=2.29.0", "autopep8>=2.0.2", "pytest>=7.3.1", "boto3>=1.28.28"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "pytest-analyzer"
-version = "1.0.9"
+version = "1.1.1"
 
 dependencies = [
-  "requests>=2.29.0",
-  "autopep8>=2.0.2",
-  "pytest>=7.3.1",]
+    "requests>=2.29.0",
+    "autopep8>=2.0.2",
+    "pytest>=7.3.1",
+    "boto3>=1.28.28"]
 
 authors = [
-  { name="Oleksii Ostapov" },
+    { name = "Oleksii Ostapov" },
 ]
 description = "this plugin allows to analyze tests in pytest project, collect test metadata and sync it with testomat.io TCM system"
 readme = "README.md"

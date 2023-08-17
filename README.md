@@ -39,7 +39,8 @@ pytest --analyzer remove
 ```
 
 Run pytest with analyzer sync parameter to execute tests and send the execution status to testomat.io.  
-Sync can be executed even without marking tests with ids. If testomat.io failed to match tests by title, it will create new tests for the run
+Sync can be executed even without marking tests with ids. If testomat.io failed to match tests by title, it will create
+new tests for the run
 
 ```bash
 pytest --analyzer sync
@@ -81,8 +82,49 @@ def test_example():
     assert 2 + 2 == 4
 ```
 
+## Change log
+
+### 1.1.0 - added artifacts support connector
+
+- there is possibility to add artifacts (screenshots, logs) to test report
+
+### 1.0.9 - first public release
+
+- test analyzer able to sync tests with testomat.io
+- test analyzer able to add test ids to tests
+- test analyzer able to submit test results to testomat.io
+
 ## Roadmap
 
+- get S3 connection details from testomat.io
 - handle REST API exceptions
-- support screenshot attachments
 - improve logging
+
+## Delivery hints
+
+1. Do not forget update version in pyproject.toml
+2. Do not forget update version in README.md
+3. Follow next steps:  
+   To install locally (for testing purposes)
+
+```bash
+pip install --upgrade .
+```
+
+To build package
+
+```bash
+py -m build
+```
+
+Install twine to upload package to pypi
+
+```bash
+py -m pip install --upgrade twine
+```
+
+Upload package to pypi
+
+```bash
+py -m twine upload --repository pypi dist/* --verbose
+```

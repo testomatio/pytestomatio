@@ -7,9 +7,11 @@ from .decorator_updater import update_tests
 from .testRunConfig import TestRunConfig
 from .testItem import TestItem
 from .code_collector import get_functions_source_by_name
+from .s3_connector import S3Connector
 import logging
 
 log = logging.getLogger('analyzer')
+log.setLevel('INFO')
 
 metadata_file = 'metadata.json'
 decorator_name = 'testomatio'
@@ -35,6 +37,11 @@ def pytest_addoption(parser: Parser) -> None:
     parser.addini('testomatio_email', 'testomat.io user email')
     parser.addini('testomatio_password', 'testomat.io user password')
 
+    parser.addini('testomatio_s3_access_key_id', 's3 access key id to save artifacts', default=None)
+    parser.addini('testomatio_s3_secret_key_id', 's3 secret key id to save artifacts', default=None)
+    parser.addini('testomatio_s3_endpoint', 's3 endpoint', default=None)
+    parser.addini('testomatio_s3_bucket', 's3 bucket name (optional)', default=None)
+
 
 def pytest_configure(config: Config):
     config.addinivalue_line(
@@ -42,7 +49,6 @@ def pytest_configure(config: Config):
     )
 
     pytest.analyzer_test_run_config = TestRunConfig()
-
 
     if config.getoption(analyzer_option):
         url = config.getini('testomatio_url')
@@ -55,6 +61,13 @@ def pytest_configure(config: Config):
         if config.getoption('testRunEnv'):
             pytest.analyzer_test_run_config.environment = config.getoption('testRunEnv')
 
+    s3_access_key = config.getini('testomatio_s3_access_key_id')
+    s3_secret_key = config.getini('testomatio_s3_secret_key_id')
+    s3_endpoint = config.getini('testomatio_s3_endpoint')
+    s3_bucket = config.getini('testomatio_s3_bucket')
+    pytest.s3_connector = None
+    if all((s3_access_key, s3_secret_key, s3_endpoint)):
+        pytest.s3_connector = S3Connector(s3_access_key, s3_secret_key, s3_endpoint, s3_bucket)
 
 
 def collect_tests(items: list[Item]):
@@ -159,6 +172,7 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
 
     if request['status']:
         connector = pytest.connector
+        request['artifacts'] = getattr(item, 'testomatio_artifacts', None)
         connector.update_test_status(run_id=pytest.analyzer_test_run_config.test_run_id, **request)
 
 
