@@ -9,6 +9,7 @@ class TestItem:
     def __init__(self, item: Item):
         self.uid = uuid.uuid4()
         self.id: str = TestItem.get_test_id(item)
+        self.user_title = _prettify_test_name(item.name)
         self.title = _clear_param_brackets(item.name)
         self.file_name = item.path.name
         self.abs_path = str(item.path)
@@ -53,3 +54,8 @@ def _clear_param_brackets(name: str) -> str:
     if point > -1:
         return name[0:point]
     return name
+
+
+def _prettify_test_name(name: str) -> str:
+    name = _clear_param_brackets(name)
+    return name.lower().lstrip('test_').replace('_', ' ').capitalize()

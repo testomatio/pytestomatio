@@ -13,14 +13,15 @@ pip install pytest-analyzer
 
 ## configuration
 
-create `pytest.ini` file in your project root directory. Set next parameters:
+Create environment variable `TESTOMATIO_API_KEY` and set your testomat.io API key.
+
+In case you are using private testomat.io service, create `pytest.ini` file in your project root directory. Specify
+testomat.io url in it
 
 ```ini
 [pytest]
-testomatio_url = https://app.testomat.io ; this one is OPTIONAL
-testomatio_project = 70t3da349fte ; project key is mandatory to assing tests to particular project
-testomatio_email = example@test.com ; your login in testomat.io
-testomatio_password = secure_password ; your password in testimat.io
+testomatio_url = https://app.testomat.io
+
 ```
 
 ## Usage
@@ -52,7 +53,7 @@ Run pytest with analyzer debug parameter to get test data collected in metadata.
 pytest --analyzer debug
 ```
 
-### Submitting Test Run Environment 
+### Submitting Test Run Environment
 
 to configure test environment, you can use additional option:
 
@@ -61,19 +62,16 @@ pytest --analyzer sync --testRunEnv windows11,chrome,1920x1080
 ```
 
 ### Submitting Test Artifacts (NEW)
-According documentation, Testomat.io does not store any screenshots, 
-logs or other artifacts. In order to manage them it is advised to use S3 Buckets. 
-https://docs.testomat.io/usage/test-artifacts/  
 
-In order to save artifacts, next optional paramenters can be added to pytest.ini:
-```ini
-[pytest]
-testomatio_s3_access_key_id = <access key>
-testomatio_s3_secret_key_id = <secret key>
-testomatio_s3_endpoint = <endpoint>
-testomatio_s3_bucket = <existing bucket> (optional)
-```
+According documentation, Testomat.io does not store any screenshots,
+logs or other artifacts. In order to manage them it is advised to use S3 Buckets.
+https://docs.testomat.io/usage/test-artifacts/
+
+In order to save artifacts, enable **Share credentials with Testomat.io Reporter** option in testomat.io Settings ->
+Artifacts.
+
 To send artifact to s3 bucket, next code should be added to test:
+
 ```python
 # file_path - path to file to be uploaded
 # file_bytes - bytes of the file to be uploaded
@@ -83,11 +81,14 @@ artifact_url = pytest.s3_connector.upload_file(file_path, key, bucket_name)
 # or
 artifact_url = pytest.s3_connector.upload_file_object(file_bytes, key, bucket_name)
 ```
+⚠️ Please take into account s3_connector available only after **pytest_collection_modifyitems()** hook is executed. 
+
 In conftest.py file next hook can be added. set attribute testomatio_artifacts. This list will be sent to testomat.io
+
 ```python
 def pytest_runtest_makereport(item, call):
-   artifacts = ['url1', 'url2']
-   setattr(item, 'testomatio_artifacts', artifacts)
+    artifact_urls = ['url1', 'url2']
+    setattr(item, 'testomatio_artifacts', artifact_urls)
 ```
 
 Eny environments used in test run. Should be placed in comma separated list, NO SPACES ALLOWED.
@@ -114,6 +115,14 @@ def test_example():
 
 ## Change log
 
+### 1.2.0 - major update after testomat.io review
+
+- code refactored
+- simplified authentication. Only API key needed
+- moved API key from pytest.ini to environment variable
+- S3 credentials now read from testomat.io API, no local configuration needed
+- Prettified test names in testomat.io
+
 ### 1.1.0 - added artifacts support connector
 
 - there is possibility to add artifacts (screenshots, logs) to test report
@@ -126,7 +135,6 @@ def test_example():
 
 ## Roadmap
 
-- get S3 connection details from testomat.io
 - handle REST API exceptions
 - improve logging
 

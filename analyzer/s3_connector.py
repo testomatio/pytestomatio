@@ -2,7 +2,7 @@ import boto3
 import logging
 from io import BytesIO
 
-log = logging.getLogger('analyzer.s3_connector')
+log = logging.getLogger(__name__)
 log.setLevel('INFO')
 
 
