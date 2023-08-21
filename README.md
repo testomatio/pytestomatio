@@ -13,7 +13,15 @@ pip install pytest-analyzer
 
 ## configuration
 
-Create environment variable `TESTOMATIO_API_KEY` and set your testomat.io API key.
+Create environment variable `TESTOMATIO` and set your testomat.io API key.
+Linux:
+```bash
+export TESTOMATIO=<key>
+```
+Windows (cmd):
+```bash
+set TESTOMATIO=<key>
+```
 
 In case you are using private testomat.io service, create `pytest.ini` file in your project root directory. Specify
 testomat.io url in it

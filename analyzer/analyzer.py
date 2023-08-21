@@ -46,9 +46,9 @@ def pytest_configure(config: Config):
 
     if config.getoption(analyzer_option) in ('add', 'remove', 'sync'):
         url = config.getini('testomatio_url')
-        project = os.environ.get('TESTOMATIO_API_KEY')
+        project = os.environ.get('TESTOMATIO')
         if project is None:
-            pytest.exit('TESTOMATIO_API_KEY env variable is not set')
+            pytest.exit('TESTOMATIO env variable is not set')
         connector = Connector(url, project)
         pytest.connector = connector
         if config.getoption('testRunEnv'):
