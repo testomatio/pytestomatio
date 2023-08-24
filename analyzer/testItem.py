@@ -58,4 +58,4 @@ def _clear_param_brackets(name: str) -> str:
 
 def _prettify_test_name(name: str) -> str:
     name = _clear_param_brackets(name)
-    return name.lower().lstrip('test_').replace('_', ' ').capitalize()
+    return name.lower().replace('_', ' ').lstrip('test').strip().capitalize()
