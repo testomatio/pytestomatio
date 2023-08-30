@@ -1,3 +1,4 @@
+[![Support Ukraine Badge](https://bit.ly/support-ukraine-now)](https://github.com/support-ukraine/support-ukraine)
 # Testomat.io plugin for pytest
 
 ## uses Testomat.io API:
