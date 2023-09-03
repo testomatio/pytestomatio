@@ -1,4 +1,5 @@
 [![Support Ukraine Badge](https://bit.ly/support-ukraine-now)](https://github.com/support-ukraine/support-ukraine)
+
 # Testomat.io plugin for pytest
 
 ## uses Testomat.io API:
@@ -16,10 +17,13 @@ pip install pytest-analyzer
 
 Create environment variable `TESTOMATIO` and set your testomat.io API key.
 Linux:
+
 ```bash
 export TESTOMATIO=<key>
 ```
+
 Windows (cmd):
+
 ```bash
 set TESTOMATIO=<key>
 ```
@@ -90,7 +94,8 @@ artifact_url = pytest.s3_connector.upload_file(file_path, key, bucket_name)
 # or
 artifact_url = pytest.s3_connector.upload_file_object(file_bytes, key, bucket_name)
 ```
-⚠️ Please take into account s3_connector available only after **pytest_collection_modifyitems()** hook is executed. 
+
+⚠️ Please take into account s3_connector available only after **pytest_collection_modifyitems()** hook is executed.
 
 In conftest.py file next hook can be added. set attribute testomatio_artifacts. This list will be sent to testomat.io
 
@@ -123,6 +128,10 @@ def test_example():
 ```
 
 ## Change log
+
+### 1.2.3 - fixed issue with test artifacts
+
+- if no credentials provided, test artifacts will not be uploaded and no issue raised
 
 ### 1.2.0 - major update after testomat.io review
 
