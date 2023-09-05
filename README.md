@@ -129,6 +129,10 @@ def test_example():
 
 ## Change log
 
+### 1.2.4 - improved parametrized tests reporting
+
+- now parameters are passed to example attribute in the report
+
 ### 1.2.3 - fixed issue with test artifacts
 
 - if no credentials provided, test artifacts will not be uploaded and no issue raised

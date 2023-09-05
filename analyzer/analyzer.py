@@ -135,6 +135,8 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
             request['status'] = 'failed'
         else:
             request['status'] = 'passed'
+        if hasattr(item, 'callspec'):
+            request['example'] = item.callspec.params
 
     if request['status']:
         connector = pytest.connector

@@ -2,7 +2,6 @@ import requests
 import logging
 
 from .testItem import TestItem
-from .helper import parse_test_list
 
 log = logging.getLogger('analyzer')
 
