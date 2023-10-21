@@ -2,9 +2,12 @@
 requires = ["setuptools>=65.5.1", "requests>=2.29.0", "autopep8>=2.0.2", "pytest>=7.3.1", "boto3>=1.28.28"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools.packages.find]
+exclude = [".github", "tests"]
+
 [project]
 name = "pytest-analyzer"
-version = "1.2.5"
+version = "1.2.6"
 
 dependencies = [
     "requests>=2.29.0",
