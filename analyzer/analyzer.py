@@ -136,7 +136,13 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         else:
             request['status'] = 'passed'
         if hasattr(item, 'callspec'):
-            request['example'] = item.callspec.params
+            example = item.callspec.params
+            if type(example) is bytes:
+                request['example'] = example.decode('utf-8')
+            elif type(example) in (str, int, float, bool):
+                request['example'] = item.callspec.params
+            else:
+                request['example'] = 'object'  # to avoid json serialization error
 
     if request['status']:
         connector = pytest.connector

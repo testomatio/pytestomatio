@@ -133,6 +133,11 @@ def test_example():
 
 ## Change log
 
+### 1.2.5 - fixed issues
+
+- added env variable `TESTOMATIO_RUNGROUP_TITLE` to group test runs
+- fixed serialization issue for update test status example
+
 ### 1.2.4 - improved parametrized tests reporting
 
 - now parameters are passed to example attribute in the report
