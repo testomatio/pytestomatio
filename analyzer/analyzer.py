@@ -41,7 +41,7 @@ def pytest_configure(config: Config):
         "markers", "testomatio(arg): built in marker to connect test case with testomat.io by unique id"
     )
 
-    pytest.analyzer_test_run_config = TestRunConfig()
+    pytest.analyzer_test_run_config = TestRunConfig(group_title=os.environ.get('TESTOMATIO_RUNGROUP_TITLE'))
     pytest.s3_connector = None
 
     if config.getoption(analyzer_option) in ('add', 'remove', 'sync'):
