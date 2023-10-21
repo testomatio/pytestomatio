@@ -28,6 +28,10 @@ Windows (cmd):
 set TESTOMATIO=<key>
 ```
 
+### Run groups parameter
+There is environment variable `TESTOMATIO_RUNGROUP_TITLE` that can be used to specify run tests with specific group title.
+
+### pytest.ini
 In case you are using private testomat.io service, create `pytest.ini` file in your project root directory. Specify
 testomat.io url in it
 
