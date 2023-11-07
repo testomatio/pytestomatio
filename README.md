@@ -159,7 +159,7 @@ def test_example():
 - there is possibility to add artifacts (screenshots, logs) to test report
 
 ### 1.0.9 - first public release
-
+ 
 - test analyzer able to sync tests with testomat.io
 - test analyzer able to add test ids to tests
 - test analyzer able to submit test results to testomat.io
