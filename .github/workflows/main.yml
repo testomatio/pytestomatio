@@ -1,9 +1,14 @@
-name: Publish Python 🐍 distributions 📦 to PyPI
+name: Publish Python distributions to PyPI
 
-on: push
+on:
+  push
+
+permissions:
+  contents: read
+
 jobs:
   build-and-publish:
-    name: Build and publish Python 🐍 distributions 📦 to PyPI
+    name: Build and publish Python distributions to PyPI
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -21,9 +26,8 @@ jobs:
       - name: Build package
         run: |
           python -m build
-      - name: Publish distribution 📦 to PyPI
+      - name: Publish distribution to PyPI
         uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
-          skip-existing: true
