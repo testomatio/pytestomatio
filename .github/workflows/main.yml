@@ -5,6 +5,11 @@ jobs:
   build-and-publish:
     name: Build and publish Python 🐍 distributions 📦 to PyPI
     runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/pytest-analyzer
+    permissions:
+      id-token: write
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
@@ -20,7 +25,8 @@ jobs:
         run: |
           python -m build
       - name: Publish distribution 📦 to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
         with:
+          user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
           skip-existing: true
