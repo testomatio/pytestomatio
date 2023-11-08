@@ -5,9 +5,6 @@ jobs:
   build-and-publish:
     name: Build and publish Python 🐍 distributions 📦 to PyPI
     runs-on: ubuntu-latest
-    environment:
-      name: pypi
-      url: https://pypi.org/p/pytest-analyzer
     permissions:
       id-token: write
     steps:
