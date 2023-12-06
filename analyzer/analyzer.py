@@ -99,8 +99,8 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
 
 
 def pytest_runtest_makereport(item: Item, call: CallInfo):
-    sync = item.config.getoption(analyzer_option)
-    if sync is None or sync != 'sync':
+    pytest.analyzer_config_option = item.config.getoption(analyzer_option)
+    if pytest.analyzer_config_option is None or pytest.analyzer_config_option != 'sync':
         return
     elif not pytest.analyzer_test_run_config.test_run_id:
         return
@@ -120,6 +120,7 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         'steps': None,
         'code': None,
     }
+
     if call.when == 'setup':
         if call.excinfo is not None:
             if call.excinfo.typename == 'Skipped':
@@ -145,9 +146,20 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
                 request['example'] = 'object'  # to avoid json serialization error
 
     if request['status']:
-        connector = pytest.connector
-        request['artifacts'] = getattr(item, 'testomatio_artifacts', None)
-        connector.update_test_status(run_id=pytest.analyzer_test_run_config.test_run_id, **request)
+        pytest.analyzer_test_run_config.status_request.append(request)
+
+
+def pytest_runtest_logfinish(nodeid, location):
+    if pytest.analyzer_config_option is None or pytest.analyzer_config_option != 'sync':
+        return
+    elif not pytest.analyzer_test_run_config.test_run_id:
+        return
+
+    for request in pytest.analyzer_test_run_config.status_request:
+        if request['status']:
+            connector = pytest.connector
+            connector.update_test_status(run_id=pytest.analyzer_test_run_config.test_run_id, **request)
+    pytest.analyzer_test_run_config.status_request = []
 
 
 def pytest_sessionfinish(session: Session, exitstatus: int):

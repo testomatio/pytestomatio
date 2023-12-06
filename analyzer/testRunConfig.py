@@ -11,6 +11,7 @@ class TestRunConfig:
         self.environment = environment
         self.group_title = group_title
         self.parallel = parallel
+        self.status_request = []
 
     def to_dict(self) -> dict:
         result = dict()

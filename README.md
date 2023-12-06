@@ -133,6 +133,9 @@ def test_example():
 
 ## Change log
 
+### 1.2.8 - fixed issues
+- [issue 4](https://github.com/Ypurek/pytest-analyzer/issues/4) - Analyzer's execution order
+
 ### 1.2.5 - fixed issues
 
 - added env variable `TESTOMATIO_RUNGROUP_TITLE` to group test runs

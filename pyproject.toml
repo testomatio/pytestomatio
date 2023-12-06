@@ -7,7 +7,7 @@ exclude = [".github", "tests"]
 
 [project]
 name = "pytest-analyzer"
-version = "1.2.7"
+version = "1.2.8"
 
 dependencies = [
     "requests>=2.29.0",
