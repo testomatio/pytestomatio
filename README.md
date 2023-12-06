@@ -133,6 +133,9 @@ def test_example():
 
 ## Change log
 
+### 1.3.0 - added artifacts support connector
+- [issue 5](https://github.com/Ypurek/pytest-analyzer/issues/5) - connection issues not blocking test execution anymore
+
 ### 1.2.8 - fixed issues
 - [issue 4](https://github.com/Ypurek/pytest-analyzer/issues/4) - Analyzer's execution order
 
@@ -168,35 +171,4 @@ def test_example():
 - test analyzer able to submit test results to testomat.io
 
 ## Roadmap
-
-- handle REST API exceptions
 - improve logging
-
-## Delivery hints
-
-1. Do not forget update version in pyproject.toml
-2. Do not forget update version in README.md
-3. Follow next steps:  
-   To install locally (for testing purposes)
-
-```bash
-pip install --upgrade .
-```
-
-To build package
-
-```bash
-py -m build
-```
-
-Install twine to upload package to pypi
-
-```bash
-py -m pip install --upgrade twine
-```
-
-Upload package to pypi
-
-```bash
-py -m twine upload --repository pypi dist/* --verbose
-```

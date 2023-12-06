@@ -1,4 +1,5 @@
 import requests
+from requests.exceptions import HTTPError, ConnectionError
 import logging
 
 from .testItem import TestItem
@@ -35,8 +36,17 @@ class Connector:
                 "file": test.file_name
             })
 
-        # with safe_request('Failed to load tests to testomat.io'):
-        response = self.session.post(f'{self.base_url}/api/load?api_key={self.api_key}', json=request)
+        try:
+            response = self.session.post(f'{self.base_url}/api/load?api_key={self.api_key}', json=request)
+        except ConnectionError:
+            log.error(f'Failed to connect to {self.base_url}')
+            return
+        except HTTPError:
+            log.error(f'Failed to connect to {self.base_url}')
+            return
+        except Exception as e:
+            log.error(f'Generic exception happened. Please report an issue. {e}')
+            return
 
         if response.status_code == 200:
             log.info(f'Tests loaded to {self.base_url}')
@@ -48,7 +58,7 @@ class Connector:
         response = self.session.get(f'{self.base_url}/api/test_data?api_key={self.api_key}')
         return response.json()
 
-    def create_test_run(self, title: str, env: str, group_title, parallel) -> dict:
+    def create_test_run(self, title: str, env: str, group_title, parallel) -> dict | None:
         request = {
             "title": title,
             "env": env,
@@ -56,8 +66,19 @@ class Connector:
             "parallel": parallel
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
-        # with safe_request('Failed to create test run'):
-        response = self.session.post(f'{self.base_url}/api/reporter?api_key={self.api_key}', json=filtered_request)
+
+        try:
+            response = self.session.post(f'{self.base_url}/api/reporter?api_key={self.api_key}', json=filtered_request)
+        except ConnectionError:
+            log.error(f'Failed to connect to {self.base_url}')
+            return
+        except HTTPError:
+            log.error(f'Failed to connect to {self.base_url}')
+            return
+        except Exception as e:
+            log.error(f'Generic exception happened. Please report an issue. {e}')
+            return
+
         if response.status_code == 200:
             log.info(f'Test run created {response.json()["uid"]}')
             return response.json()
@@ -91,15 +112,34 @@ class Connector:
             "code": code
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
-        # with safe_request(f'Failed to update test status for test id {test_id}'):
-        response = self.session.post(f'{self.base_url}/api/reporter/{run_id}/testrun?api_key={self.api_key}',
-                                     json=filtered_request)
+        try:
+            response = self.session.post(f'{self.base_url}/api/reporter/{run_id}/testrun?api_key={self.api_key}',
+                                         json=filtered_request)
+        except ConnectionError:
+            log.error(f'Failed to connect to {self.base_url}')
+            return
+        except HTTPError:
+            log.error(f'Failed to connect to {self.base_url}')
+            return
+        except Exception as e:
+            log.error(f'Generic exception happened. Please report an issue. {e}')
+            return
         if response.status_code == 200:
             log.info('Test status updated')
 
     def finish_test_run(self, run_id: str) -> None:
-        self.session.put(f'{self.base_url}/api/reporter/{run_id}?api_key={self.api_key}',
-                         json={"status_event": "finish"})
+        try:
+            self.session.put(f'{self.base_url}/api/reporter/{run_id}?api_key={self.api_key}',
+                             json={"status_event": "finish"})
+        except ConnectionError:
+            log.error(f'Failed to connect to {self.base_url}')
+            return
+        except HTTPError:
+            log.error(f'Failed to connect to {self.base_url}')
+            return
+        except Exception as e:
+            log.error(f'Generic exception happened. Please report an issue. {e}')
+            return
 
     def disconnect(self):
         self.session.close()

@@ -77,6 +77,9 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                 connector: Connector = pytest.connector
                 test_config = pytest.analyzer_test_run_config
                 run_details = connector.create_test_run(**test_config.to_dict())
+                if run_details is None:
+                    log.error('Test run failed to create. Reporting skipped')
+                    return
                 pytest.analyzer_test_run_config.test_run_id = run_details['uid']
 
                 if run_details.get('artifacts'):
