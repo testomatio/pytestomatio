@@ -90,7 +90,8 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                     if all((s3_access_key, s3_secret_key, s3_endpoint, s3_bucket)):
                         pytest.s3_connector = S3Connector(s3_access_key, s3_secret_key, s3_endpoint, s3_bucket)
                         pytest.s3_connector.login()
-                pytest.s3_connector = S3Connector('', '', '', '')
+                    else:
+                        pytest.s3_connector = S3Connector('', '', '', '')
             case 'debug':
                 with open(metadata_file, 'w') as file:
                     data = json.dumps([i.to_dict() for i in meta], indent=4)

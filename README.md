@@ -78,35 +78,50 @@ to configure test environment, you can use additional option:
 pytest --analyzer sync --testRunEnv windows11,chrome,1920x1080
 ```
 
-### Submitting Test Artifacts (NEW)
+### Submitting Test Artifacts
 
-According documentation, Testomat.io does not store any screenshots,
-logs or other artifacts. In order to manage them it is advised to use S3 Buckets.
+Testomat.io does not store any screenshots,logs or other artifacts.
+
+In order to manage them it is advised to use S3 Buckets (GCP Storage).
 https://docs.testomat.io/usage/test-artifacts/
 
-In order to save artifacts, enable **Share credentials with Testomat.io Reporter** option in testomat.io Settings ->
+In order for analyser to have access to your cloud bucket - enable **Share credentials with Testomat.io Reporter** option in testomat.io Settings ->
 Artifacts.
 
-To send artifact to s3 bucket, next code should be added to test:
+You would need to decide when and where you want to upload your test artifacts to cloud storage
+
+Using pytest fixtures might be a good choice, ex.:
 
 ```python
-# file_path - path to file to be uploaded
-# file_bytes - bytes of the file to be uploaded
-# key - file name in the s3 bucket
-# bucket_name - name of the bucket to upload file to. If not set, bucket name from pytest.ini will be used, if set, overrides bucket name from pytest.ini
-artifact_url = pytest.s3_connector.upload_file(file_path, key, bucket_name)
-# or
-artifact_url = pytest.s3_connector.upload_file_object(file_bytes, key, bucket_name)
+@pytest.fixture(scope="function")
+def page(context, request):
+    page = context.new_page()
+    yield
+    if request.node.rep_call.failed:
+        random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+
+        filename = f"{random_string}.png"
+        screenshot_path = os.path.join(artifacts_dir, filename)
+        page.screenshot(path=screenshot_path)
+        # file_path - required, path to file to be uploaded
+        # file_bytes - required, bytes of the file to be uploaded
+        # key - required, file name in the s3 bucket
+        # bucket_name - optional,name of the bucket to upload file to. Default value is taken from Testomatio.io
+        artifact_url = pytest.s3_connector.upload_file(screenshot_path, filename)
+        # or
+        # artifact_url = pytest.s3_connector.upload_file_object(file_bytes, key, bucket_name)
+        request.node.testomatio = {"artifacts": [artifact_url]}
+    page.close()
 ```
 
 ⚠️ Please take into account s3_connector available only after **pytest_collection_modifyitems()** hook is executed.
 
-In conftest.py file next hook can be added. set attribute testomatio_artifacts. This list will be sent to testomat.io
+If you prefer to use pytest hooks - add `pytest_runtest_makereport` hook in your `conftest.py` file.
 
 ```python
 def pytest_runtest_makereport(item, call):
-    artifact_urls = ['url1', 'url2']
-    setattr(item, 'testomatio_artifacts', artifact_urls)
+    artifact_url = pytest.s3_connector.upload_file(screenshot_path, filename)
+    item.testomatio = {"artifacts": [artifact_url]}
 ```
 
 Eny environments used in test run. Should be placed in comma separated list, NO SPACES ALLOWED.

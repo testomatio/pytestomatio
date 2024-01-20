@@ -19,7 +19,8 @@ class TestItem:
         # straitforward way, does not work with test packages
         # self.source_code = getsource(item.function)
         self.class_name = item.cls.__name__ if item.cls else None
-
+        self.artifacts = item.testomatio.get('artifacts', []) if hasattr(item, 'testomatio') else []
+    
     def to_dict(self) -> dict:
         result = dict()
         result['uid'] = str(self.uid)
@@ -31,6 +32,7 @@ class TestItem:
         result['module'] = self.module
         result['className'] = self.class_name
         result['sourceCode'] = self.source_code
+        result['artifacts'] = self.artifacts
         return result
 
     def json(self) -> str:
