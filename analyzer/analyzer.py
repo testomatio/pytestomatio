@@ -110,13 +110,14 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         return
 
     test_item = TestItem(item)
+    test_id = test_item.id if not test_item.id.startswith("@T") else test_item.id[2:]
     request = {
         'status': None,
         'title': test_item.title,
         'run_time': call.duration,
         'suite_title': test_item.file_name,
         'suite_id': None,
-        'test_id': test_item.id[2:] if test_item.id else None,  # remove @T if exists
+        'test_id': test_id,
         'message': None,
         'stack': None,
         'example': None,
