@@ -172,7 +172,8 @@ def test_example():
 - Fixes artifacts uploads
 - Fixes test id resolution when syncing local test with Testomatio
 - Fixes test id when sending test into test run
-- Adds `--no-empty`, `--no-detached`, `--keep-structure`, `--create` for compatibility with original Testomatio check-tests
+- Adds `--create`, `--no-detached`, `--keep-structure`, `--no-empty`,  for compatibility with original Testomatio check-tests
+- Improves file update so it doesn't cause code style changes
 
 ### 1.3.0 - added artifacts support connector
 - [issue 5](https://github.com/Ypurek/pytest-analyzer/issues/5) - connection issues not blocking test execution anymore
