@@ -63,7 +63,7 @@ def add_and_enrich_tests(meta: list[TestItem], test_files: set,
     tcm_test_data = parse_test_list(testomatio_tests)
     for test in meta:
         for tcm_test in tcm_test_data:
-            if test.user_title == tcm_test.title and test.file_name == tcm_test.file_name:
+            if test.title == tcm_test.title and test.file_name == tcm_test.file_name:
                 test.id = tcm_test.id
                 tcm_test_data.remove(tcm_test)
                 break
