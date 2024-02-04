@@ -32,7 +32,26 @@ def pytest_addoption(parser: Parser) -> None:
     parser.addoption(f'--testRunEnv',
                      action='store',
                      help='specify test run environment for testomat.io. Works only with --analyzer sync')
-
+    parser.addoption(f'--create',
+                    action='store_true',
+                    default=False,
+                    dest="create",
+                    help='To import tests with Test IDs set in source code into a project use --create option. In this case, a new project will be populated with the same Test IDs.. Use --add together with --create option to enable this behavior.')
+    parser.addoption(f'--no-empty',
+                     action='store_true',
+                     default=False,
+                     dest="no_empty",
+                     help='Delete empty suites. If tests were marked with IDs and imported to already created suites in Testomat.io newly imported suites may become empty. Use --add together with --no-empty option to clean them up after import.')
+    parser.addoption(f'--no-detach',
+                     action='store_true',
+                     default=False,
+                     dest="no_detach",
+                     help='Disable detaching tests. If a test from a previous import was not found on next import it is marked as "detached". This is done to ensure that deleted tests are not staying in Testomatio while deleted in codebase. To disable this behavior and don\'t mark anything on detached on import use --add together with --no-detached option.')
+    parser.addoption(f'--keep-structure',
+                     action='store_true',
+                     default=False,
+                     dest="keep_structure",
+                     help='Keep structure of source code. If suites are not created in Testomat.io they will be created based on the file structure. Use --add together with --structure option to enable this behavior.')
     parser.addini('testomatio_url', 'testomat.io base url', default='https://app.testomat.io')
 
 
@@ -61,7 +80,13 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
         match config.getoption(analyzer_option):
             case 'add':
                 connector: Connector = pytest.connector
-                connector.load_tests(meta)
+                connector.load_tests(
+                    meta,
+                    no_empty=config.getoption('no_empty'),
+                    no_detach=config.getoption('no_detach'),
+                    structure=config.getoption('keep_structure'),
+                    create=config.getoption('create')
+                )
                 testomatio_tests = connector.get_tests(meta)
                 add_and_enrich_tests(meta, test_files, test_names, testomatio_tests, decorator_name)
                 pytest.exit(

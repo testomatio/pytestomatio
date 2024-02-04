@@ -15,19 +15,27 @@ class Connector:
         self.jwt: str = ''
         self.api_key = api_key
 
-    def load_tests(self, tests: list[TestItem], no_empty: bool = True, no_detach: bool = True):
+    def load_tests(
+            self,
+            tests: list[TestItem],
+            no_empty: bool = False,
+            no_detach: bool = False,
+            structure: bool = False,
+            create: bool = False
+        ):
         request = {
-            "framework": "pytest",
-            "language": "python",
+            "framework": "",
+            "language": "",
             "noempty": no_empty,
             "no-detach": no_detach,
-            "structure": True,
+            "structure": structure if not no_empty else False,
+            "create": create,
             "sync": True,
             "tests": []
         }
         for test in tests:
             request['tests'].append({
-                "name": test.user_title,
+                "name": test.sync_title,
                 "suites": [
                     test.file_name,
                     test.class_name
@@ -48,7 +56,7 @@ class Connector:
             log.error(f'Generic exception happened. Please report an issue. {e}')
             return
 
-        if response.status_code == 200:
+        if response.status_code < 400:
             log.info(f'Tests loaded to {self.base_url}')
         else:
             log.error(f'Failed to load tests to {self.base_url}. Status code: {response.status_code}')

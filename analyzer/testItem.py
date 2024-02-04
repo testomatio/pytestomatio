@@ -11,6 +11,7 @@ class TestItem:
         self.id: str = TestItem.get_test_id(item)
         self.user_title = _prettify_test_name(item.name)
         self.title = _clear_param_brackets(item.name)
+        self.sync_title = _get_sync_title(item)
         self.file_name = item.path.name
         self.abs_path = str(item.path)
         self.file_path = item.location[0]
@@ -56,6 +57,16 @@ def _clear_param_brackets(name: str) -> str:
     if point > -1:
         return name[0:point]
     return name
+
+# Testomatio resolves test id on BE by parsing test name to find test id
+def _get_sync_title(item: Item) -> str:
+    clean_name = _clear_param_brackets(item.name)
+    test_id = TestItem.get_test_id(item)
+    # Test id is present on already synced tests
+    if (test_id):
+        return f'{clean_name} {test_id}'
+    # New test don't have testomatio test id.
+    return clean_name
 
 
 def _prettify_test_name(name: str) -> str:

@@ -146,7 +146,33 @@ def test_example():
     assert 2 + 2 == 4
 ```
 
+### Compatibility table with [Testomatio check-tests](https://github.com/testomatio/check-tests)
+
+| Action |  Compatibility | Method |
+|--------|--------|-------|
+| Importing test into Testomatio | complete | `pytest --analyzer add` |
+| Exclude hook code of a test | N/A | N/A |
+| Include line number code of a test | N/A | N/A |
+| Import Parametrized Tests | complete | default behaviour |
+| Disable Detached Tests | complete | `pytest --analyzer add --no-detached` |
+| Synchronous Import | complete | default behaviour |
+| Auto-assign Test IDs in Source Code | complete | default behaviour |
+| Keep Test IDs Between Projects | complete | `pytest --analyzer add --create` |
+| Clean Test IDs | complete | `pytest --analyzer remove` |
+| Import Into a Branch | N/A | N/A |
+| Keep Structure of Source Code | complete | `pytest --analyzer add --keep-structure` |
+| Delete Empty Suites | complete | `pytest --analyzer add --no-empty` |
+| Import Into a Specific Suite | N/A | N/A |
+| Debugging | parity | `pytest --analyzer debug` |
+
+
 ## Change log
+
+### 1.4.0 - added artifacts support connector
+- Fixes artifacts uploads
+- Fixes test id resolution when syncing local test with Testomatio
+- Fixes test id when sending test into test run
+- Adds `--no-empty`, `--no-detached`, `--keep-structure`, `--create` for compatibility with original Testomatio check-tests
 
 ### 1.3.0 - added artifacts support connector
 - [issue 5](https://github.com/Ypurek/pytest-analyzer/issues/5) - connection issues not blocking test execution anymore
