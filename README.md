@@ -128,7 +128,7 @@ Eny environments used in test run. Should be placed in comma separated list, NO 
 
 ### Clarifications
 
-- tests can be synced even without `@mark.testomatio('@T96c700e6')` decorator.
+- tests can be synced even without `@patest.mark.testomatio('@T96c700e6')` decorator.
 - test title in testomat.io == test name in pytest
 - test suit title in testomat.io == test file name in pytest
 
@@ -138,10 +138,10 @@ To make analyzer experience more consistent, it uses standard pytest markers.
 Testomat.io test id is a string value that starts with `@T` and has 8 symbols after.
 
 ```python
-from pytest import mark
+import pytest
 
 
-@mark.testomatio('@T96c700e6')
+@pytest.mark.testomatio('@T96c700e6')
 def test_example():
     assert 2 + 2 == 4
 ```
@@ -168,7 +168,7 @@ def test_example():
 
 ## Change log
 
-### 1.4.0 - added artifacts support connector
+### 1.4.0 - Fixes artifacts and test sync with Testomatio
 - Fixes artifacts uploads
 - Fixes test id resolution when syncing local test with Testomatio
 - Fixes test id when sending test into test run
