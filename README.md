@@ -78,42 +78,57 @@ to configure test environment, you can use additional option:
 pytest --analyzer sync --testRunEnv windows11,chrome,1920x1080
 ```
 
-### Submitting Test Artifacts (NEW)
+### Submitting Test Artifacts
 
-According documentation, Testomat.io does not store any screenshots,
-logs or other artifacts. In order to manage them it is advised to use S3 Buckets.
+Testomat.io does not store any screenshots,logs or other artifacts.
+
+In order to manage them it is advised to use S3 Buckets (GCP Storage).
 https://docs.testomat.io/usage/test-artifacts/
 
-In order to save artifacts, enable **Share credentials with Testomat.io Reporter** option in testomat.io Settings ->
+In order for analyser to have access to your cloud bucket - enable **Share credentials with Testomat.io Reporter** option in testomat.io Settings ->
 Artifacts.
 
-To send artifact to s3 bucket, next code should be added to test:
+You would need to decide when and where you want to upload your test artifacts to cloud storage
+
+Using pytest fixtures might be a good choice, ex.:
 
 ```python
-# file_path - path to file to be uploaded
-# file_bytes - bytes of the file to be uploaded
-# key - file name in the s3 bucket
-# bucket_name - name of the bucket to upload file to. If not set, bucket name from pytest.ini will be used, if set, overrides bucket name from pytest.ini
-artifact_url = pytest.s3_connector.upload_file(file_path, key, bucket_name)
-# or
-artifact_url = pytest.s3_connector.upload_file_object(file_bytes, key, bucket_name)
+@pytest.fixture(scope="function")
+def page(context, request):
+    page = context.new_page()
+    yield
+    if request.node.rep_call.failed:
+        random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+
+        filename = f"{random_string}.png"
+        screenshot_path = os.path.join(artifacts_dir, filename)
+        page.screenshot(path=screenshot_path)
+        # file_path - required, path to file to be uploaded
+        # file_bytes - required, bytes of the file to be uploaded
+        # key - required, file name in the s3 bucket
+        # bucket_name - optional,name of the bucket to upload file to. Default value is taken from Testomatio.io
+        artifact_url = pytest.s3_connector.upload_file(screenshot_path, filename)
+        # or
+        # artifact_url = pytest.s3_connector.upload_file_object(file_bytes, key, bucket_name)
+        request.node.testomatio = {"artifacts": [artifact_url]}
+    page.close()
 ```
 
 ⚠️ Please take into account s3_connector available only after **pytest_collection_modifyitems()** hook is executed.
 
-In conftest.py file next hook can be added. set attribute testomatio_artifacts. This list will be sent to testomat.io
+If you prefer to use pytest hooks - add `pytest_runtest_makereport` hook in your `conftest.py` file.
 
 ```python
 def pytest_runtest_makereport(item, call):
-    artifact_urls = ['url1', 'url2']
-    setattr(item, 'testomatio_artifacts', artifact_urls)
+    artifact_url = pytest.s3_connector.upload_file(screenshot_path, filename)
+    item.testomatio = {"artifacts": [artifact_url]}
 ```
 
 Eny environments used in test run. Should be placed in comma separated list, NO SPACES ALLOWED.
 
 ### Clarifications
 
-- tests can be synced even without `@mark.testomatio('@T96c700e6')` decorator.
+- tests can be synced even without `@patest.mark.testomatio('@T96c700e6')` decorator.
 - test title in testomat.io == test name in pytest
 - test suit title in testomat.io == test file name in pytest
 
@@ -123,15 +138,42 @@ To make analyzer experience more consistent, it uses standard pytest markers.
 Testomat.io test id is a string value that starts with `@T` and has 8 symbols after.
 
 ```python
-from pytest import mark
+import pytest
 
 
-@mark.testomatio('@T96c700e6')
+@pytest.mark.testomatio('@T96c700e6')
 def test_example():
     assert 2 + 2 == 4
 ```
 
+### Compatibility table with [Testomatio check-tests](https://github.com/testomatio/check-tests)
+
+| Action |  Compatibility | Method |
+|--------|--------|-------|
+| Importing test into Testomatio | complete | `pytest --analyzer add` |
+| Exclude hook code of a test | N/A | N/A |
+| Include line number code of a test | N/A | N/A |
+| Import Parametrized Tests | complete | default behaviour |
+| Disable Detached Tests | complete | `pytest --analyzer add --no-detached` |
+| Synchronous Import | complete | default behaviour |
+| Auto-assign Test IDs in Source Code | complete | default behaviour |
+| Keep Test IDs Between Projects | complete | `pytest --analyzer add --create` |
+| Clean Test IDs | complete | `pytest --analyzer remove` |
+| Import Into a Branch | N/A | N/A |
+| Keep Structure of Source Code | complete | `pytest --analyzer add --keep-structure` |
+| Delete Empty Suites | complete | `pytest --analyzer add --no-empty` |
+| Import Into a Specific Suite | N/A | N/A |
+| Debugging | parity | `pytest --analyzer debug` |
+
+
 ## Change log
+
+### 1.4.0 - Fixes artifacts and test sync with Testomatio
+- Fixes artifacts uploads
+- Fixes test id resolution when syncing local test with Testomatio
+- Fixes test id when sending test into test run
+- Adds `--create`, `--no-detached`, `--keep-structure`, `--no-empty`,  for compatibility with original Testomatio check-tests
+- Improves file update so it doesn't cause code style changes
 
 ### 1.3.0 - added artifacts support connector
 - [issue 5](https://github.com/Ypurek/pytest-analyzer/issues/5) - connection issues not blocking test execution anymore
