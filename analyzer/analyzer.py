@@ -18,7 +18,7 @@ metadata_file = 'metadata.json'
 decorator_name = 'testomatio'
 analyzer_option = 'analyzer'
 
-help_text = 'analize tests, connect test with testomat.io. Use parameters:\n' \
+help_text = 'analyze tests, connect test with testomat.io. Use parameters:\n' \
             'add - upload tests and set test ids in the code\n' \
             'remove - removes testomat.io ids from the ALL tests\n' \
             'sync - allows to share sync test run status with testomat.io\n' \
@@ -135,7 +135,11 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         return
 
     test_item = TestItem(item)
-    test_id = test_item.id if not test_item.id.startswith("@T") else test_item.id[2:]
+    if test_item.id is None:
+        test_id = None
+    else:
+        test_id = test_item.id if not test_item.id.startswith("@T") else test_item.id[2:]
+
     request = {
         'status': None,
         'title': test_item.title,
