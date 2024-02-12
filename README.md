@@ -90,14 +90,29 @@ Artifacts.
 
 You would need to decide when and where you want to upload your test artifacts to cloud storage
 
-Using pytest fixtures might be a good choice, ex.:
+Upload page screenshot when test fails, using fixtures [reference](https://docs.pytest.org/en/latest/example/simple.html#making-test-result-information-available-in-fixtures)
 
 ```python
+# content of conftest.py
+import pytest
+from typing import Dict
+from pytest import StashKey, CollectReport
+from playwright.sync_api import Page
+
+phase_report_key = StashKey[Dict[str, CollectReport]]()
+
+@pytest.hookimpl(wrapper=True, tryfirst=True)
+def pytest_runtest_makereport(item, call):
+    rep = yield
+    item.stash.setdefault(phase_report_key, {})[rep.when] = rep
+    return rep
+
+
 @pytest.fixture(scope="function")
-def page(context, request):
-    page = context.new_page()
+def handle_artifacts(page: Page, request):
     yield
-    if request.node.rep_call.failed:
+    report = request.node.stash[phase_report_key]
+    if ("call" not in report) or report["setup"].failed or report["call"].failed:
         random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
 
         filename = f"{random_string}.png"
@@ -110,7 +125,7 @@ def page(context, request):
         artifact_url = pytest.s3_connector.upload_file(screenshot_path, filename)
         # or
         # artifact_url = pytest.s3_connector.upload_file_object(file_bytes, key, bucket_name)
-        request.node.testomatio = {"artifacts": [artifact_url]}
+        request.node.stash["artifact_urls"] = [artifact_url]
     page.close()
 ```
 
@@ -121,7 +136,7 @@ If you prefer to use pytest hooks - add `pytest_runtest_makereport` hook in your
 ```python
 def pytest_runtest_makereport(item, call):
     artifact_url = pytest.s3_connector.upload_file(screenshot_path, filename)
-    item.testomatio = {"artifacts": [artifact_url]}
+    item.stash["artifact_urls"] = [artifact_url]
 ```
 
 Eny environments used in test run. Should be placed in comma separated list, NO SPACES ALLOWED.
@@ -167,6 +182,9 @@ def test_example():
 
 
 ## Change log
+
+### 1.5.0 - Fixes artifacts in fixtures lifecycle
+- Earlier, artifacts added in pytest fixtures where scipped by analyser
 
 ### 1.4.0 - Fixes artifacts and test sync with Testomatio
 - Fixes artifacts uploads

@@ -20,7 +20,7 @@ class TestItem:
         # straitforward way, does not work with test packages
         # self.source_code = getsource(item.function)
         self.class_name = item.cls.__name__ if item.cls else None
-        self.artifacts = item.testomatio.get('artifacts', []) if hasattr(item, 'testomatio') else []
+        self.artifacts = item.stash.get("artifact_urls", [])
     
     def to_dict(self) -> dict:
         result = dict()

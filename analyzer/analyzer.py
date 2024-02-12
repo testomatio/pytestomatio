@@ -150,7 +150,7 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         'message': None,
         'stack': None,
         'example': None,
-        'artifacts': None,
+        'artifacts': test_item.artifacts,
         'steps': None,
         'code': None,
     }
@@ -179,8 +179,12 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
             else:
                 request['example'] = 'object'  # to avoid json serialization error
 
-    if request['status']:
-        pytest.analyzer_test_run_config.status_request.append(request)
+    if item.nodeid not in pytest.analyzer_test_run_config.status_request:
+        pytest.analyzer_test_run_config.status_request[item.nodeid] = request
+    else:
+        for key, value in request.items():
+            if value is not None:
+                pytest.analyzer_test_run_config.status_request[item.nodeid][key] = value
 
 
 def pytest_runtest_logfinish(nodeid, location):
@@ -189,11 +193,11 @@ def pytest_runtest_logfinish(nodeid, location):
     elif not pytest.analyzer_test_run_config.test_run_id:
         return
 
-    for request in pytest.analyzer_test_run_config.status_request:
+    for nodeid, request in pytest.analyzer_test_run_config.status_request.items():
         if request['status']:
             connector = pytest.connector
             connector.update_test_status(run_id=pytest.analyzer_test_run_config.test_run_id, **request)
-    pytest.analyzer_test_run_config.status_request = []
+    pytest.analyzer_test_run_config.status_request = {}
 
 
 def pytest_sessionfinish(session: Session, exitstatus: int):
