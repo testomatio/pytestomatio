@@ -122,10 +122,10 @@ def handle_artifacts(page: Page, request):
         # file_bytes - required, bytes of the file to be uploaded
         # key - required, file name in the s3 bucket
         # bucket_name - optional,name of the bucket to upload file to. Default value is taken from Testomatio.io
-        artifact_url = pytest.s3_connector.upload_file(screenshot_path, filename)
+        artifact_url = pytest.testomatio.upload_file(screenshot_path, filename)
         # or
-        # artifact_url = pytest.s3_connector.upload_file_object(file_bytes, key, bucket_name)
-        request.node.stash["artifact_urls"] = [artifact_url]
+        # artifact_url = pytest.testomatio.upload_file_object(file_bytes, key, bucket_name)
+        pytest.testomatio.add_artifacts([artifact_url])
     page.close()
 ```
 
@@ -135,8 +135,8 @@ If you prefer to use pytest hooks - add `pytest_runtest_makereport` hook in your
 
 ```python
 def pytest_runtest_makereport(item, call):
-    artifact_url = pytest.s3_connector.upload_file(screenshot_path, filename)
-    item.stash["artifact_urls"] = [artifact_url]
+    artifact_url = pytest.testomatio.upload_file(screenshot_path, filename)
+    pytest.testomatio.add_artifacts([artifact_url])
 ```
 
 Eny environments used in test run. Should be placed in comma separated list, NO SPACES ALLOWED.

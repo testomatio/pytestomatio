@@ -7,6 +7,7 @@ from .decorator_updater import update_tests
 from .testRunConfig import TestRunConfig
 from .testItem import TestItem
 from .s3_connector import S3Connector
+from .testomatio import Testomatio
 from .helper import add_and_enrich_tests, get_test_mapping, get_functions_source_by_name, collect_tests
 import logging
 import os
@@ -61,7 +62,9 @@ def pytest_configure(config: Config):
     )
 
     pytest.analyzer_test_run_config = TestRunConfig(group_title=os.environ.get('TESTOMATIO_RUNGROUP_TITLE'))
-    pytest.s3_connector = None
+    
+    pytest.testomatio = Testomatio()
+    pytest.s3_connector = pytest.testomatio.s3_connector # backward compatibility
 
     if config.getoption(analyzer_option) in ('add', 'remove', 'sync'):
         url = config.getini('testomatio_url')
@@ -113,10 +116,12 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                     s3_endpoint = run_details['artifacts'].get('ENDPOINT')
                     s3_bucket = run_details['artifacts'].get('BUCKET')
                     if all((s3_access_key, s3_secret_key, s3_endpoint, s3_bucket)):
-                        pytest.s3_connector = S3Connector(s3_access_key, s3_secret_key, s3_endpoint, s3_bucket)
-                        pytest.s3_connector.login()
+                        pytest.testomatio.set_s3_connector(S3Connector(s3_access_key, s3_secret_key, s3_endpoint, s3_bucket))
+                        pytest.testomatio.s3_connector.login()
+                        pytest.s3_connector = pytest.testomatio.s3_connector # backward compatibility
                     else:
-                        pytest.s3_connector = S3Connector('', '', '', '')
+                        pytest.testomatio.set_s3_connector(S3Connector('', '', '', ''))
+                        pytest.s3_connector = pytest.testomatio.s3_connector # backward compatibility
             case 'debug':
                 with open(metadata_file, 'w') as file:
                     data = json.dumps([i.to_dict() for i in meta], indent=4)
