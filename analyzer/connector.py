@@ -37,7 +37,6 @@ class Connector:
             request['tests'].append({
                 "name": test.sync_title,
                 "suites": [
-                    test.file_name,
                     test.class_name
                 ],
                 "code": test.source_code,
