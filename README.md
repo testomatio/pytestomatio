@@ -183,6 +183,9 @@ def test_example():
 
 ## Change log
 
+### 1.5.1 - Fixes nested suites
+- Testomaito not longer supports nested test suites. Suites could be only in a folder.
+
 ### 1.5.0 - Fixes artifacts in fixtures lifecycle
 - Earlier, artifacts added in pytest fixtures where scipped by analyser
 
