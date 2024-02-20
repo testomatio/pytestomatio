@@ -111,10 +111,10 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                 pytest.analyzer_test_run_config.test_run_id = run_details['uid']
 
                 if run_details.get('artifacts'):
-                    s3_access_key = run_details['artifacts'].get('ACCESS_KEY_ID')
-                    s3_secret_key = run_details['artifacts'].get('SECRET_ACCESS_KEY')
-                    s3_endpoint = run_details['artifacts'].get('ENDPOINT')
-                    s3_bucket = run_details['artifacts'].get('BUCKET')
+                    s3_access_key = os.environ.get('ACCESS_KEY_ID') or run_details['artifacts'].get('ACCESS_KEY_ID')
+                    s3_secret_key = os.environ.get('SECRET_ACCESS_KEY') or run_details['artifacts'].get('SECRET_ACCESS_KEY')
+                    s3_endpoint = os.environ.get('ENDPOINT') or run_details['artifacts'].get('ENDPOINT')
+                    s3_bucket = os.environ.get('BUCKET') or run_details['artifacts'].get('BUCKET')
                     if all((s3_access_key, s3_secret_key, s3_endpoint, s3_bucket)):
                         pytest.testomatio.set_s3_connector(S3Connector(s3_access_key, s3_secret_key, s3_endpoint, s3_bucket))
                         pytest.testomatio.s3_connector.login()
