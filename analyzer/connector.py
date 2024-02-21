@@ -24,8 +24,8 @@ class Connector:
             create: bool = False
         ):
         request = {
-            "framework": "",
-            "language": "",
+            "framework": "pytest",
+            "language": "python",
             "noempty": no_empty,
             "no-detach": no_detach,
             "structure": structure if not no_empty else False,
@@ -37,7 +37,6 @@ class Connector:
             request['tests'].append({
                 "name": test.sync_title,
                 "suites": [
-                    test.file_name,
                     test.class_name
                 ],
                 "code": test.source_code,
