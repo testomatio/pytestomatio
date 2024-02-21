@@ -24,8 +24,8 @@ class Connector:
             create: bool = False
         ):
         request = {
-            "framework": "",
-            "language": "",
+            "framework": "pytest",
+            "language": "python",
             "noempty": no_empty,
             "no-detach": no_detach,
             "structure": structure if not no_empty else False,
