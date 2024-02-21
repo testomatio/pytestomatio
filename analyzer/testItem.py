@@ -10,7 +10,7 @@ class TestItem:
         self.uid = uuid.uuid4()
         self.id: str = TestItem.get_test_id(item)
         self.user_title = _prettify_test_name(item.name)
-        self.title = _clear_param_brackets(item.name)
+        self.title = item.name
         self.sync_title = _get_sync_title(item)
         self.file_name = item.path.name
         self.abs_path = str(item.path)
