@@ -26,6 +26,9 @@ class DecoratorUpdater(cst.CSTTransformer):
     def leave_FunctionDef(self, original_node: cst.FunctionDef, updated_node: cst.FunctionDef) -> cst.FunctionDef:
         if original_node.name.value in self.all_tests:
             test_id = self._get_id_by_title(original_node.name.value)
+            if test_id is None:
+                return updated_node
+            
             deco_name = f'pytest.mark.{self.decorator_name}("{test_id}")'
             decorator = cst.Decorator(decorator=cst.parse_expression(deco_name))
 

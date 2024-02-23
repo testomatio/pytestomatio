@@ -1,5 +1,4 @@
-import pytest
-import json
+import os, pytest, logging, json, re
 
 from pytest import Parser, Session, Config, Item, CallInfo
 from .connector import Connector
@@ -9,8 +8,6 @@ from .testItem import TestItem
 from .s3_connector import S3Connector
 from .testomatio import Testomatio
 from .helper import add_and_enrich_tests, get_test_mapping, get_functions_source_by_name, collect_tests
-import logging
-import os
 
 log = logging.getLogger(__name__)
 log.setLevel('INFO')
@@ -146,7 +143,7 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
 
     request = {
         'status': None,
-        'title': test_item.title,
+        'title': test_item.sync_title,
         'run_time': call.duration,
         'suite_title': test_item.file_name,
         'suite_id': None,
@@ -181,12 +178,19 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
             elif type(example) in (str, int, float, bool):
                 request['example'] = item.callspec.params
             else:
-                request['example'] = 'object'  # to avoid json serialization error
+                request['example'] = 'object'
+            # TODO: parse parameter safely
+            request['example'] = str(test_item.uid)
+            print(request['example'], test_item.sync_title)
+            request['title'] = re.sub(r'\$\{.*?\}', request['example'], test_item.sync_title)
+            print(request['title'])
 
     if item.nodeid not in pytest.testomatio.test_run.status_request:
         pytest.testomatio.test_run.status_request[item.nodeid] = request
     else:
         for key, value in request.items():
+            if key == 'title' and call.when == 'teardown':
+                continue
             if value is not None:
                 pytest.testomatio.test_run.status_request[item.nodeid][key] = value
 
@@ -207,4 +211,4 @@ def pytest_runtest_logfinish(nodeid, location):
 def pytest_sessionfinish(session: Session, exitstatus: int):
     if pytest.testomatio.test_run.test_run_id:
         connector = pytest.connector
-        connector.finish_test_run(pytest.pytest.testomatio.test_run)
+        connector.finish_test_run(pytest.testomatio.test_run)
