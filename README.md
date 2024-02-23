@@ -75,10 +75,10 @@ pytest --analyzer debug
 to configure test environment, you can use additional option:
 
 ```bash
-pytest --analyzer sync --testRunEnv windows11,chrome,1920x1080
+pytest --analyzer sync --testRunEnv "windows11,chrome,1920x1080"
 ```
 
-Eny environments used in test run should be placed in comma separated list, NO SPACES ALLOWED.
+Environment values are comma separated, please use double quotation.
 
 
 ### Submitting Test Artifacts
@@ -130,7 +130,7 @@ def handle_artifacts(page: Page, request):
         artifact_url = pytest.testomatio.upload_file(screenshot_path, filename)
         # or
         # artifact_url = pytest.testomatio.upload_file_object(file_bytes, key, bucket_name)
-        pytest.testomatio.add_artifacts([artifact_url])
+        pytest.testomatio.add_artifacts(request.node, [artifact_url])
     page.close()
 ```
 

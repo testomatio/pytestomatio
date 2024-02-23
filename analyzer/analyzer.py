@@ -60,10 +60,9 @@ def pytest_configure(config: Config):
     config.addinivalue_line(
         "markers", "testomatio(arg): built in marker to connect test case with testomat.io by unique id"
     )
-
-    pytest.analyzer_test_run_config = TestRunConfig(group_title=os.environ.get('TESTOMATIO_RUNGROUP_TITLE'))
     
     pytest.testomatio = Testomatio()
+    pytest.testomatio.set_test_run(TestRunConfig(group_title=os.environ.get('TESTOMATIO_RUNGROUP_TITLE')))
     pytest.s3_connector = pytest.testomatio.s3_connector # backward compatibility
 
     if config.getoption(analyzer_option) in ('add', 'remove', 'sync'):
@@ -74,7 +73,7 @@ def pytest_configure(config: Config):
         connector = Connector(url, project)
         pytest.connector = connector
         if config.getoption('testRunEnv'):
-            pytest.analyzer_test_run_config.environment = config.getoption('testRunEnv')
+            pytest.testomatio.test_run.set_env(config.getoption('testRunEnv'))
 
 
 def pytest_collection_modifyitems(session: Session, config: Config, items: list[Item]) -> None:
@@ -103,12 +102,12 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                     f'{len(items)} found. tests ids removed. Exit without test execution')
             case 'sync':
                 connector: Connector = pytest.connector
-                test_config = pytest.analyzer_test_run_config
+                test_config = pytest.testomatio.test_run
                 run_details = connector.create_test_run(**test_config.to_dict())
                 if run_details is None:
                     log.error('Test run failed to create. Reporting skipped')
                     return
-                pytest.analyzer_test_run_config.test_run_id = run_details['uid']
+                pytest.testomatio.test_run.set_run_id(run_details['uid'])
 
                 if run_details.get('artifacts'):
                     s3_access_key = os.environ.get('ACCESS_KEY_ID') or run_details['artifacts'].get('ACCESS_KEY_ID')
@@ -136,7 +135,7 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
     pytest.analyzer_config_option = item.config.getoption(analyzer_option)
     if pytest.analyzer_config_option is None or pytest.analyzer_config_option != 'sync':
         return
-    elif not pytest.analyzer_test_run_config.test_run_id:
+    elif not pytest.testomatio.test_run.test_run_id:
         return
 
     test_item = TestItem(item)
@@ -184,28 +183,28 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
             else:
                 request['example'] = 'object'  # to avoid json serialization error
 
-    if item.nodeid not in pytest.analyzer_test_run_config.status_request:
-        pytest.analyzer_test_run_config.status_request[item.nodeid] = request
+    if item.nodeid not in pytest.testomatio.test_run.status_request:
+        pytest.testomatio.test_run.status_request[item.nodeid] = request
     else:
         for key, value in request.items():
             if value is not None:
-                pytest.analyzer_test_run_config.status_request[item.nodeid][key] = value
+                pytest.testomatio.test_run.status_request[item.nodeid][key] = value
 
 
 def pytest_runtest_logfinish(nodeid, location):
     if pytest.analyzer_config_option is None or pytest.analyzer_config_option != 'sync':
         return
-    elif not pytest.analyzer_test_run_config.test_run_id:
+    elif not pytest.testomatio.test_run.test_run_id:
         return
 
-    for nodeid, request in pytest.analyzer_test_run_config.status_request.items():
+    for nodeid, request in pytest.testomatio.test_run.status_request.items():
         if request['status']:
             connector = pytest.connector
-            connector.update_test_status(run_id=pytest.analyzer_test_run_config.test_run_id, **request)
-    pytest.analyzer_test_run_config.status_request = {}
+            connector.update_test_status(run_id=pytest.testomatio.test_run.test_run_id, **request)
+    pytest.testomatio.test_run.status_request = {}
 
 
 def pytest_sessionfinish(session: Session, exitstatus: int):
-    if pytest.analyzer_test_run_config.test_run_id:
+    if pytest.testomatio.test_run.test_run_id:
         connector = pytest.connector
-        connector.finish_test_run(pytest.analyzer_test_run_config.test_run_id)
+        connector.finish_test_run(pytest.pytest.testomatio.test_run)

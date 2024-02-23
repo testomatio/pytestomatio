@@ -1,10 +1,14 @@
 from _pytest.python import Function
+from .testRunConfig import TestRunConfig
 from .s3_connector import S3Connector
 
 class Testomatio:
     def __init__(self) -> None:
         self.s3_connector = None
-        pass
+        self.test_run = None
+
+    def set_test_run(self, test_run: TestRunConfig) -> None:
+        self.test_run = test_run
 
     def set_s3_connector(self, s3_connector: S3Connector) -> None:
         self.s3_connector = s3_connector

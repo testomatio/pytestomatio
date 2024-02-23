@@ -20,3 +20,9 @@ class TestRunConfig:
         result['group_title'] = self.group_title
         result['parallel'] = self.parallel
         return result
+    
+    def set_run_id(self, run_id: str) -> None:
+        self.test_run_id = run_id
+
+    def set_env(self, env: str) -> None:
+        self.environment = [part.strip() for part in env.split(',')]
