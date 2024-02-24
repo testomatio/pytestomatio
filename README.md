@@ -239,5 +239,6 @@ def test_example():
 - test analyzer able to add test ids to tests
 - test analyzer able to submit test results to testomat.io
 
-## Roadmap
-- improve logging
+## TODO
+- Fix "1.0.0" parameters
+- Regression test

@@ -143,7 +143,7 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
 
     request = {
         'status': None,
-        'title': test_item.sync_title,
+        'title': test_item.exec_title,
         'run_time': call.duration,
         'suite_title': test_item.file_name,
         'suite_id': None,
@@ -171,19 +171,6 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
             request['status'] = 'failed'
         else:
             request['status'] = 'passed'
-        if hasattr(item, 'callspec'):
-            example = item.callspec.params
-            if type(example) is bytes:
-                request['example'] = example.decode('utf-8')
-            elif type(example) in (str, int, float, bool):
-                request['example'] = item.callspec.params
-            else:
-                request['example'] = 'object'
-            # TODO: parse parameter safely
-            request['example'] = str(test_item.uid)
-            print(request['example'], test_item.sync_title)
-            request['title'] = re.sub(r'\$\{.*?\}', request['example'], test_item.sync_title)
-            print(request['title'])
 
     if item.nodeid not in pytest.testomatio.test_run.status_request:
         pytest.testomatio.test_run.status_request[item.nodeid] = request
