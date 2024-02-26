@@ -240,5 +240,4 @@ def test_example():
 - test analyzer able to submit test results to testomat.io
 
 ## TODO
-- Fix "1.0.0" parameters
 - Regression test

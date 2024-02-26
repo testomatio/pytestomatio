@@ -73,7 +73,7 @@ class TestItem:
         # ex. "User adds ${variation} ${item} to cart @T1234"
         return test_name
 
-    #  Fix such example @pytest.mark.parametrize("version", "1.0.0")
+    #  Fix such example @pytest.mark.parametrize("version", "1.0.0"), ref. https://github.com/testomatio/check-tests/issues/147
     #  that doesn't parse value correctly
     def _get_execution_test_title(self, item: Item) -> str:
         test_name = self.pytest_title_to_testomatio_title(item.name)
