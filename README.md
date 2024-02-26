@@ -186,6 +186,8 @@ def test_example():
 
 ## Change log
 
+### 1.7 - Fixes parameterized test sync and report
+
 ### 1.6 - Fixes nested suites
 - Testomaito not longer supports nested test suites. Suites could be only in a folder.
 - Add helped to attach test artifacts
