@@ -242,6 +242,9 @@ def test_example():
 - test analyzer able to submit test results to testomat.io
 
 ## TODO
+- Fix test duration
+- Support parallel test runs
+- Support labels assignment
 - Regression test
 - Align naming with testomatio
 - Improve documentation
