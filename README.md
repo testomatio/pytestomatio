@@ -243,3 +243,6 @@ def test_example():
 
 ## TODO
 - Regression test
+- Align naming with testomatio
+- Improve documentation
+- Require more back references from testomatio
