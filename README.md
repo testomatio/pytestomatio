@@ -249,3 +249,4 @@ def test_example():
 - Align naming with testomatio
 - Improve documentation
 - Require more back references from testomatio
+- pytest.skip should behave as @pytest.mark.skip
