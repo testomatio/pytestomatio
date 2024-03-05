@@ -47,10 +47,10 @@ class TestItem:
                 return marker.args[0]
 
     def __str__(self) -> str:
-        return f'TestItem: {self.id} - {self.title} - {self.file_name}'
+        return f'TestItem: {self.id} - {self.title} - {self.file_path}'
 
     def __repr__(self):
-        return f'TestItem: {self.id} - {self.title} - {self.file_name}'
+        return f'TestItem: {self.id} - {self.title} - {self.file_path}'
 
     def _get_pytest_title(self, name: str) -> str:
         point = name.find('[')

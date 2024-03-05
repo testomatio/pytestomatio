@@ -1,10 +1,11 @@
 import requests
 from requests.exceptions import HTTPError, ConnectionError
 import logging
+from os.path import join, normpath
 
 from .testItem import TestItem
 
-log = logging.getLogger('analyzer')
+log = logging.getLogger('pytestomatio')
 
 
 class Connector:
@@ -21,7 +22,8 @@ class Connector:
             no_empty: bool = False,
             no_detach: bool = False,
             structure: bool = False,
-            create: bool = False
+            create: bool = False,
+            directory: str = None
         ):
         request = {
             "framework": "pytest",
@@ -40,7 +42,7 @@ class Connector:
                     test.class_name
                 ],
                 "code": test.source_code,
-                "file": test.file_name
+                "file": test.file_path if structure else (test.file_name if directory is None else normpath(join(directory, test.file_name))),
             })
 
         try:

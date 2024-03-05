@@ -1,8 +1,8 @@
 [![Support Ukraine Badge](https://bit.ly/support-ukraine-now)](https://github.com/support-ukraine/support-ukraine)
 
-# Testomat.io plugin for pytest
+# testomat.io plugin for pytest
 
-## uses Testomat.io API:
+## uses testomat.io API:
 
 - https://testomatio.github.io/check-tests/
 - https://testomatio.github.io/reporter/
@@ -10,7 +10,7 @@
 ## Installation
 
 ```bash
-pip install pytest-analyzer
+pip install git+https://github.com/tikolakin/pytestomatio.git@1.7#egg=pytestomatio
 ```
 
 ## configuration
@@ -43,31 +43,31 @@ testomatio_url = https://app.testomat.io
 
 ## Usage
 
-Run pytest with analyzer add parameter to analyze your tests, send them to testomat.io and get back test id. Tests will
-not be executed
+Synchronize tests to testomat.io and get back test id.
+Tests will not be executed
 
 ```bash
-pytest --analyzer add
+pytest --testomatio sync
 ```
 
-Run pytest with analyzer remove parameter to remove all test ids from your tests. Tests will not be executed
+Remove all test ids from source code. Tests will not be executed
 
 ```bash
-pytest --analyzer remove
+pytest --testomatio remove
 ```
 
-Run pytest with analyzer sync parameter to execute tests and send the execution status to testomat.io.  
-Sync can be executed even without marking tests with ids. If testomat.io failed to match tests by title, it will create
+Run pytest and send test results into testomat.io.  
+Test can be sent to testomat.io without ids in your test code. If testomat.io failed to match tests by title, it will create
 new tests for the run
 
 ```bash
-pytest --analyzer sync
+pytest --testomatio report
 ```
 
-Run pytest with analyzer debug parameter to get test data collected in metadata.json file
+Run pytest with debug parameter to get test data collected in metadata.json file
 
 ```bash
-pytest --analyzer debug
+pytest --testomatio debug
 ```
 
 ### Submitting Test Run Environment
@@ -75,7 +75,7 @@ pytest --analyzer debug
 to configure test environment, you can use additional option:
 
 ```bash
-pytest --analyzer sync --testRunEnv "windows11,chrome,1920x1080"
+pytest --testomatio report --testRunEnv "windows11,chrome,1920x1080"
 ```
 
 Environment values are comma separated, please use double quotation.
@@ -83,14 +83,14 @@ Environment values are comma separated, please use double quotation.
 
 ### Submitting Test Artifacts
 
-Testomat.io does not store any screenshots, logs or other artifacts.
+testomat.io does not store any screenshots, logs or other artifacts.
 
 In order to manage them it is advised to use S3 Buckets (GCP Storage).
 https://docs.testomat.io/usage/test-artifacts/
 
 Analyser needs to be aware of the cloud storage credentials.
 There are two options:
-1. Enable **Share credentials with Testomat.io Reporter** option in testomat.io Settings -> Artifacts.
+1. Enable **Share credentials with testomat.io Reporter** option in testomat.io Settings -> Artifacts.
 2. Use environment variables   `ACCESS_KEY_ID, SECRET_ACCESS_KEY, ENDPOINT, BUCKET`
 
 You would need to decide when you want to upload your test artifacts to cloud storage
@@ -126,7 +126,7 @@ def handle_artifacts(page: Page, request):
         # file_path - required, path to file to be uploaded
         # file_bytes - required, bytes of the file to be uploaded
         # key - required, file name in the s3 bucket
-        # bucket_name - optional,name of the bucket to upload file to. Default value is taken from Testomatio.io
+        # bucket_name - optional,name of the bucket to upload file to. Default value is taken from testomat.io
         artifact_url = pytest.testomatio.upload_file(screenshot_path, filename)
         # or
         # artifact_url = pytest.testomatio.upload_file_object(file_bytes, key, bucket_name)
@@ -152,8 +152,8 @@ def pytest_runtest_makereport(item, call):
 
 ## Example of test
 
-To make analyzer experience more consistent, it uses standard pytest markers.  
-Testomat.io test id is a string value that starts with `@T` and has 8 symbols after.
+To make the experience more consistent, it uses standard pytest markers.  
+testomat.io test id is a string value that starts with `@T` and has 8 symbols after.
 
 ```python
 import pytest
@@ -168,23 +168,27 @@ def test_example():
 
 | Action |  Compatibility | Method |
 |--------|--------|-------|
-| Importing test into Testomatio | complete | `pytest --analyzer add` |
+| Importing test into testomat.io | complete | `pytest --testomatio sync` |
 | Exclude hook code of a test | N/A | N/A |
 | Include line number code of a test | N/A | N/A |
 | Import Parametrized Tests | complete | default behaviour |
-| Disable Detached Tests | complete | `pytest --analyzer add --no-detached` |
+| Disable Detached Tests | complete | `pytest --testomatio sync --no-detached` |
 | Synchronous Import | complete | default behaviour |
 | Auto-assign Test IDs in Source Code | complete | default behaviour |
-| Keep Test IDs Between Projects | complete | `pytest --analyzer add --create` |
-| Clean Test IDs | complete | `pytest --analyzer remove` |
+| Keep Test IDs Between Projects | complete | `pytest --testomatio sync --create` |
+| Clean Test IDs | complete | `pytest --testomatio remove` |
 | Import Into a Branch | N/A | N/A |
-| Keep Structure of Source Code | complete | `pytest --analyzer add --keep-structure` |
-| Delete Empty Suites | complete | `pytest --analyzer add --no-empty` |
-| Import Into a Specific Suite | N/A | N/A |
-| Debugging | parity | `pytest --analyzer debug` |
+| Keep Structure of Source Code | complete | `pytest --testomatio sync --keep-structure` |
+| Delete Empty Suites | complete | `pytest --testomatio sync --no-empty` |
+| Import Into a Specific Folder | complete | `pytest --testomatio --directory "Windows\smoke"` |
+| Debugging | parity | `pytest --testomatio debug` |
 
 
 ## Change log
+
+### 2.0 - Reunion
+- Align naming with Testomat.io branding
+- add --directory option to import test into specific directory in testomat.io
 
 ### 1.7 - Fixes parameterized test sync and report
 
@@ -241,12 +245,16 @@ def test_example():
 - test analyzer able to add test ids to tests
 - test analyzer able to submit test results to testomat.io
 
+## Test
+- import into empty project
+- updated test - (resync)
+- test run
+- test run into a folder
+- test run labels, tags
+
 ## TODO
 - Fix test duration
 - Support parallel test runs
 - Support labels assignment
-- Regression test
-- Align naming with testomatio
-- Improve documentation
 - Require more back references from testomatio
 - pytest.skip should behave as @pytest.mark.skip

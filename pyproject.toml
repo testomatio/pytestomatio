@@ -6,8 +6,8 @@ build-backend = "setuptools.build_meta"
 exclude = [".github", "tests"]
 
 [project]
-name = "pytestomat"
-version = "1.7.0"
+name = "pytestomatio"
+version = "2.0.0"
 
 dependencies = [
     "requests>=2.29.0",
@@ -17,7 +17,7 @@ dependencies = [
 
 authors = [
     { name = "Oleksii Ostapov" },
-    { name = "Tiko QA" },
+    { name = "TikoQA" },
 ]
 description = "Pytest plugin to sync test with testomat.io"
 readme = "README.md"
@@ -31,8 +31,8 @@ classifiers = [
 
 [project.urls]
 "Testomat.io" = "https://testomat.io/"
-"Homepage" = "https://github.com/tikolakin/pytestomat"
-"Bug Tracker" = "https://github.com/tikolakin/pytestomat/issues"
+"Homepage" = "https://github.com/tikolakin/pytestomatio"
+"Bug Tracker" = "https://github.com/tikolakin/pytestomatio/issues"
 
 [project.entry-points.pytest11]
-analyzer = "analyzer.analyzer"
+pytestomatio = "pytestomatio.main"
