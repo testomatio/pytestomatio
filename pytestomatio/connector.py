@@ -67,15 +67,17 @@ class Connector:
         response = self.session.get(f'{self.base_url}/api/test_data?api_key={self.api_key}')
         return response.json()
 
-    def create_test_run(self, title: str, env: str, group_title, parallel) -> dict | None:
+    def create_test_run(self, title: str, group_title, env: str, label: str, shared_run: bool, parallel) -> dict | None:
         request = {
             "title": title,
-            "env": env,
             "group_title": group_title,
-            "parallel": parallel
+            "env": env,
+            "label": label,
+            "parallel": parallel,
+            "shared_run": shared_run
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
-
+        
         try:
             response = self.session.post(f'{self.base_url}/api/reporter?api_key={self.api_key}', json=filtered_request)
         except ConnectionError:

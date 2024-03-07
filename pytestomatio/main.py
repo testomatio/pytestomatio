@@ -91,7 +91,14 @@ def pytest_configure(config: Config):
     )
     
     pytest.testomatio = Testomatio()
-    pytest.testomatio.set_test_run(TestRunConfig(group_title=os.environ.get('TESTOMATIO_RUNGROUP_TITLE')))
+    test_run_config = TestRunConfig(
+        title=os.environ.get('TESTOMATIO_TITLE'),
+        group_title=os.environ.get('TESTOMATIO_RUNGROUP_TITLE'),
+        environment=os.environ.get('TESTOMATIO_ENV'),
+        shared_run=os.environ.get('TESTOMATIO_SHARED_RUN') in ['True', 'true', '1'],
+        label=os.environ.get('TESTOMATIO_LABEL'),
+    )
+    pytest.testomatio.set_test_run(test_run_config)
     pytest.s3_connector = pytest.testomatio.s3_connector # backward compatibility
 
     if config.getoption(testomatio) in ('sync', 'report', 'remove'):
@@ -232,4 +239,4 @@ def pytest_runtest_logfinish(nodeid, location):
 def pytest_sessionfinish(session: Session, exitstatus: int):
     if pytest.testomatio.test_run.test_run_id:
         connector = pytest.connector
-        connector.finish_test_run(pytest.testomatio.test_run)
+        connector.finish_test_run(pytest.testomatio.test_run_id)

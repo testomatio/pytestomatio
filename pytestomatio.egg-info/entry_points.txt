@@ -1,2 +1,0 @@
-[pytest11]
-pytestomatio = pytestomatio.main

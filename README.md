@@ -186,13 +186,16 @@ def test_example():
 
 ## Change log
 
-### 2.0 - Reunion
+### 2.1.0
+- Added support for `TESTOMATIO_TITLE`, `TESTOMATIO_SHARED_RUN` and `TESTOMATIO_LABEL`
+
+### 2.0.0 - Reunion
 - Align naming with Testomat.io branding
 - add --directory option to import test into specific directory in testomat.io
 
-### 1.7 - Fixes parameterized test sync and report
+### 1.7.0 - Fixes parameterized test sync and report
 
-### 1.6 - Fixes nested suites
+### 1.6.0 - Fixes nested suites
 - Testomaito not longer supports nested test suites. Suites could be only in a folder.
 - Add helped to attach test artifacts
 - Expose environment variables to provide access to cloud storage
@@ -254,7 +257,5 @@ def test_example():
 
 ## TODO
 - Fix test duration
-- Support parallel test runs
-- Support labels assignment
 - Require more back references from testomatio
 - pytest.skip should behave as @pytest.mark.skip
