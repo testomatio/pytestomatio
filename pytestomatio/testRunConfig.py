@@ -13,8 +13,8 @@ class TestRunConfig:
         ):
         self.test_run_id = None
         self.title = title if title else 'test run at ' + dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        self.environment = environment
-        self.label = label
+        self.environment = self.safe_string_list(environment)
+        self.label = self.safe_string_list(label)
         self.group_title = group_title
         self.parallel = parallel
         if shared_run and not title:
@@ -36,4 +36,9 @@ class TestRunConfig:
         self.test_run_id = run_id
 
     def set_env(self, env: str) -> None:
-        self.environment = [part.strip() for part in env.split(',')]
+        self.environment = self.safe_string_list(env)
+    
+    def safe_string_list(self, param: str):
+        if not param:
+            return None
+        return ",".join([part.strip() for part in param.split(',')])
