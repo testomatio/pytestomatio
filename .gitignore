@@ -5,5 +5,5 @@ temp_test.py
 build
 pytest_analyzer.egg-info
 dist
-venv
+.venv*
 pytest.ini
