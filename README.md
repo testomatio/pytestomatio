@@ -259,3 +259,9 @@ def test_example():
 - Fix test duration
 - Require more back references from testomatio
 - pytest.skip should behave as @pytest.mark.skip
+
+## Contribution
+1. `pip install -e .`
+2. `cz commit`
+3. `cz bump`
+4. `git push remoteName branchName --tags`
