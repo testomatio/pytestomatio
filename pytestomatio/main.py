@@ -92,6 +92,7 @@ def pytest_configure(config: Config):
     
     pytest.testomatio = Testomatio()
     test_run_config = TestRunConfig(
+        id=os.environ.get('TESTOMATIO_RUN'),
         title=os.environ.get('TESTOMATIO_TITLE'),
         group_title=os.environ.get('TESTOMATIO_RUNGROUP_TITLE'),
         environment=os.environ.get('TESTOMATIO_ENV'),
@@ -107,7 +108,8 @@ def pytest_configure(config: Config):
         if project is None:
             pytest.exit('TESTOMATIO env variable is not set')
         ## TODO: move connector tin testomatio
-        pytest.connector = Connector(url, project)
+        pytest.connector = Connector(url, project) # backward compatibility
+        pytest.testomatio.connector = pytest.connector
         if config.getoption('testRunEnv'):
             pytest.testomatio.test_run.set_env(config.getoption('testRunEnv'))
 
@@ -117,8 +119,7 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
         meta, test_files, test_names = collect_tests(items)
         match config.getoption(testomatio):
             case 'sync':
-                connector: Connector = pytest.connector
-                connector.load_tests(
+                pytest.testomatio.connector.load_tests(
                     meta,
                     no_empty=config.getoption('no_empty'),
                     no_detach=config.getoption('no_detach'),
@@ -126,7 +127,7 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                     create=config.getoption('create'),
                     directory=config.getoption('directory')
                 )
-                testomatio_tests = connector.get_tests(meta)
+                testomatio_tests = pytest.testomatio.connector.get_tests(meta)
                 add_and_enrich_tests(meta, test_files, test_names, testomatio_tests, decorator_name)
                 pytest.exit(
                     f'{len(items)} found. {len(meta)} unique test functions data collected and updated.'
@@ -138,14 +139,16 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                 pytest.exit(
                     f'{len(items)} found. tests ids removed. Exit without test execution')
             case 'report':
-                connector: Connector = pytest.connector
-                test_config = pytest.testomatio.test_run
-                # TODO: don't create test run for shared execution
-                run_details = connector.create_test_run(**test_config.to_dict())
+                if pytest.testomatio.test_run.id:
+                    run_details = pytest.testomatio.connector.update_test_run(**pytest.testomatio.test_run.to_dict())
+                else:
+                    # TODO: don't create test run for shared execution
+                    run_details = pytest.testomatio.connector.create_test_run(**pytest.testomatio.test_run.to_dict())
+                    pytest.testomatio.test_run.set_run_id(run_details['uid'])
+                
                 if run_details is None:
                     log.error('Test run failed to create. Reporting skipped')
                     return
-                pytest.testomatio.test_run.set_run_id(run_details['uid'])
 
                 if run_details.get('artifacts'):
                     s3_access_key = os.environ.get('ACCESS_KEY_ID') or run_details['artifacts'].get('ACCESS_KEY_ID')
@@ -231,12 +234,12 @@ def pytest_runtest_logfinish(nodeid, location):
 
     for nodeid, request in pytest.testomatio.test_run.status_request.items():
         if request['status']:
-            connector = pytest.connector
-            connector.update_test_status(run_id=pytest.testomatio.test_run.test_run_id, **request)
+            pytest.testomatio.connector.update_test_status(run_id=pytest.testomatio.test_run.test_run_id, **request)
     pytest.testomatio.test_run.status_request = {}
 
 
 def pytest_sessionfinish(session: Session, exitstatus: int):
+    if os.environ.get('TESTOMATIO_RUN'):
+        return
     if pytest.testomatio.test_run.test_run_id:
-        connector = pytest.connector
-        connector.finish_test_run(pytest.testomatio.test_run.test_run_id)
+        pytest.testomatio.connector.finish_test_run(pytest.testomatio.test_run.test_run_id)
