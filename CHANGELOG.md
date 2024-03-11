@@ -1,3 +1,14 @@
+## 2.3.0 (2024-03-11)
+
+### Feat
+
+- Add TESTOMATIO_RUN to support test runs created on testomatio
+
+### Fix
+
+- Fix to check testomatio session
+- Allow all pytest hooks execution when running sync command that run before pytest_runtestloop (actual tests)
+
 ## 2.2.0 (2024-03-11)
 
 ### Feat

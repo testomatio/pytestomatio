@@ -14,7 +14,7 @@ version_provider = "pep621"
 update_changelog_on_bump = true
 [project]
 name = "pytestomatio"
-version = "2.2.0"
+version = "2.3.0"
 
 dependencies = [
     "requests>=2.29.0",
