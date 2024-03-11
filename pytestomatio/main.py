@@ -114,9 +114,10 @@ def pytest_configure(config: Config):
             pytest.testomatio.test_run.set_env(config.getoption('testRunEnv'))
 
 def pytest_runtestloop(session: Session):
-    if pytest.testomatio.session == 'sync':
-        print('Test sync with testomat.io finished')
-        pytest.exit('Exit without test execution')
+    if hasattr(pytest.testomatio, 'session'):
+        if pytest.testomatio.session == "sync":
+            print('Test sync with testomat.io finished')
+            pytest.exit('Exit without test execution')
 
 def pytest_collection_modifyitems(session: Session, config: Config, items: list[Item]) -> None:
     if config.getoption(testomatio):
@@ -142,7 +143,7 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                 pytest.exit(
                     f'{len(items)} found. tests ids removed. Exit without test execution')
             case 'report':
-                if pytest.testomatio.test_run.id:
+                if pytest.testomatio.test_run.test_run_id:
                     run_details = pytest.testomatio.connector.update_test_run(**pytest.testomatio.test_run.to_dict())
                 else:
                     # TODO: don't create test run for shared execution
