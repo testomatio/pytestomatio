@@ -113,6 +113,10 @@ def pytest_configure(config: Config):
         if config.getoption('testRunEnv'):
             pytest.testomatio.test_run.set_env(config.getoption('testRunEnv'))
 
+def pytest_runtestloop(session: Session):
+    if pytest.testomatio.session == 'sync':
+        print('Test sync with testomat.io finished')
+        pytest.exit('Exit without test execution')
 
 def pytest_collection_modifyitems(session: Session, config: Config, items: list[Item]) -> None:
     if config.getoption(testomatio):
@@ -129,9 +133,8 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                 )
                 testomatio_tests = pytest.testomatio.connector.get_tests(meta)
                 add_and_enrich_tests(meta, test_files, test_names, testomatio_tests, decorator_name)
-                pytest.exit(
-                    f'{len(items)} found. {len(meta)} unique test functions data collected and updated.'
-                    f'Exit without test execution')
+                pytest.testomatio.session = "sync"
+                print(f'Found {len(items)} test. {len(meta)} unique test functions data collected and updated.')
             case 'remove':
                 mapping = get_test_mapping(meta)
                 for test_file in test_files:
