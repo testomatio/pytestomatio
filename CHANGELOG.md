@@ -1,3 +1,10 @@
+## 2.3.1 (2024-03-13)
+
+### Fix
+
+- Fix shared run reporting into new test run
+- Fix/workarround of the incorreclty processed parameterised test on API
+
 ## 2.3.0 (2024-03-11)
 
 ### Feat
