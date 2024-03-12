@@ -2,6 +2,7 @@ import requests
 from requests.exceptions import HTTPError, ConnectionError
 import logging
 from os.path import join, normpath
+from os import getenv
 
 from .testItem import TestItem
 
@@ -165,10 +166,13 @@ class Connector:
         if response.status_code == 200:
             log.info('Test status updated')
 
+    # TODO: I guess this class should be just an API client and used within testRun (testRunConfig)
     def finish_test_run(self, run_id: str) -> None:
+        is_parallel = getenv('TESTOMATIO_SHARED_RUN') in ['True', 'true', '1']
+        status_event = "finish_parallel" if is_parallel else 'finish'
         try:
             self.session.put(f'{self.base_url}/api/reporter/{run_id}?api_key={self.api_key}',
-                             json={"status_event": "finish"})
+                             json={"status_event": status_event})
         except ConnectionError:
             log.error(f'Failed to connect to {self.base_url}')
             return

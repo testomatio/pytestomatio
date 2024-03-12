@@ -31,7 +31,7 @@ class TestRunConfig:
         result['group_title'] = self.group_title
         result['env'] = self.environment
         result['label'] = self.label
-        result['parallel'] = self.parallel
+        result['parallel'] = self.shared_run # !!!! If shared run then it's parallel run in principle
         result['shared_run'] = self.shared_run
         return result
     
