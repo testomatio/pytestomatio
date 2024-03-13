@@ -1,3 +1,9 @@
+## 2.3.2 (2024-03-13)
+
+### Fix
+
+- Fix dot and space in parameterised test, fix project dependency
+
 ## 2.3.1 (2024-03-13)
 
 ### Fix
