@@ -1,4 +1,4 @@
-import re
+from re import sub
 from typing import Iterable
 import uuid
 import json
@@ -137,8 +137,8 @@ class TestItem:
                 string_value = str(value)
             else:
                 string_value = 'Unsupported type'
-            # TODO: handle "value with space" on testomatio BE
-            return string_value.replace(" ", "_") # Temporary fix for spaces in parameter values
+            # TODO: handle "value with space" on testomatio BE https://github.com/testomatio/check-tests/issues/147
+            return sub("[\.\s]", "_", string_value) # Temporary fix for spaces in parameter values
 
-        test_name = re.sub(pattern, repl, sync_title)
+        test_name = sub(pattern, repl, sync_title)
         return test_name
