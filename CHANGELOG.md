@@ -1,37 +1,19 @@
-## 2.3.2 (2024-03-13)
-
-### Fix
-
-- Fix dot and space in parameterised test, fix project dependency
-
-## 2.3.1 (2024-03-13)
-
-### Fix
-
-- Fix shared run reporting into new test run
-- Fix/workarround of the incorreclty processed parameterised test on API
-
-## 2.3.0 (2024-03-11)
-
-### Feat
-
-- Add TESTOMATIO_RUN to support test runs created on testomatio
-
-### Fix
-
-- Fix to check testomatio session
-- Allow all pytest hooks execution when running sync command that run before pytest_runtestloop (actual tests)
-
 ## 2.2.0 (2024-03-11)
 
 ### Feat
 
+- Add TESTOMATIO_RUN to support test runs created on testomatio
 - Add https://www.conventionalcommits.org/en/v1.0.0/ support
 
 ### Fix
 
 - Fix syncing local test with testomatio that are imported in a custom folder (on testomatio end)
 - Fix test run completion
+- Fix to check testomatio session
+- Allow all pytest hooks execution when running sync command that run before pytest_runtestloop (actual tests)
+- Fix shared run reporting into new test run
+- Fix/workarround of the incorreclty processed parameterised test on API
+- Fix dot and space in parameterised test, fix project dependency
 
 ## 2.1.0 (2024-03-07)
 

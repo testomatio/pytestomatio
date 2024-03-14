@@ -4,7 +4,7 @@ import datetime as dt
 class TestRunConfig:
     def __init__(
             self,
-            id: int = None,
+            id: str = None,
             title: str = None,
             group_title: str = None,
             environment: str = None,

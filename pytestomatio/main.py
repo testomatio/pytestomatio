@@ -243,7 +243,5 @@ def pytest_runtest_logfinish(nodeid, location):
 
 
 def pytest_sessionfinish(session: Session, exitstatus: int):
-    if os.environ.get('TESTOMATIO_RUN'):
-        return
     if pytest.testomatio.test_run.test_run_id:
         pytest.testomatio.connector.finish_test_run(pytest.testomatio.test_run.test_run_id)
