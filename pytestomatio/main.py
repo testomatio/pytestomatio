@@ -146,7 +146,6 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                 if pytest.testomatio.test_run.test_run_id:
                     run_details = pytest.testomatio.connector.update_test_run(**pytest.testomatio.test_run.to_dict())
                 else:
-                    # TODO: don't create test run for shared execution
                     run_details = pytest.testomatio.connector.create_test_run(**pytest.testomatio.test_run.to_dict())
                     pytest.testomatio.test_run.set_run_id(run_details['uid'])
                 

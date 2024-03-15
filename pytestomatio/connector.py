@@ -70,17 +70,18 @@ class Connector:
 
     def create_test_run(self, title: str, group_title, env: str, label: str, shared_run: bool, parallel) -> dict | None:
         request = {
+            "api_key": self.api_key,
             "title": title,
             "group_title": group_title,
             "env": env,
             "label": label,
             "parallel": parallel,
-            "shared_run": shared_run
+            "shared_run": shared_run,
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
-        
+        print('create_test_run', filtered_request)
         try:
-            response = self.session.post(f'{self.base_url}/api/reporter?api_key={self.api_key}', json=filtered_request)
+            response = self.session.post(f'{self.base_url}/api/reporter', json=filtered_request)
         except ConnectionError:
             log.error(f'Failed to connect to {self.base_url}')
             return
@@ -97,17 +98,18 @@ class Connector:
         
     def update_test_run(self, id: str, title: str, group_title, env: str, label: str, shared_run: bool, parallel) -> dict | None:
         request = {
+            "api_key": self.api_key,
             "title": title,
             "group_title": group_title,
-            "env": env,
-            "label": label,
+            #"env": env, TODO: enabled when bug with 500 response fixed
+            #"label": label, TODO: enabled when bug with 500 response fixed
             "parallel": parallel,
             "shared_run": shared_run
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
         
         try:
-            response = self.session.put(f'{self.base_url}/api/reporter/{id}?api_key={self.api_key}', json=filtered_request)
+            response = self.session.put(f'{self.base_url}/api/reporter/{id}', json=filtered_request)
         except ConnectionError:
             log.error(f'Failed to connect to {self.base_url}')
             return

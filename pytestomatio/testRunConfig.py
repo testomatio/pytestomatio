@@ -1,4 +1,5 @@
 import datetime as dt
+from re import sub
 
 
 class TestRunConfig:
@@ -31,7 +32,7 @@ class TestRunConfig:
         result['group_title'] = self.group_title
         result['env'] = self.environment
         result['label'] = self.label
-        result['parallel'] = self.shared_run # !!!! If shared run then it's parallel run in principle
+        result['parallel'] = self.parallel
         result['shared_run'] = self.shared_run
         return result
     
@@ -44,4 +45,4 @@ class TestRunConfig:
     def safe_string_list(self, param: str):
         if not param:
             return None
-        return ",".join([part.strip() for part in param.split(',')])
+        return ",".join([sub("\s", "", part) for part in param.split(',')])
