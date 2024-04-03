@@ -45,4 +45,4 @@ class TestRunConfig:
     def safe_string_list(self, param: str):
         if not param:
             return None
-        return ",".join([sub("\s", "", part) for part in param.split(',')])
+        return ",".join([sub(r"\s", "", part) for part in param.split(',')])

@@ -138,7 +138,7 @@ class TestItem:
             else:
                 string_value = 'Unsupported type'
             # TODO: handle "value with space" on testomatio BE https://github.com/testomatio/check-tests/issues/147
-            return sub("[\.\s]", "_", string_value) # Temporary fix for spaces in parameter values
+            return sub(r"[\.\s]", "_", string_value) # Temporary fix for spaces in parameter values
 
         test_name = sub(pattern, repl, sync_title)
         return test_name
