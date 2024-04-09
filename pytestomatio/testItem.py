@@ -1,4 +1,4 @@
-import re
+from re import sub
 from typing import Iterable
 import uuid
 import json
@@ -129,6 +129,7 @@ class TestItem:
 
         def repl(match):
             key = match.group(1)
+            
             value = item.callspec.params.get(key, '')
             if type(value) is bytes:
                 string_value = value.decode('utf-8')
@@ -136,7 +137,8 @@ class TestItem:
                 string_value = str(value)
             else:
                 string_value = 'Unsupported type'
-            return string_value
+            # TODO: handle "value with space" on testomatio BE https://github.com/testomatio/check-tests/issues/147
+            return sub(r"[\.\s]", "_", string_value) # Temporary fix for spaces in parameter values
 
-        test_name = re.sub(pattern, repl, sync_title)
+        test_name = sub(pattern, repl, sync_title)
         return test_name

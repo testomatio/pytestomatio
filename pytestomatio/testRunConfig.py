@@ -1,9 +1,11 @@
 import datetime as dt
+from re import sub
 
 
 class TestRunConfig:
     def __init__(
             self,
+            id: str = None,
             title: str = None,
             group_title: str = None,
             environment: str = None,
@@ -11,7 +13,7 @@ class TestRunConfig:
             parallel: bool = False,
             shared_run: bool = False
         ):
-        self.test_run_id = None
+        self.test_run_id = id
         self.title = title if title else 'test run at ' + dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.environment = self.safe_string_list(environment)
         self.label = self.safe_string_list(label)
@@ -24,6 +26,8 @@ class TestRunConfig:
 
     def to_dict(self) -> dict:
         result = dict()
+        if self.test_run_id:
+            result['id'] = self.test_run_id
         result['title'] = self.title
         result['group_title'] = self.group_title
         result['env'] = self.environment
@@ -41,4 +45,4 @@ class TestRunConfig:
     def safe_string_list(self, param: str):
         if not param:
             return None
-        return ",".join([part.strip() for part in param.split(',')])
+        return ",".join([sub(r"\s", "", part) for part in param.split(',')])

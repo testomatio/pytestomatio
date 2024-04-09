@@ -2,6 +2,7 @@ import requests
 from requests.exceptions import HTTPError, ConnectionError
 import logging
 from os.path import join, normpath
+from os import getenv
 
 from .testItem import TestItem
 
@@ -69,17 +70,18 @@ class Connector:
 
     def create_test_run(self, title: str, group_title, env: str, label: str, shared_run: bool, parallel) -> dict | None:
         request = {
+            "api_key": self.api_key,
             "title": title,
             "group_title": group_title,
             "env": env,
             "label": label,
             "parallel": parallel,
-            "shared_run": shared_run
+            "shared_run": shared_run,
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
-        
+        print('create_test_run', filtered_request)
         try:
-            response = self.session.post(f'{self.base_url}/api/reporter?api_key={self.api_key}', json=filtered_request)
+            response = self.session.post(f'{self.base_url}/api/reporter', json=filtered_request)
         except ConnectionError:
             log.error(f'Failed to connect to {self.base_url}')
             return
@@ -92,6 +94,34 @@ class Connector:
 
         if response.status_code == 200:
             log.info(f'Test run created {response.json()["uid"]}')
+            return response.json()
+        
+    def update_test_run(self, id: str, title: str, group_title, env: str, label: str, shared_run: bool, parallel) -> dict | None:
+        request = {
+            "api_key": self.api_key,
+            "title": title,
+            "group_title": group_title,
+            #"env": env, TODO: enabled when bug with 500 response fixed
+            #"label": label, TODO: enabled when bug with 500 response fixed
+            "parallel": parallel,
+            "shared_run": shared_run
+        }
+        filtered_request = {k: v for k, v in request.items() if v is not None}
+        
+        try:
+            response = self.session.put(f'{self.base_url}/api/reporter/{id}', json=filtered_request)
+        except ConnectionError:
+            log.error(f'Failed to connect to {self.base_url}')
+            return
+        except HTTPError:
+            log.error(f'Failed to connect to {self.base_url}')
+            return
+        except Exception as e:
+            log.error(f'Generic exception happened. Please report an issue. {e}')
+            return
+
+        if response.status_code == 200:
+            log.info(f'Test run updated {response.json()["uid"]}')
             return response.json()
 
     def update_test_status(self, run_id: str,
@@ -138,10 +168,13 @@ class Connector:
         if response.status_code == 200:
             log.info('Test status updated')
 
+    # TODO: I guess this class should be just an API client and used within testRun (testRunConfig)
     def finish_test_run(self, run_id: str) -> None:
+        is_parallel = getenv('TESTOMATIO_SHARED_RUN') in ['True', 'true', '1']
+        status_event = "finish_parallel" if is_parallel else 'finish'
         try:
             self.session.put(f'{self.base_url}/api/reporter/{run_id}?api_key={self.api_key}',
-                             json={"status_event": "finish"})
+                             json={"status_event": status_event})
         except ConnectionError:
             log.error(f'Failed to connect to {self.base_url}')
             return

@@ -1,3 +1,4 @@
+from os.path import basename 
 from pytest import Item
 from .testomat_item import TestomatItem
 from .testItem import TestItem
@@ -63,7 +64,15 @@ def add_and_enrich_tests(meta: list[TestItem], test_files: set,
     tcm_test_data = parse_test_list(testomatio_tests)
     for test in meta:
         for tcm_test in tcm_test_data:
-            if test.resync_title == tcm_test.title and test.file_name == tcm_test.file_name:
+            if not tcm_test.file_name:
+                continue
+            # Test that are synced into user specified folder - might end up with altered file path in testomatio
+            # making file path not match between source code and testomatio
+            # to mitigate this we compare only file names, skipping the path
+            # while it works it might not be the most reliable approach
+            # however, the underlying issue is the ability to alter the file path in testomatio
+            # https://github.com/testomatio/check-tests?tab=readme-ov-file#import-into-a-specific-suite
+            if test.resync_title == tcm_test.title and basename(test.file_name) == basename(tcm_test.file_name):
                 test.id = tcm_test.id
                 tcm_test_data.remove(tcm_test)
                 break
