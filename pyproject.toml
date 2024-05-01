@@ -13,7 +13,7 @@ version_provider = "pep621"
 update_changelog_on_bump = true
 [project]
 name = "pytestomatio"
-version = "2.2.1"
+version = "2.2.2"
 
 dependencies = [
     "requests>=2.29.0",
@@ -38,8 +38,8 @@ classifiers = [
 
 [project.urls]
 "Testomat.io" = "https://testomat.io/"
-"Homepage" = "https://github.com/tikolakin/pytestomatio"
-"Bug Tracker" = "https://github.com/tikolakin/pytestomatio/issues"
+"Homepage" = "https://github.com/testomatio/pytestomatio"
+"Bug Tracker" = "https://github.com/testomatio/pytestomatio/issues"
 
 [project.entry-points.pytest11]
 pytestomatio = "pytestomatio.main"

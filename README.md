@@ -10,35 +10,7 @@
 ## Installation
 
 ```bash
-pip install git+https://github.com/tikolakin/pytestomatio.git@1.7#egg=pytestomatio
-```
-
-## configuration
-
-Create environment variable `TESTOMATIO` and set your testomat.io API key.
-Linux:
-
-```bash
-export TESTOMATIO=<key>
-```
-
-Windows (cmd):
-
-```bash
-set TESTOMATIO=<key>
-```
-
-### Run groups parameter
-There is environment variable `TESTOMATIO_RUNGROUP_TITLE` that can be used to specify run tests with specific group title.
-
-### pytest.ini
-In case you are using private testomat.io service, create `pytest.ini` file in your project root directory. Specify
-testomat.io url in it
-
-```ini
-[pytest]
-testomatio_url = https://app.testomat.io
-
+pip install pytestomatio
 ```
 
 ## Usage
@@ -68,6 +40,34 @@ Run pytest with debug parameter to get test data collected in metadata.json file
 
 ```bash
 pytest --testomatio debug
+```
+
+## configuration
+
+Create environment variable `TESTOMATIO` and set your testomat.io API key.
+Linux:
+
+```bash
+export TESTOMATIO=<key>
+```
+
+Windows (cmd):
+
+```bash
+set TESTOMATIO=<key>
+```
+
+### Run groups parameter
+There is environment variable `TESTOMATIO_RUNGROUP_TITLE` that can be used to specify run tests with specific group title.
+
+### pytest.ini
+In case you are using private testomat.io service, create `pytest.ini` file in your project root directory. Specify
+testomat.io url in it
+
+```ini
+[pytest]
+testomatio_url = https://app.testomat.io
+
 ```
 
 ### Submitting Test Run Environment
