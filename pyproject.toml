@@ -13,14 +13,15 @@ version_provider = "pep621"
 update_changelog_on_bump = true
 [project]
 name = "pytestomatio"
-version = "2.2.4"
+version = "2.2.5"
 
 dependencies = [
     "requests>=2.29.0",
     "pytest>8.0.0",
     "boto3>=1.28.28",
     "libcst==1.1.0",
-    "commitizen>=3.18.1"]
+    "commitizen>=3.18.1",
+    "autopep8>=2.1.0"]
 
 authors = [
     { name = "Oleksii Ostapov" },
