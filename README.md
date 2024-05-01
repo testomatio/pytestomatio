@@ -100,6 +100,8 @@ You would need to decide when you want to upload your test artifacts to cloud st
 ```python
 # content of conftest.py
 import pytest
+import random
+import os
 from typing import Dict
 from pytest import StashKey, CollectReport
 from playwright.sync_api import Page
@@ -156,10 +158,10 @@ To make the experience more consistent, it uses standard pytest markers.
 testomat.io test id is a string value that starts with `@T` and has 8 symbols after.
 
 ```python
-import pytest
+from pytest import mark
 
 
-@pytest.mark.testomatio('@T96c700e6')
+@mark.testomatio('@T96c700e6')
 def test_example():
     assert 2 + 2 == 4
 ```
