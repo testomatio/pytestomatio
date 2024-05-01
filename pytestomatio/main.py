@@ -230,6 +230,8 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
 
 
 def pytest_runtest_logfinish(nodeid, location):
+    if not hasattr(pytest, 'testomatio_config_option'):
+        return
     if pytest.testomatio_config_option is None or pytest.testomatio_config_option != 'report':
         return
     elif not pytest.testomatio.test_run.test_run_id:
