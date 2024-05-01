@@ -116,7 +116,7 @@ def pytest_configure(config: Config):
 
 @fixture(autouse=True)
 def testomatio_skip_test_fixture(request: FixtureRequest):
-    if request.config.getoption(testomatio) in ['sync', 'remove']:
+    if request.config.getoption(testomatio) in ['sync', 'remove', 'debug']:
         pytest.skip("Skipping this test because of some condition")
 
 
@@ -141,8 +141,6 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                 mapping = get_test_mapping(meta)
                 for test_file in test_files:
                     update_tests(test_file, mapping, test_names, decorator_name, remove=True)
-                pytest.exit(
-                    f'{len(items)} found. tests ids removed. Exit without test execution')
             case 'report':
                 if pytest.testomatio.test_run.test_run_id:
                     run_details = pytest.testomatio.connector.update_test_run(**pytest.testomatio.test_run.to_dict())
@@ -172,8 +170,6 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                 with open(metadata_file, 'w') as file:
                     data = json.dumps([i.to_dict() for i in meta], indent=4)
                     file.write(data)
-                pytest.exit(
-                    f'saved metadata to {metadata_file}. Exit without test execution')
             case _:
                 pytest.exit('Unknown pytestomatio parameter. Use one of: add, remove, sync, debug')
 
