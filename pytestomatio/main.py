@@ -136,6 +136,8 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                 add_and_enrich_tests(meta, test_files, test_names, testomatio_tests, decorator_name)
                 pytest.testomatio.session = "sync"
                 print(f'Found {len(items)} test. {len(meta)} unique test functions data collected and updated.')
+                print('Test sync with testomat.io finished')
+                pytest.exit('Exit without test execution')
             case 'remove':
                 mapping = get_test_mapping(meta)
                 for test_file in test_files:
