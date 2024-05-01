@@ -8,3 +8,4 @@ pytest*.egg-info
 dist
 .venv*
 pytest.ini
+.env

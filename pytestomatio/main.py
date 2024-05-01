@@ -1,6 +1,6 @@
 import os, pytest, logging, json, re
 
-from pytest import Parser, Session, Config, Item, CallInfo
+from pytest import Parser, Session, Config, Item, CallInfo, fixture, FixtureRequest
 from .connector import Connector
 from .decorator_updater import update_tests
 from .testRunConfig import TestRunConfig
@@ -33,15 +33,15 @@ def pytest_addoption(parser: Parser) -> None:
                      action='store',
                      help=f'specify test run environment for testomat.io. Works only with --testomatio sync')
     parser.addoption(f'--create',
-                    action='store_true',
-                    default=False,
-                    dest="create",
-                    help="""
+                     action='store_true',
+                     default=False,
+                     dest="create",
+                     help="""
                         To import tests with Test IDs set in source code into a project use --create option.
                         In this case a project will be populated with the same Test IDs as in the code.
                         Use --testomatio sync together with --create option to enable this behavior.
                         """
-                    )
+                     )
     parser.addoption(f'--no-empty',
                      action='store_true',
                      default=False,
@@ -71,7 +71,7 @@ def pytest_addoption(parser: Parser) -> None:
                         Keep structure of source code. If suites are not created in Testomat.io they will be created based on the file structure.
                         Use --testomatio sync together with --structure option to enable this behaviour.
                         """
-                    )
+                     )
     parser.addoption('--directory',
                      default=None,
                      dest="directory",
@@ -89,7 +89,7 @@ def pytest_configure(config: Config):
     config.addinivalue_line(
         "markers", "testomatio(arg): built in marker to connect test case with testomat.io by unique id"
     )
-    
+
     pytest.testomatio = Testomatio()
     test_run_config = TestRunConfig(
         id=os.environ.get('TESTOMATIO_RUN'),
@@ -100,7 +100,7 @@ def pytest_configure(config: Config):
         label=os.environ.get('TESTOMATIO_LABEL'),
     )
     pytest.testomatio.set_test_run(test_run_config)
-    pytest.s3_connector = pytest.testomatio.s3_connector # backward compatibility
+    pytest.s3_connector = pytest.testomatio.s3_connector  # backward compatibility
 
     if config.getoption(testomatio) in ('sync', 'report', 'remove'):
         url = config.getini('testomatio_url')
@@ -108,16 +108,17 @@ def pytest_configure(config: Config):
         if project is None:
             pytest.exit('TESTOMATIO env variable is not set')
         ## TODO: move connector tin testomatio
-        pytest.connector = Connector(url, project) # backward compatibility
+        pytest.connector = Connector(url, project)  # backward compatibility
         pytest.testomatio.connector = pytest.connector
         if config.getoption('testRunEnv'):
             pytest.testomatio.test_run.set_env(config.getoption('testRunEnv'))
 
-def pytest_runtestloop(session: Session):
-    if hasattr(pytest.testomatio, 'session'):
-        if pytest.testomatio.session == "sync":
-            print('Test sync with testomat.io finished')
-            pytest.exit('Exit without test execution')
+
+@fixture(autouse=True)
+def testomatio_skip_test_fixture(request: FixtureRequest):
+    if request.config.getoption(testomatio) in ['sync', 'remove']:
+        pytest.skip("Skipping this test because of some condition")
+
 
 def pytest_collection_modifyitems(session: Session, config: Config, items: list[Item]) -> None:
     if config.getoption(testomatio):
@@ -136,8 +137,6 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                 add_and_enrich_tests(meta, test_files, test_names, testomatio_tests, decorator_name)
                 pytest.testomatio.session = "sync"
                 print(f'Found {len(items)} test. {len(meta)} unique test functions data collected and updated.')
-                print('Test sync with testomat.io finished')
-                pytest.skip('Skip all tests without execution')
             case 'remove':
                 mapping = get_test_mapping(meta)
                 for test_file in test_files:
@@ -150,23 +149,25 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                 else:
                     run_details = pytest.testomatio.connector.create_test_run(**pytest.testomatio.test_run.to_dict())
                     pytest.testomatio.test_run.set_run_id(run_details['uid'])
-                
+
                 if run_details is None:
                     log.error('Test run failed to create. Reporting skipped')
                     return
 
                 if run_details.get('artifacts'):
                     s3_access_key = os.environ.get('ACCESS_KEY_ID') or run_details['artifacts'].get('ACCESS_KEY_ID')
-                    s3_secret_key = os.environ.get('SECRET_ACCESS_KEY') or run_details['artifacts'].get('SECRET_ACCESS_KEY')
+                    s3_secret_key = os.environ.get('SECRET_ACCESS_KEY') or run_details['artifacts'].get(
+                        'SECRET_ACCESS_KEY')
                     s3_endpoint = os.environ.get('ENDPOINT') or run_details['artifacts'].get('ENDPOINT')
                     s3_bucket = os.environ.get('BUCKET') or run_details['artifacts'].get('BUCKET')
                     if all((s3_access_key, s3_secret_key, s3_endpoint, s3_bucket)):
-                        pytest.testomatio.set_s3_connector(S3Connector(s3_access_key, s3_secret_key, s3_endpoint, s3_bucket))
+                        pytest.testomatio.set_s3_connector(
+                            S3Connector(s3_access_key, s3_secret_key, s3_endpoint, s3_bucket))
                         pytest.testomatio.s3_connector.login()
-                        pytest.s3_connector = pytest.testomatio.s3_connector # backward compatibility
+                        pytest.s3_connector = pytest.testomatio.s3_connector  # backward compatibility
                     else:
                         pytest.testomatio.set_s3_connector(S3Connector('', '', '', ''))
-                        pytest.s3_connector = pytest.testomatio.s3_connector # backward compatibility
+                        pytest.s3_connector = pytest.testomatio.s3_connector  # backward compatibility
             case 'debug':
                 with open(metadata_file, 'w') as file:
                     data = json.dumps([i.to_dict() for i in meta], indent=4)

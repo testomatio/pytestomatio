@@ -13,7 +13,7 @@ version_provider = "pep621"
 update_changelog_on_bump = true
 [project]
 name = "pytestomatio"
-version = "2.3.2"
+version = "2.3.3"
 
 dependencies = [
     "requests>=2.29.0",
@@ -21,7 +21,9 @@ dependencies = [
     "boto3>=1.28.28",
     "libcst==1.1.0",
     "commitizen>=3.18.1",
-    "autopep8>=2.1.0"]
+    "autopep8>=2.1.0",
+    "pytest-dotenv>=0.5.2",
+]
 
 authors = [
     { name = "Oleksii Ostapov" },
@@ -38,8 +40,7 @@ classifiers = [
 ]
 
 [tool.pytest.ini_options]
-minversion = "7.0"
-pytest_plugins = ["dotenv"]
+plugins = ["dotenv"]
 
 [project.urls]
 "Testomat.io" = "https://testomat.io/"
