@@ -43,19 +43,18 @@ pytest --testomatio debug
 ```
 
 ## configuration
-
 Create environment variable `TESTOMATIO` and set your testomat.io API key.
-Linux:
-
 ```bash
-export TESTOMATIO=<key>
+TESTOMATIO=<key>
+```
+Select code style by set environment variable `TESTOMATIO_CODE_STYLE`. Available options are 'default' and 'pep8'  
+If you are not sure, don't set this variable. Default value is 'default'
+```bash
+TESTOMATIO_CODE_STYLE=pep8
 ```
 
-Windows (cmd):
-
 ```bash
-set TESTOMATIO=<key>
-```
+
 
 ### Run groups parameter
 There is environment variable `TESTOMATIO_RUNGROUP_TITLE` that can be used to specify run tests with specific group title.
