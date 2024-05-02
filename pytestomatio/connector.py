@@ -68,7 +68,7 @@ class Connector:
         response = self.session.get(f'{self.base_url}/api/test_data?api_key={self.api_key}')
         return response.json()
 
-    def create_test_run(self, title: str, group_title, env: str, label: str, shared_run: bool, parallel) -> dict | None:
+    def create_test_run(self, title: str, group_title, env: str, label: str, parallel: bool = True) -> dict | None:
         request = {
             "api_key": self.api_key,
             "title": title,
@@ -76,7 +76,6 @@ class Connector:
             "env": env,
             "label": label,
             "parallel": parallel,
-            "shared_run": shared_run,
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
         print('create_test_run', filtered_request)
@@ -96,7 +95,7 @@ class Connector:
             log.info(f'Test run created {response.json()["uid"]}')
             return response.json()
         
-    def update_test_run(self, id: str, title: str, group_title, env: str, label: str, shared_run: bool, parallel) -> dict | None:
+    def update_test_run(self, id: str, title: str, group_title, env: str, label: str, parallel: bool = True) -> dict | None:
         request = {
             "api_key": self.api_key,
             "title": title,
@@ -104,7 +103,6 @@ class Connector:
             #"env": env, TODO: enabled when bug with 500 response fixed
             #"label": label, TODO: enabled when bug with 500 response fixed
             "parallel": parallel,
-            "shared_run": shared_run
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
         
@@ -170,7 +168,7 @@ class Connector:
 
     # TODO: I guess this class should be just an API client and used within testRun (testRunConfig)
     def finish_test_run(self, run_id: str) -> None:
-        is_parallel = getenv('TESTOMATIO_SHARED_RUN') in ['True', 'true', '1']
+        is_parallel = getenv('TESTOMATIO_SHARED_RUN', 'false').lower() in ['true', '1']
         status_event = "finish_parallel" if is_parallel else 'finish'
         try:
             self.session.put(f'{self.base_url}/api/reporter/{run_id}?api_key={self.api_key}',

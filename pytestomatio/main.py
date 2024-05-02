@@ -96,7 +96,7 @@ def pytest_configure(config: Config):
         title=os.environ.get('TESTOMATIO_TITLE'),
         group_title=os.environ.get('TESTOMATIO_RUNGROUP_TITLE'),
         environment=os.environ.get('TESTOMATIO_ENV'),
-        shared_run=os.environ.get('TESTOMATIO_SHARED_RUN') in ['True', 'true', '1'],
+        parallel=os.environ.get('TESTOMATIO_SHARED_RUN', default='false').lower() in ['true', '1'],
         label=os.environ.get('TESTOMATIO_LABEL'),
     )
     pytest.testomatio.set_test_run(test_run_config)

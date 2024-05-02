@@ -2,12 +2,11 @@ from pytest import mark
 import os
 
 
-@mark.testomatio('@T741f0586')
+@mark.testomatio('@Ta44e5a34')
 def test_something():
     assert 1 == 1
 
 
-@mark.testomatio('@T8157d47d')
 def test_no_decorator():
     assert 1 == 1
 
