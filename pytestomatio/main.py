@@ -8,6 +8,7 @@ from .testItem import TestItem
 from .s3_connector import S3Connector
 from .testomatio import Testomatio
 from .helper import add_and_enrich_tests, get_test_mapping, get_functions_source_by_name, collect_tests
+from .worker_sync import start_file_sync_lock, stop_file_sync_lock_is_last
 
 log = logging.getLogger(__name__)
 log.setLevel('INFO')
@@ -145,8 +146,12 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                 if pytest.testomatio.test_run.test_run_id:
                     run_details = pytest.testomatio.connector.update_test_run(**pytest.testomatio.test_run.to_dict())
                 else:
-                    run_details = pytest.testomatio.connector.create_test_run(**pytest.testomatio.test_run.to_dict())
+                    lock = start_file_sync_lock()
+                    if lock.is_first:
+                        run_details = pytest.testomatio.connector.create_test_run(
+                            **pytest.testomatio.test_run.to_dict())
                     pytest.testomatio.test_run.set_run_id(run_details['uid'])
+                    pytest.testomatio.test_run.worker_id = lock.uuid
 
                 if run_details is None:
                     log.error('Test run failed to create. Reporting skipped')
@@ -245,5 +250,11 @@ def pytest_runtest_logfinish(nodeid, location):
 
 
 def pytest_sessionfinish(session: Session, exitstatus: int):
+    if not hasattr(pytest, 'testomatio'):
+        return
     if pytest.testomatio.test_run.test_run_id:
         pytest.testomatio.connector.finish_test_run(pytest.testomatio.test_run.test_run_id)
+
+        lock = stop_file_sync_lock_is_last(id=pytest.testomatio.test_run.worker_id)
+        if lock:
+            pytest.testomatio.connector.finish_test_run(pytest.testomatio.test_run.test_run_id, is_final=True)

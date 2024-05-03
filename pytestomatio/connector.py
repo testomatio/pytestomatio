@@ -25,7 +25,7 @@ class Connector:
             structure: bool = False,
             create: bool = False,
             directory: str = None
-        ):
+    ):
         request = {
             "framework": "pytest",
             "language": "python",
@@ -43,7 +43,8 @@ class Connector:
                     test.class_name
                 ],
                 "code": test.source_code,
-                "file": test.file_path if structure else (test.file_name if directory is None else normpath(join(directory, test.file_name))),
+                "file": test.file_path if structure else (
+                    test.file_name if directory is None else normpath(join(directory, test.file_name))),
             })
 
         try:
@@ -95,19 +96,20 @@ class Connector:
         if response.status_code == 200:
             log.info(f'Test run created {response.json()["uid"]}')
             return response.json()
-        
-    def update_test_run(self, id: str, title: str, group_title, env: str, label: str, shared_run: bool, parallel) -> dict | None:
+
+    def update_test_run(self, id: str, title: str, group_title, env: str, label: str, shared_run: bool,
+                        parallel) -> dict | None:
         request = {
             "api_key": self.api_key,
             "title": title,
             "group_title": group_title,
-            #"env": env, TODO: enabled when bug with 500 response fixed
-            #"label": label, TODO: enabled when bug with 500 response fixed
+            # "env": env, TODO: enabled when bug with 500 response fixed
+            # "label": label, TODO: enabled when bug with 500 response fixed
             "parallel": True,
             "shared_run": True
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
-        
+
         try:
             response = self.session.put(f'{self.base_url}/api/reporter/{id}', json=filtered_request)
         except ConnectionError:
@@ -169,9 +171,8 @@ class Connector:
             log.info('Test status updated')
 
     # TODO: I guess this class should be just an API client and used within testRun (testRunConfig)
-    def finish_test_run(self, run_id: str) -> None:
-        is_parallel = getenv('TESTOMATIO_SHARED_RUN', 'false').lower() in ['true', '1']
-        status_event = "finish_parallel" if is_parallel else 'finish'
+    def finish_test_run(self, run_id: str, is_final=False) -> None:
+        status_event = "finish_parallel" if is_final else 'finish'
         try:
             self.session.put(f'{self.base_url}/api/reporter/{run_id}?api_key={self.api_key}',
                              json={"status_event": status_event})

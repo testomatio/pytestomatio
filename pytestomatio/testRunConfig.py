@@ -12,7 +12,7 @@ class TestRunConfig:
             label: str = None,
             parallel: bool = True,
             shared_run: bool = True
-        ):
+    ):
         self.test_run_id = id
         self.title = title if title else 'test run at ' + dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.environment = self.safe_string_list(environment)
@@ -23,6 +23,7 @@ class TestRunConfig:
             raise ValueError('TESTOMATIO_SHARED_RUN can only be used together with TESTOMATIO_TITLE')
         self.shared_run = shared_run
         self.status_request = {}
+        self.worker_id: str or None = None
 
     def to_dict(self) -> dict:
         result = dict()
@@ -35,13 +36,13 @@ class TestRunConfig:
         result['parallel'] = self.parallel
         result['shared_run'] = self.shared_run
         return result
-    
+
     def set_run_id(self, run_id: str) -> None:
         self.test_run_id = run_id
 
     def set_env(self, env: str) -> None:
         self.environment = self.safe_string_list(env)
-    
+
     def safe_string_list(self, param: str):
         if not param:
             return None
