@@ -217,6 +217,8 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
             request['status'] = 'failed'
         else:
             request['status'] = 'passed'
+        if hasattr(item, 'callspec'):
+            request['example'] = item.callspec.params
 
     if item.nodeid not in pytest.testomatio.test_run.status_request:
         pytest.testomatio.test_run.status_request[item.nodeid] = request
