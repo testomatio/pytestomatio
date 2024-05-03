@@ -11,6 +11,7 @@ class TestRunConfig:
             environment: str = None,
             label: str = None,
             parallel: bool = True,
+            shared_run: bool = True
         ):
         self.test_run_id = id
         self.title = title if title else 'test run at ' + dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -18,8 +19,9 @@ class TestRunConfig:
         self.label = self.safe_string_list(label)
         self.group_title = group_title
         self.parallel = parallel
-        if parallel and not title:
+        if shared_run and not title:
             raise ValueError('TESTOMATIO_SHARED_RUN can only be used together with TESTOMATIO_TITLE')
+        self.shared_run = shared_run
         self.status_request = {}
 
     def to_dict(self) -> dict:
@@ -31,6 +33,7 @@ class TestRunConfig:
         result['env'] = self.environment
         result['label'] = self.label
         result['parallel'] = self.parallel
+        result['shared_run'] = self.shared_run
         return result
     
     def set_run_id(self, run_id: str) -> None:
