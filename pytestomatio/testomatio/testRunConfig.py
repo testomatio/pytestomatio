@@ -1,4 +1,5 @@
 import datetime as dt
+import uuid
 from re import sub
 
 
@@ -23,7 +24,7 @@ class TestRunConfig:
             raise ValueError('TESTOMATIO_SHARED_RUN can only be used together with TESTOMATIO_TITLE')
         self.shared_run = shared_run
         self.status_request = {}
-        self.worker_id: str or None = None
+        self.worker_id = str(uuid.uuid4())
 
     def to_dict(self) -> dict:
         result = dict()

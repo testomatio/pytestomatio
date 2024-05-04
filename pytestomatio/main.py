@@ -1,14 +1,18 @@
-import os, pytest, logging, json, re
+import os, pytest, logging, json
 
 from pytest import Parser, Session, Config, Item, CallInfo, fixture, FixtureRequest
-from .connector import Connector
-from .decorator_updater import update_tests
-from .testRunConfig import TestRunConfig
-from .testItem import TestItem
-from .s3_connector import S3Connector
-from .testomatio import Testomatio
-from .helper import add_and_enrich_tests, get_test_mapping, get_functions_source_by_name, collect_tests
-from .worker_sync import start_file_sync_lock, stop_file_sync_lock_is_last
+from pytestomatio.connect.connector import Connector
+from pytestomatio.decor.decorator_updater import update_tests
+from pytestomatio.testomatio.testRunConfig import TestRunConfig
+from pytestomatio.testing.testItem import TestItem
+from pytestomatio.connect.s3_connector import S3Connector
+from .testomatio.testomatio import Testomatio
+from pytestomatio.utils.helper import add_and_enrich_tests, get_test_mapping, collect_tests, get_run_id
+from pytestomatio.utils.worker_sync import start_file_sync_lock, stop_file_sync_lock_is_last, save_test_run_id, \
+    get_test_run_id, \
+    remove_sync_run
+from pytestomatio.utils.parser_setup import parser_options
+from pytestomatio.utils import helper
 
 log = logging.getLogger(__name__)
 log.setLevel('INFO')
@@ -17,73 +21,15 @@ metadata_file = 'metadata.json'
 decorator_name = 'testomatio'
 testomatio = 'testomatio'
 
-help_text = """
-            synchronise and connect test with testomat.io. Use parameters:
-            sync - synchronize tests and set test ids in the code
-            remove - removes testomat.io ids from the ALL test
-            report - report tests into testomat.io
-            debug - saves analysed test metadata to the json in the test project root
-            """
+
+@fixture(autouse=True)
+def testomatio_skip_test_fixture(request: FixtureRequest):
+    if request.config.getoption(testomatio, default='').lower() in ['sync', 'remove', 'debug']:
+        pytest.skip("Skipping this test because of some condition")
 
 
 def pytest_addoption(parser: Parser) -> None:
-    parser.addoption(f'--{testomatio}',
-                     action='store',
-                     help=help_text)
-    parser.addoption(f'--testRunEnv',
-                     action='store',
-                     help=f'specify test run environment for testomat.io. Works only with --testomatio sync')
-    parser.addoption(f'--create',
-                     action='store_true',
-                     default=False,
-                     dest="create",
-                     help="""
-                        To import tests with Test IDs set in source code into a project use --create option.
-                        In this case a project will be populated with the same Test IDs as in the code.
-                        Use --testomatio sync together with --create option to enable this behavior.
-                        """
-                     )
-    parser.addoption(f'--no-empty',
-                     action='store_true',
-                     default=False,
-                     dest="no_empty",
-                     help="""
-                        Delete empty suites.
-                        When tests are marked with IDs and imported to already created suites in Testomat.io newly imported suites may become empty.
-                        Use --testomatio sync together with --no-empty option to clean them up after import.
-                        """
-                     )
-    parser.addoption(f'--no-detach',
-                     action='store_true',
-                     default=False,
-                     dest="no_detach",
-                     help="""
-                        Disable detaching tests.
-                        If a test from a previous import was not found on next import it is marked as "detached".
-                        This is done to ensure that deleted tests are not staying in Testomatio while deleted in codebase.
-                        To disable this behaviour and don\'t mark anything on detached on import use sync together with --no-detached option.
-                        """
-                     )
-    parser.addoption(f'--keep-structure',
-                     action='store_true',
-                     default=False,
-                     dest="keep_structure",
-                     help="""
-                        Keep structure of source code. If suites are not created in Testomat.io they will be created based on the file structure.
-                        Use --testomatio sync together with --structure option to enable this behaviour.
-                        """
-                     )
-    parser.addoption('--directory',
-                     default=None,
-                     dest="directory",
-                     help="""
-                        Specify directory to use for test file structure, ex. --directory Windows\\smoke or --directory Linux/e2e
-                        Use --testomatio sync together with --directory option to enable this behaviour.
-                        Default is the root of the project.
-                        Note: --structure option takes precedence over --directory option. If both are used --structure will be used.
-                        """
-                     )
-    parser.addini('testomatio_url', 'testomat.io base url', default='https://app.testomat.io')
+    parser_options(parser, testomatio)
 
 
 def pytest_configure(config: Config):
@@ -91,34 +37,19 @@ def pytest_configure(config: Config):
         "markers", "testomatio(arg): built in marker to connect test case with testomat.io by unique id"
     )
 
-    pytest.testomatio = Testomatio()
-    test_run_config = TestRunConfig(
-        id=os.environ.get('TESTOMATIO_RUN'),
-        title=os.environ.get('TESTOMATIO_TITLE'),
-        group_title=os.environ.get('TESTOMATIO_RUNGROUP_TITLE'),
-        environment=os.environ.get('TESTOMATIO_ENV'),
-        shared_run=os.environ.get('TESTOMATIO_SHARED_RUN', default='false').lower() in ['true', '1'],
-        label=os.environ.get('TESTOMATIO_LABEL'),
-    )
-    pytest.testomatio.set_test_run(test_run_config)
-    pytest.s3_connector = pytest.testomatio.s3_connector  # backward compatibility
+    pytest.testomatio = Testomatio(TestRunConfig(**helper.read_env_test_run_cfg()))
 
     if config.getoption(testomatio) in ('sync', 'report', 'remove'):
         url = config.getini('testomatio_url')
         project = os.environ.get('TESTOMATIO')
         if project is None:
             pytest.exit('TESTOMATIO env variable is not set')
-        ## TODO: move connector tin testomatio
+
         pytest.connector = Connector(url, project)  # backward compatibility
-        pytest.testomatio.connector = pytest.connector
-        if config.getoption('testRunEnv'):
-            pytest.testomatio.test_run.set_env(config.getoption('testRunEnv'))
-
-
-@fixture(autouse=True)
-def testomatio_skip_test_fixture(request: FixtureRequest):
-    if request.config.getoption(testomatio) in ['sync', 'remove', 'debug']:
-        pytest.skip("Skipping this test because of some condition")
+        pytest.testomatio.connector = Connector(url, project)
+        run_env = config.getoption('testRunEnv')
+        if run_env:
+            pytest.testomatio.test_run_config.set_env(run_env)
 
 
 def pytest_collection_modifyitems(session: Session, config: Config, items: list[Item]) -> None:
@@ -137,40 +68,43 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                 testomatio_tests = pytest.testomatio.connector.get_tests(meta)
                 add_and_enrich_tests(meta, test_files, test_names, testomatio_tests, decorator_name)
                 pytest.testomatio.session = "sync"
-                print(f'Found {len(items)} test. {len(meta)} unique test functions data collected and updated.')
             case 'remove':
                 mapping = get_test_mapping(meta)
                 for test_file in test_files:
                     update_tests(test_file, mapping, test_names, decorator_name, remove=True)
             case 'report':
-                if pytest.testomatio.test_run.test_run_id:
-                    run_details = pytest.testomatio.connector.update_test_run(**pytest.testomatio.test_run.to_dict())
+                lock = start_file_sync_lock()
+                if lock.is_first:
+                    run_details = pytest.testomatio.connector.create_test_run(
+                        **pytest.testomatio.test_run_config.to_dict())
+
+                pytest.testomatio.test_run_config.test_run_id = get_run_id(get_test_run_id(),
+                                                                           pytest.testomatio.test_run_config.test_run_id)
+                if pytest.testomatio.test_run_config.test_run_id:
+                    run_details = pytest.testomatio.connector.update_test_run(
+                        **pytest.testomatio.test_run_config.to_dict())
                 else:
-                    lock = start_file_sync_lock()
                     if lock.is_first:
                         run_details = pytest.testomatio.connector.create_test_run(
-                            **pytest.testomatio.test_run.to_dict())
-                    pytest.testomatio.test_run.set_run_id(run_details['uid'])
-                    pytest.testomatio.test_run.worker_id = lock.uuid
+                            **pytest.testomatio.test_run_config.to_dict())
+
+                    pytest.testomatio.test_run_config.test_run_id = run_details['uid']
+                    save_test_run_id(run_details['uid'])
+                    pytest.testomatio.test_run_config.worker_id = lock.uuid
 
                 if run_details is None:
                     log.error('Test run failed to create. Reporting skipped')
                     return
 
-                if run_details.get('artifacts'):
-                    s3_access_key = os.environ.get('ACCESS_KEY_ID') or run_details['artifacts'].get('ACCESS_KEY_ID')
-                    s3_secret_key = os.environ.get('SECRET_ACCESS_KEY') or run_details['artifacts'].get(
-                        'SECRET_ACCESS_KEY')
-                    s3_endpoint = os.environ.get('ENDPOINT') or run_details['artifacts'].get('ENDPOINT')
-                    s3_bucket = os.environ.get('BUCKET') or run_details['artifacts'].get('BUCKET')
-                    if all((s3_access_key, s3_secret_key, s3_endpoint, s3_bucket)):
-                        pytest.testomatio.set_s3_connector(
-                            S3Connector(s3_access_key, s3_secret_key, s3_endpoint, s3_bucket))
+                artifact = run_details.get('artifacts')
+                if artifact:
+                    s3_details = helper.read_env_s3_keys(artifact)
+
+                    if all(s3_details):
+                        pytest.testomatio.s3_connector = S3Connector(*s3_details)
                         pytest.testomatio.s3_connector.login()
-                        pytest.s3_connector = pytest.testomatio.s3_connector  # backward compatibility
                     else:
-                        pytest.testomatio.set_s3_connector(S3Connector('', '', '', ''))
-                        pytest.s3_connector = pytest.testomatio.s3_connector  # backward compatibility
+                        pytest.testomatio.s3_connector = S3Connector()
             case 'debug':
                 with open(metadata_file, 'w') as file:
                     data = json.dumps([i.to_dict() for i in meta], indent=4)
@@ -183,7 +117,7 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
     pytest.testomatio_config_option = item.config.getoption(testomatio)
     if pytest.testomatio_config_option is None or pytest.testomatio_config_option != 'report':
         return
-    elif not pytest.testomatio.test_run.test_run_id:
+    elif not pytest.testomatio.test_run_config.test_run_id:
         return
 
     test_item = TestItem(item)
@@ -225,14 +159,14 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         if hasattr(item, 'callspec'):
             request['example'] = item.callspec.params
 
-    if item.nodeid not in pytest.testomatio.test_run.status_request:
-        pytest.testomatio.test_run.status_request[item.nodeid] = request
+    if item.nodeid not in pytest.testomatio.test_run_config.status_request:
+        pytest.testomatio.test_run_config.status_request[item.nodeid] = request
     else:
         for key, value in request.items():
             if key == 'title' and call.when == 'teardown':
                 continue
             if value is not None:
-                pytest.testomatio.test_run.status_request[item.nodeid][key] = value
+                pytest.testomatio.test_run_config.status_request[item.nodeid][key] = value
 
 
 def pytest_runtest_logfinish(nodeid, location):
@@ -240,21 +174,23 @@ def pytest_runtest_logfinish(nodeid, location):
         return
     if pytest.testomatio_config_option is None or pytest.testomatio_config_option != 'report':
         return
-    elif not pytest.testomatio.test_run.test_run_id:
+    elif not pytest.testomatio.test_run_config.test_run_id:
         return
 
-    for nodeid, request in pytest.testomatio.test_run.status_request.items():
+    for nodeid, request in pytest.testomatio.test_run_config.status_request.items():
         if request['status']:
-            pytest.testomatio.connector.update_test_status(run_id=pytest.testomatio.test_run.test_run_id, **request)
-    pytest.testomatio.test_run.status_request = {}
+            pytest.testomatio.connector.update_test_status(run_id=pytest.testomatio.test_run_config.test_run_id,
+                                                           **request)
+    pytest.testomatio.test_run_config.status_request = {}
 
 
 def pytest_sessionfinish(session: Session, exitstatus: int):
     if not hasattr(pytest, 'testomatio'):
         return
-    if pytest.testomatio.test_run.test_run_id:
-        pytest.testomatio.connector.finish_test_run(pytest.testomatio.test_run.test_run_id)
+    if pytest.testomatio.test_run_config.test_run_id:
+        pytest.testomatio.connector.finish_test_run(pytest.testomatio.test_run_config.test_run_id)
 
-        lock = stop_file_sync_lock_is_last(id=pytest.testomatio.test_run.worker_id)
-        if lock:
-            pytest.testomatio.connector.finish_test_run(pytest.testomatio.test_run.test_run_id, is_final=True)
+        is_last = stop_file_sync_lock_is_last(id=pytest.testomatio.test_run_config.worker_id)
+        if is_last:
+            pytest.testomatio.connector.finish_test_run(pytest.testomatio.test_run_config.test_run_id, is_final=True)
+            remove_sync_run()

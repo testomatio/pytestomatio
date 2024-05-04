@@ -6,15 +6,23 @@ log = logging.getLogger(__name__)
 log.setLevel('INFO')
 
 
+def parse_endpoint(endpoint: str or None) -> str or None:
+    if endpoint is None:
+        return
+    if endpoint.startswith('https://'):
+        return endpoint[8:]
+    elif endpoint.startswith('http://'):
+        return endpoint[7:]
+    return endpoint
+
+
 class S3Connector:
-    def __init__(self, aws_access_key_id: str, aws_secret_access_key: str,
-                 endpoint: str, bucket_name: str = None):
-        if endpoint.startswith('https://'):
-            self.endpoint = endpoint[8:]
-        elif endpoint.startswith('http://'):
-            self.endpoint = endpoint[7:]
-        else:
-            self.endpoint = endpoint
+    def __init__(self, aws_access_key_id: str or None = None,
+                 aws_secret_access_key: str or None = None,
+                 endpoint: str or None = None,
+                 bucket_name: str or None = None):
+
+        self.endpoint = parse_endpoint(endpoint)
         self.bucket_name = bucket_name
         self.client = None
         self._is_logged_in = False

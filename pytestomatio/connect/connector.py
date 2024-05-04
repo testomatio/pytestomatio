@@ -2,9 +2,8 @@ import requests
 from requests.exceptions import HTTPError, ConnectionError
 import logging
 from os.path import join, normpath
-from os import getenv
 
-from .testItem import TestItem
+from pytestomatio.testing.testItem import TestItem
 
 log = logging.getLogger('pytestomatio')
 

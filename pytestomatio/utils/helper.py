@@ -1,9 +1,10 @@
-from os.path import basename 
+import os
+from os.path import basename
 from pytest import Item
-from .testomat_item import TestomatItem
-from .testItem import TestItem
-from .decorator_updater import update_tests
-from .code_collector import get_functions_source_by_name
+from pytestomatio.testomatio.testomat_item import TestomatItem
+from pytestomatio.testing.testItem import TestItem
+from pytestomatio.decor.decorator_updater import update_tests
+from pytestomatio.testing.code_collector import get_functions_source_by_name
 
 
 def collect_tests(items: list[Item]):
@@ -80,3 +81,31 @@ def add_and_enrich_tests(meta: list[TestItem], test_files: set,
     mapping = get_test_mapping(meta)
     for test_file in test_files:
         update_tests(test_file, mapping, test_names, decorator_name)
+
+
+def get_run_id(file_id=None, pytest_id=None) -> str or None:
+    if pytest_id:
+        return pytest_id
+    if file_id:
+        return file_id
+    return None
+
+
+def read_env_test_run_cfg() -> dict:
+    return {
+        'id': os.environ.get('TESTOMATIO_RUN'),
+        'title': os.environ.get('TESTOMATIO_TITLE'),
+        'group_title': os.environ.get('TESTOMATIO_RUNGROUP_TITLE'),
+        'environment': os.environ.get('TESTOMATIO_ENV'),
+        'shared_run': os.environ.get('TESTOMATIO_SHARED_RUN', default='false').lower() in ['true', '1'],
+        'label': os.environ.get('TESTOMATIO_LABEL'),
+    }
+
+
+def read_env_s3_keys(artifact: dict) -> tuple:
+    return (
+        os.environ.get('ACCESS_KEY_ID') or artifact.get('ACCESS_KEY_ID'),
+        os.environ.get('SECRET_ACCESS_KEY') or artifact.get('SECRET_ACCESS_KEY'),
+        os.environ.get('ENDPOINT') or artifact.get('ENDPOINT'),
+        os.environ.get('BUCKET') or artifact.get('BUCKET')
+    )

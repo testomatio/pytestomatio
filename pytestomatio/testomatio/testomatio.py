@@ -1,26 +1,24 @@
 from _pytest.python import Function
 from .testRunConfig import TestRunConfig
-from .s3_connector import S3Connector
+from pytestomatio.connect.s3_connector import S3Connector
+from pytestomatio.connect.connector import Connector
+
 
 class Testomatio:
-    def __init__(self) -> None:
-        self.s3_connector = None
-        self.test_run = None
-
-    def set_test_run(self, test_run: TestRunConfig) -> None:
-        self.test_run = test_run
-
-    def set_s3_connector(self, s3_connector: S3Connector) -> None:
-        self.s3_connector = s3_connector
+    def __init__(self, test_run_config: TestRunConfig = None,
+                 s3_connector: S3Connector = None) -> None:
+        self.s3_connector: S3Connector or None = None
+        self.test_run_config: TestRunConfig or None = None,
+        self.connector: Connector or None = None
 
     def upload_file(self, file_path: str, key: str = None, bucket_name: str = None) -> str:
-        if self.test_run.test_run_id is None:
+        if self.test_run_config.test_run_id is None:
             print("Skipping file upload when testomatio test run is not created")
             return ""
         return self.s3_connector.upload_file(file_path, key, bucket_name)
 
     def upload_file_object(self, file_bytes: bytes, key: str, bucket_name: str = None) -> str:
-        if self.test_run.test_run_id is None:
+        if self.test_run_config.test_run_id is None:
             print("Skipping file upload when testomatio test run is not created")
             return ""
         return self.s3_connector.upload_file_object(file_bytes, key, bucket_name)
