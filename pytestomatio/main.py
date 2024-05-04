@@ -7,12 +7,10 @@ from pytestomatio.testomatio.testRunConfig import TestRunConfig
 from pytestomatio.testing.testItem import TestItem
 from pytestomatio.connect.s3_connector import S3Connector
 from .testomatio.testomatio import Testomatio
-from pytestomatio.utils.helper import add_and_enrich_tests, get_test_mapping, collect_tests, get_run_id
-from pytestomatio.utils.worker_sync import start_file_sync_lock, stop_file_sync_lock_is_last, save_test_run_id, \
-    get_test_run_id, \
-    remove_sync_run
+from pytestomatio.utils.helper import add_and_enrich_tests, get_test_mapping, collect_tests
 from pytestomatio.utils.parser_setup import parser_options
 from pytestomatio.utils import helper
+from pytestomatio.utils import validations
 
 log = logging.getLogger(__name__)
 log.setLevel('INFO')
@@ -33,19 +31,21 @@ def pytest_addoption(parser: Parser) -> None:
 
 
 def pytest_configure(config: Config):
+    validations.validate_env_variables()
+    validations.validate_command_line_args(config)
+
     config.addinivalue_line(
         "markers", "testomatio(arg): built in marker to connect test case with testomat.io by unique id"
     )
 
     pytest.testomatio = Testomatio(TestRunConfig(**helper.read_env_test_run_cfg()))
+    # TODO this executes before workers init!!!
+    pytest.testomatio.test_run_config.lock.lock()
 
-    if config.getoption(testomatio) in ('sync', 'report', 'remove'):
+    if config.getoption(testomatio, default='').lower() in ('sync', 'report', 'remove'):
         url = config.getini('testomatio_url')
         project = os.environ.get('TESTOMATIO')
-        if project is None:
-            pytest.exit('TESTOMATIO env variable is not set')
 
-        pytest.connector = Connector(url, project)  # backward compatibility
         pytest.testomatio.connector = Connector(url, project)
         run_env = config.getoption('testRunEnv')
         if run_env:
@@ -67,30 +67,20 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                 )
                 testomatio_tests = pytest.testomatio.connector.get_tests(meta)
                 add_and_enrich_tests(meta, test_files, test_names, testomatio_tests, decorator_name)
-                pytest.testomatio.session = "sync"
             case 'remove':
                 mapping = get_test_mapping(meta)
                 for test_file in test_files:
                     update_tests(test_file, mapping, test_names, decorator_name, remove=True)
             case 'report':
-                lock = start_file_sync_lock()
-                if lock.is_first:
-                    run_details = pytest.testomatio.connector.create_test_run(
-                        **pytest.testomatio.test_run_config.to_dict())
-
-                pytest.testomatio.test_run_config.test_run_id = get_run_id(get_test_run_id(),
-                                                                           pytest.testomatio.test_run_config.test_run_id)
-                if pytest.testomatio.test_run_config.test_run_id:
-                    run_details = pytest.testomatio.connector.update_test_run(
-                        **pytest.testomatio.test_run_config.to_dict())
-                else:
-                    if lock.is_first:
-                        run_details = pytest.testomatio.connector.create_test_run(
-                            **pytest.testomatio.test_run_config.to_dict())
-
-                    pytest.testomatio.test_run_config.test_run_id = run_details['uid']
-                    save_test_run_id(run_details['uid'])
-                    pytest.testomatio.test_run_config.worker_id = lock.uuid
+                run: TestRunConfig = pytest.testomatio.test_run_config
+                if run.test_run_id is None and run.lock.get_run_id() is None:
+                    run_details = pytest.testomatio.connector.create_test_run(**run.to_dict())
+                    uid = run_details.get('uid')
+                    run.lock.save_run_id(uid)
+                    uid = run.lock.get_run_id()
+                    run.test_run_id = uid
+                if run.test_run_id:
+                    run_details = pytest.testomatio.connector.update_test_run(**run.to_dict())
 
                 if run_details is None:
                     log.error('Test run failed to create. Reporting skipped')
@@ -185,12 +175,10 @@ def pytest_runtest_logfinish(nodeid, location):
 
 
 def pytest_sessionfinish(session: Session, exitstatus: int):
-    if not hasattr(pytest, 'testomatio'):
-        return
-    if pytest.testomatio.test_run_config.test_run_id:
-        pytest.testomatio.connector.finish_test_run(pytest.testomatio.test_run_config.test_run_id)
-
-        is_last = stop_file_sync_lock_is_last(id=pytest.testomatio.test_run_config.worker_id)
+    run = pytest.testomatio.test_run_config
+    if run.test_run_id:
+        pytest.testomatio.connector.finish_test_run(run.test_run_id)
+        is_last = run.lock.unlock()
         if is_last:
-            pytest.testomatio.connector.finish_test_run(pytest.testomatio.test_run_config.test_run_id, is_final=True)
-            remove_sync_run()
+            run.lock.clear_run_id()
+            pytest.testomatio.connector.finish_test_run(run.test_run_id, True)

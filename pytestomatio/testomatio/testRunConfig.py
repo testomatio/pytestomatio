@@ -1,6 +1,7 @@
 import datetime as dt
 import uuid
 from re import sub
+from pytestomatio.utils.worker_sync import SyncLock
 
 
 class TestRunConfig:
@@ -20,11 +21,9 @@ class TestRunConfig:
         self.label = self.safe_string_list(label)
         self.group_title = group_title
         self.parallel = parallel
-        if shared_run and not title:
-            raise ValueError('TESTOMATIO_SHARED_RUN can only be used together with TESTOMATIO_TITLE')
         self.shared_run = shared_run
         self.status_request = {}
-        self.worker_id = str(uuid.uuid4())
+        self.lock = SyncLock()
 
     def to_dict(self) -> dict:
         result = dict()
@@ -37,9 +36,6 @@ class TestRunConfig:
         result['parallel'] = self.parallel
         result['shared_run'] = self.shared_run
         return result
-
-    def set_run_id(self, run_id: str) -> None:
-        self.test_run_id = run_id
 
     def set_env(self, env: str) -> None:
         self.environment = self.safe_string_list(env)

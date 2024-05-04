@@ -83,13 +83,6 @@ def add_and_enrich_tests(meta: list[TestItem], test_files: set,
         update_tests(test_file, mapping, test_names, decorator_name)
 
 
-def get_run_id(file_id=None, pytest_id=None) -> str or None:
-    if pytest_id:
-        return pytest_id
-    if file_id:
-        return file_id
-    return None
-
 
 def read_env_test_run_cfg() -> dict:
     return {
