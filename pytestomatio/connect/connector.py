@@ -76,7 +76,6 @@ class Connector:
             "env": env,
             "label": label,
             "parallel": True,
-            "shared_run": True,
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
         print('create_test_run', filtered_request)
@@ -105,7 +104,6 @@ class Connector:
             # "env": env, TODO: enabled when bug with 500 response fixed
             # "label": label, TODO: enabled when bug with 500 response fixed
             "parallel": True,
-            "shared_run": True
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
 
@@ -171,7 +169,7 @@ class Connector:
 
     # TODO: I guess this class should be just an API client and used within testRun (testRunConfig)
     def finish_test_run(self, run_id: str, is_final=False) -> None:
-        status_event = "finish_parallel" if is_final else 'finish'
+        status_event = 'finish_parallel' if is_final else 'finish'
         try:
             self.session.put(f'{self.base_url}/api/reporter/{run_id}?api_key={self.api_key}',
                              json={"status_event": status_event})

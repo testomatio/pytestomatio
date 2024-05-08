@@ -1,3 +1,20 @@
+## 2.5.0 (2024-03-11)
+
+### Feat
+
+- Plugin code refactored
+- Introduced ENV variable `TESTOMATIO_CODE_STYLE` to select code style formating **PEP8** or don't format at all
+- Updated pytest version supported to 8+
+- Set parallel run as default parameter. ENV variable `TESTOMATIO_SHARED_RUN` is not needed
+- Introduced sync lock to be used with pytest-xdist. Env variable `TESTOMATIO_TITLE` becomes optional
+
+### Fix
+
+- Fixed NPE when some params not set
+- Fixed pytest exception with using **xdist** lib
+- Fixed test parameters transfer for DDT tests
+
+
 ## 2.2.0 (2024-03-11)
 
 ### Feat

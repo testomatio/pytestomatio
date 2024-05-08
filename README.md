@@ -52,6 +52,16 @@ If you are not sure, don't set this variable. Default value is 'default'
 ```bash
 TESTOMATIO_CODE_STYLE=pep8
 ```
+Set test run name in Testomat.io
+```bash
+TESTOMATIO_RUN=test_run_name
+```
+Set test run environment in Testomat.io
+```bash
+TESTOMATIO_ENV=linux,chrome,1920x1080
+```
+Set test run labels in Testomat.io
+TESTOMATIO_LABELS=smoke,regression
 
 ```bash
 

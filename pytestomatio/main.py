@@ -11,6 +11,7 @@ from pytestomatio.utils.helper import add_and_enrich_tests, get_test_mapping, co
 from pytestomatio.utils.parser_setup import parser_options
 from pytestomatio.utils import helper
 from pytestomatio.utils import validations
+import multiprocessing
 
 log = logging.getLogger(__name__)
 log.setLevel('INFO')
@@ -22,7 +23,8 @@ testomatio = 'testomatio'
 
 @fixture(autouse=True)
 def testomatio_skip_test_fixture(request: FixtureRequest):
-    if request.config.getoption(testomatio, default='').lower() in ['sync', 'remove', 'debug']:
+    if request.config.getoption(testomatio) and request.config.getoption(testomatio).lower() in ['sync', 'remove',
+                                                                                                 'debug']:
         pytest.skip("Skipping this test because of some condition")
 
 
@@ -30,7 +32,17 @@ def pytest_addoption(parser: Parser) -> None:
     parser_options(parser, testomatio)
 
 
+#
+# def pytest_xdist_setupnodes(config, specs):
+#     pass
+#
+#
+# def pytest_xdist_node_collection_finished(node, ids):
+#     pass
+
+
 def pytest_configure(config: Config):
+    #  FYI hook runs before the xdist and later again within every worker
     validations.validate_env_variables()
     validations.validate_command_line_args(config)
 
@@ -39,10 +51,8 @@ def pytest_configure(config: Config):
     )
 
     pytest.testomatio = Testomatio(TestRunConfig(**helper.read_env_test_run_cfg()))
-    # TODO this executes before workers init!!!
-    pytest.testomatio.test_run_config.lock.lock()
 
-    if config.getoption(testomatio, default='').lower() in ('sync', 'report', 'remove'):
+    if config.getoption(testomatio) and config.getoption(testomatio).lower() in ('sync', 'report', 'remove'):
         url = config.getini('testomatio_url')
         project = os.environ.get('TESTOMATIO')
 
@@ -50,6 +60,14 @@ def pytest_configure(config: Config):
         run_env = config.getoption('testRunEnv')
         if run_env:
             pytest.testomatio.test_run_config.set_env(run_env)
+
+    if config.getoption(testomatio) and config.getoption(testomatio).lower() == 'report':
+        run: TestRunConfig = pytest.testomatio.test_run_config
+        if run.lock.get_run_id() is None:
+            run_details = pytest.testomatio.connector.create_test_run(**run.to_dict())
+            run.lock.save_run_id(run_details.get('uid'))
+        else:
+            run.test_run_id = run.lock.get_run_id()
 
 
 def pytest_collection_modifyitems(session: Session, config: Config, items: list[Item]) -> None:
@@ -72,15 +90,12 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                 for test_file in test_files:
                     update_tests(test_file, mapping, test_names, decorator_name, remove=True)
             case 'report':
+                # assuming run already created in pytest_configure hook
                 run: TestRunConfig = pytest.testomatio.test_run_config
-                if run.test_run_id is None and run.lock.get_run_id() is None:
-                    run_details = pytest.testomatio.connector.create_test_run(**run.to_dict())
-                    uid = run_details.get('uid')
-                    run.lock.save_run_id(uid)
-                    uid = run.lock.get_run_id()
-                    run.test_run_id = uid
-                if run.test_run_id:
-                    run_details = pytest.testomatio.connector.update_test_run(**run.to_dict())
+                run.test_run_id = run.lock.get_run_id()
+                # lock file here as it runs in the worker
+                run.lock.lock()
+                run_details = pytest.testomatio.connector.update_test_run(**run.to_dict())
 
                 if run_details is None:
                     log.error('Test run failed to create. Reporting skipped')
@@ -177,8 +192,15 @@ def pytest_runtest_logfinish(nodeid, location):
 def pytest_sessionfinish(session: Session, exitstatus: int):
     run = pytest.testomatio.test_run_config
     if run.test_run_id:
-        pytest.testomatio.connector.finish_test_run(run.test_run_id)
-        is_last = run.lock.unlock()
-        if is_last:
-            run.lock.clear_run_id()
-            pytest.testomatio.connector.finish_test_run(run.test_run_id, True)
+        run.lock.unlock()
+        is_last = run.lock.clear_run_id()
+        pytest.testomatio.connector.finish_test_run(run.test_run_id, True)
+
+
+# @pytest.fixture(scope='session')
+# def final_worker_standing():
+#     yield
+#     run = pytest.testomatio.test_run_config
+#     if run.test_run_id:
+#         is_last = run.lock.clear_run_id()
+#         pytest.testomatio.connector.finish_test_run(run.test_run_id, is_last)
