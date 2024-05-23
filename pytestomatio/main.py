@@ -27,7 +27,7 @@ def pytest_addoption(parser: Parser) -> None:
 
 def pytest_configure(config: Config):
     #  FYI hook runs before the xdist and later again within every worker
-    validations.validate_env_variables()
+    validations.validate_env_variables(config)
     validations.validate_command_line_args(config)
 
     config.addinivalue_line(
