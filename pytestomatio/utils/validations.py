@@ -2,9 +2,10 @@ import os
 from pytest import Config
 
 
-def validate_env_variables():
-    if os.getenv('TESTOMATIO') is None:
-        raise ValueError('TESTOMATIO env variable is not set')
+def validate_env_variables(config: Config):
+    if config.getoption('testomatio') and config.getoption('testomatio').lower() in ('sync', 'report', 'remove'):
+        if os.getenv('TESTOMATIO') is None:
+            raise ValueError('TESTOMATIO env variable is not set')
 
     # if os.getenv('TESTOMATIO_SHARED_RUN') and not os.getenv('TESTOMATIO_TITLE'):
     #     raise ValueError('TESTOMATIO_SHARED_RUN can only be used together with TESTOMATIO_TITLE')

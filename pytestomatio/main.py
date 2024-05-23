@@ -1,6 +1,6 @@
 import os, pytest, logging, json
 
-from pytest import Parser, Session, Config, Item, CallInfo, fixture, FixtureRequest
+from pytest import Parser, Session, Config, Item, CallInfo, hookimpl
 from pytestomatio.connect.connector import Connector
 from pytestomatio.decor.decorator_updater import update_tests
 from pytestomatio.testomatio.testRunConfig import TestRunConfig
@@ -11,7 +11,7 @@ from pytestomatio.utils.helper import add_and_enrich_tests, get_test_mapping, co
 from pytestomatio.utils.parser_setup import parser_options
 from pytestomatio.utils import helper
 from pytestomatio.utils import validations
-import multiprocessing
+from xdist.plugin import is_xdist_controller, get_xdist_worker_id
 
 log = logging.getLogger(__name__)
 log.setLevel('INFO')
@@ -21,24 +21,8 @@ decorator_name = 'testomatio'
 testomatio = 'testomatio'
 
 
-@fixture(autouse=True)
-def testomatio_skip_test_fixture(request: FixtureRequest):
-    if request.config.getoption(testomatio) and request.config.getoption(testomatio).lower() in ['sync', 'remove',
-                                                                                                 'debug']:
-        pytest.skip("Skipping this test because of some condition")
-
-
 def pytest_addoption(parser: Parser) -> None:
     parser_options(parser, testomatio)
-
-
-#
-# def pytest_xdist_setupnodes(config, specs):
-#     pass
-#
-#
-# def pytest_xdist_node_collection_finished(node, ids):
-#     pass
 
 
 def pytest_configure(config: Config):
@@ -85,10 +69,12 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                 )
                 testomatio_tests = pytest.testomatio.connector.get_tests(meta)
                 add_and_enrich_tests(meta, test_files, test_names, testomatio_tests, decorator_name)
+                pytest.exit('Sync completed without test execution')
             case 'remove':
                 mapping = get_test_mapping(meta)
                 for test_file in test_files:
                     update_tests(test_file, mapping, test_names, decorator_name, remove=True)
+                pytest.exit('Sync completed without test execution')
             case 'report':
                 # assuming run already created in pytest_configure hook
                 run: TestRunConfig = pytest.testomatio.test_run_config
@@ -114,6 +100,7 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                 with open(metadata_file, 'w') as file:
                     data = json.dumps([i.to_dict() for i in meta], indent=4)
                     file.write(data)
+                    pytest.exit('Debug file created. Exiting...')
             case _:
                 pytest.exit('Unknown pytestomatio parameter. Use one of: add, remove, sync, debug')
 
@@ -189,18 +176,17 @@ def pytest_runtest_logfinish(nodeid, location):
     pytest.testomatio.test_run_config.status_request = {}
 
 
-def pytest_sessionfinish(session: Session, exitstatus: int):
+@hookimpl(tryfirst=True)
+def pytest_testnodedown(node, error):
     run = pytest.testomatio.test_run_config
     if run.test_run_id:
         run.lock.unlock()
-        is_last = run.lock.clear_run_id()
+        pytest.testomatio.connector.finish_test_run(run.test_run_id)
+
+
+@hookimpl(trylast=True)
+def pytest_sessionfinish(session: Session, exitstatus: int):
+    run = pytest.testomatio.test_run_config
+    if run.test_run_id and is_xdist_controller(session):
+        run.lock.clear_run_id()
         pytest.testomatio.connector.finish_test_run(run.test_run_id, True)
-
-
-# @pytest.fixture(scope='session')
-# def final_worker_standing():
-#     yield
-#     run = pytest.testomatio.test_run_config
-#     if run.test_run_id:
-#         is_last = run.lock.clear_run_id()
-#         pytest.testomatio.connector.finish_test_run(run.test_run_id, is_last)

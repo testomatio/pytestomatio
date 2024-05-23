@@ -10,13 +10,14 @@ help_text = """
 
 
 def parser_options(parser: Parser, testomatio='testomatio') -> None:
-    parser.addoption(f'--{testomatio}',
+    group = parser.getgroup(testomatio, 'synchronise and connect test with testomat.io')
+    group.addoption(f'--{testomatio}',
                      action='store',
                      help=help_text)
-    parser.addoption(f'--testRunEnv',
+    group.addoption(f'--testRunEnv',
                      action='store',
                      help=f'specify test run environment for testomat.io. Works only with --testomatio sync')
-    parser.addoption(f'--create',
+    group.addoption(f'--create',
                      action='store_true',
                      default=False,
                      dest="create",
@@ -26,7 +27,7 @@ def parser_options(parser: Parser, testomatio='testomatio') -> None:
                         Use --testomatio sync together with --create option to enable this behavior.
                         """
                      )
-    parser.addoption(f'--no-empty',
+    group.addoption(f'--no-empty',
                      action='store_true',
                      default=False,
                      dest="no_empty",
@@ -36,7 +37,7 @@ def parser_options(parser: Parser, testomatio='testomatio') -> None:
                         Use --testomatio sync together with --no-empty option to clean them up after import.
                         """
                      )
-    parser.addoption(f'--no-detach',
+    group.addoption(f'--no-detach',
                      action='store_true',
                      default=False,
                      dest="no_detach",
@@ -47,7 +48,7 @@ def parser_options(parser: Parser, testomatio='testomatio') -> None:
                         To disable this behaviour and don\'t mark anything on detached on import use sync together with --no-detached option.
                         """
                      )
-    parser.addoption(f'--keep-structure',
+    group.addoption(f'--keep-structure',
                      action='store_true',
                      default=False,
                      dest="keep_structure",
@@ -56,7 +57,7 @@ def parser_options(parser: Parser, testomatio='testomatio') -> None:
                         Use --testomatio sync together with --structure option to enable this behaviour.
                         """
                      )
-    parser.addoption('--directory',
+    group.addoption('--directory',
                      default=None,
                      dest="directory",
                      help="""
