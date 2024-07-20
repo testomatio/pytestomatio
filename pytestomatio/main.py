@@ -40,6 +40,10 @@ def pytest_configure(config: Config):
         url = config.getini('testomatio_url')
         project = os.environ.get('TESTOMATIO')
 
+        run_id = os.environ.get('TESTOMATIO_RUN')
+        if run_id:
+            pytest.testomatio.test_run_config.test_run_id = run_id
+
         pytest.testomatio.connector = Connector(url, project)
         run_env = config.getoption('testRunEnv')
         if run_env:
