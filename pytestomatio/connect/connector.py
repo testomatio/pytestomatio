@@ -75,7 +75,7 @@ class Connector:
             "group_title": group_title,
             "env": env,
             "label": label,
-            "parallel": True,
+            "parallel": parallel,
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
         print('create_test_run', filtered_request)

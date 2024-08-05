@@ -1,5 +1,5 @@
 import os, pytest, logging, json
-
+import time
 from pytest import Parser, Session, Config, Item, CallInfo, hookimpl
 from pytestomatio.connect.connector import Connector
 from pytestomatio.decor.decorator_updater import update_tests
@@ -58,6 +58,8 @@ def pytest_configure(config: Config):
             pass
 
 
+
+
 def pytest_collection_modifyitems(session: Session, config: Config, items: list[Item]) -> None:
     if config.getoption(testomatio):
         meta, test_files, test_names = collect_tests(items)
@@ -84,6 +86,7 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                 run: TestRunConfig = pytest.testomatio.test_run_config
                 run.get_run_id()
 
+                # send update without status just to get artifact details from the server
                 run_details = pytest.testomatio.connector.update_test_run(**run.to_dict())
 
                 if run_details is None:
@@ -185,6 +188,7 @@ def pytest_unconfigure(config: Config):
     run: TestRunConfig = pytest.testomatio.test_run_config
     # for xdist - main process
     if not hasattr(config, 'workerinput'):
+        time.sleep(1)
         pytest.testomatio.connector.finish_test_run(run.test_run_id, True)
         run.clear_run_id()
 

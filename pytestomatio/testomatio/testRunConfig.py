@@ -5,7 +5,7 @@ from re import sub
 
 class TestRunConfig:
     def __init__(self, parallel: bool = True):
-        self.test_run_id = None,
+        self.test_run_id = None
         run = os.environ.get('TESTOMATIO_RUN')
         title = os.environ.get('TESTOMATIO_TITLE')
         run_or_title = run if run else title
@@ -15,7 +15,7 @@ class TestRunConfig:
         self.group_title = os.environ.get('TESTOMATIO_RUNGROUP_TITLE')
         self.parallel = parallel
         # stands for run with shards
-        self.shared_run = self.test_run_id is not None
+        self.shared_run = run_or_title is not None
         self.status_request = {}
 
     def to_dict(self) -> dict:
