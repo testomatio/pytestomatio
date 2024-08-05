@@ -1,29 +1,22 @@
+import os
 import datetime as dt
-import uuid
 from re import sub
-from pytestomatio.utils.worker_sync import SyncLock
 
 
 class TestRunConfig:
-    def __init__(
-            self,
-            id: str = None,
-            title: str = None,
-            group_title: str = None,
-            environment: str = None,
-            label: str = None,
-            parallel: bool = True,
-            shared_run: bool = True
-    ):
-        self.test_run_id = id
-        self.title = title if title else 'test run at ' + dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        self.environment = self.safe_string_list(environment)
-        self.label = self.safe_string_list(label)
-        self.group_title = group_title
+    def __init__(self, parallel: bool = True):
+        self.test_run_id = None
+        run = os.environ.get('TESTOMATIO_RUN')
+        title = os.environ.get('TESTOMATIO_TITLE')
+        run_or_title = run if run else title
+        self.title = run_or_title if run_or_title else 'test run at ' + dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.environment = self.safe_string_list(os.environ.get('TESTOMATIO_ENV'))
+        self.label = self.safe_string_list(os.environ.get('TESTOMATIO_LABEL'))
+        self.group_title = os.environ.get('TESTOMATIO_RUNGROUP_TITLE')
         self.parallel = parallel
-        self.shared_run = shared_run
+        # stands for run with shards
+        self.shared_run = run_or_title is not None
         self.status_request = {}
-        self.lock = SyncLock()
 
     def to_dict(self) -> dict:
         result = dict()
@@ -44,3 +37,21 @@ class TestRunConfig:
         if not param:
             return None
         return ",".join([sub(r"\s", "", part) for part in param.split(',')])
+
+    def save_run_id(self, run_id: str) -> None:
+        self.test_run_id = run_id
+        with open('.temp_test_run_id', 'w') as f:
+            f.write(run_id)
+
+    def get_run_id(self) -> str or None:
+        if self.test_run_id:
+            return self.test_run_id
+        if os.path.exists('.temp_test_run_id'):
+            with open('.temp_test_run_id', 'r') as f:
+                self.test_run_id = f.read()
+                return self.test_run_id
+        return None
+
+    def clear_run_id(self) -> None:
+        if os.path.exists('.temp_test_run_id'):
+            os.remove('.temp_test_run_id')

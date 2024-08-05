@@ -75,7 +75,7 @@ class Connector:
             "group_title": group_title,
             "env": env,
             "label": label,
-            "parallel": True,
+            "parallel": parallel,
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
         print('create_test_run', filtered_request)
@@ -95,15 +95,15 @@ class Connector:
             log.info(f'Test run created {response.json()["uid"]}')
             return response.json()
 
-    def update_test_run(self, id: str, title: str, group_title, env: str, label: str, shared_run: bool,
-                        parallel) -> dict | None:
+    def update_test_run(self, id: str, title: str, group_title,
+                        env: str, label: str, shared_run: bool, parallel) -> dict | None:
         request = {
             "api_key": self.api_key,
             "title": title,
             "group_title": group_title,
             # "env": env, TODO: enabled when bug with 500 response fixed
             # "label": label, TODO: enabled when bug with 500 response fixed
-            "parallel": True,
+            "parallel": parallel,
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
 

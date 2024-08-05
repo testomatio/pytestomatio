@@ -1,5 +1,5 @@
 import os, pytest, logging, json
-
+import time
 from pytest import Parser, Session, Config, Item, CallInfo, hookimpl
 from pytestomatio.connect.connector import Connector
 from pytestomatio.decor.decorator_updater import update_tests
@@ -26,32 +26,38 @@ def pytest_addoption(parser: Parser) -> None:
 
 
 def pytest_configure(config: Config):
-    #  FYI hook runs before the xdist and later again within every worker
-    validations.validate_env_variables(config)
-    validations.validate_command_line_args(config)
-
     config.addinivalue_line(
         "markers", "testomatio(arg): built in marker to connect test case with testomat.io by unique id"
     )
 
-    pytest.testomatio = Testomatio(TestRunConfig(**helper.read_env_test_run_cfg()))
+    option = validations.validate_option(config)
+    if option == 'debug':
+        return
 
-    if config.getoption(testomatio) and config.getoption(testomatio).lower() in ('sync', 'report', 'remove'):
-        url = config.getini('testomatio_url')
-        project = os.environ.get('TESTOMATIO')
+    is_parallel = config.getoption('numprocesses') is not None
 
-        pytest.testomatio.connector = Connector(url, project)
-        run_env = config.getoption('testRunEnv')
-        if run_env:
-            pytest.testomatio.test_run_config.set_env(run_env)
+    pytest.testomatio = Testomatio(TestRunConfig(is_parallel))
+
+    url = config.getini('testomatio_url')
+    project = os.environ.get('TESTOMATIO')
+
+    pytest.testomatio.connector = Connector(url, project)
+    run_env = config.getoption('testRunEnv')
+    if run_env:
+        pytest.testomatio.test_run_config.set_env(run_env)
 
     if config.getoption(testomatio) and config.getoption(testomatio).lower() == 'report':
         run: TestRunConfig = pytest.testomatio.test_run_config
-        if run.lock.get_run_id() is None:
+
+        # for xdist - main process
+        if not hasattr(config, 'workerinput'):
             run_details = pytest.testomatio.connector.create_test_run(**run.to_dict())
-            run.lock.save_run_id(run_details.get('uid'))
+            run.save_run_id(run_details.get('uid'))
         else:
-            run.test_run_id = run.lock.get_run_id()
+            # for xdist - worker process - do nothing
+            pass
+
+
 
 
 def pytest_collection_modifyitems(session: Session, config: Config, items: list[Item]) -> None:
@@ -76,16 +82,15 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                     update_tests(test_file, mapping, test_names, decorator_name, remove=True)
                 pytest.exit('Sync completed without test execution')
             case 'report':
-                # assuming run already created in pytest_configure hook
+                # for xdist workers - get run id from the main process
                 run: TestRunConfig = pytest.testomatio.test_run_config
-                run.test_run_id = run.lock.get_run_id()
-                # lock file here as it runs in the worker
-                run.lock.lock()
+                run.get_run_id()
+
+                # send update without status just to get artifact details from the server
                 run_details = pytest.testomatio.connector.update_test_run(**run.to_dict())
 
                 if run_details is None:
-                    log.error('Test run failed to create. Reporting skipped')
-                    return
+                    raise Exception('Test run failed to create. Reporting skipped')
 
                 artifact = run_details.get('artifacts')
                 if artifact:
@@ -102,7 +107,7 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                     file.write(data)
                     pytest.exit('Debug file created. Exiting...')
             case _:
-                pytest.exit('Unknown pytestomatio parameter. Use one of: add, remove, sync, debug')
+                raise Exception('Unknown pytestomatio parameter. Use one of: add, remove, sync, debug')
 
 
 def pytest_runtest_makereport(item: Item, call: CallInfo):
@@ -176,17 +181,17 @@ def pytest_runtest_logfinish(nodeid, location):
     pytest.testomatio.test_run_config.status_request = {}
 
 
-@hookimpl(tryfirst=True)
-def pytest_testnodedown(node, error):
-    run = pytest.testomatio.test_run_config
-    if run.test_run_id:
-        run.lock.unlock()
-        pytest.testomatio.connector.finish_test_run(run.test_run_id)
+def pytest_unconfigure(config: Config):
+    if not hasattr(pytest, 'testomatio'):
+        return
 
-
-@hookimpl(trylast=True)
-def pytest_sessionfinish(session: Session, exitstatus: int):
-    run = pytest.testomatio.test_run_config
-    if run.test_run_id and is_xdist_controller(session):
-        run.lock.clear_run_id()
+    run: TestRunConfig = pytest.testomatio.test_run_config
+    # for xdist - main process
+    if not hasattr(config, 'workerinput'):
+        time.sleep(1)
         pytest.testomatio.connector.finish_test_run(run.test_run_id, True)
+        run.clear_run_id()
+
+    # for xdist - worker process
+    else:
+        pytest.testomatio.connector.finish_test_run(run.test_run_id, False)

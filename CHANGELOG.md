@@ -1,3 +1,10 @@
+## 2.6.1 (2024-08-05)
+
+### Feat
+
+- Fixed report final handling with pytest-xdist
+- Small code refactoring
+
 ## 2.5.0 (2024-03-11)
 
 ### Feat

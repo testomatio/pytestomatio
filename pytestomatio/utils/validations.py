@@ -1,17 +1,16 @@
 import os
+from typing import Literal
 from pytest import Config
 
 
-def validate_env_variables(config: Config):
-    if config.getoption('testomatio') and config.getoption('testomatio').lower() in ('sync', 'report', 'remove'):
+def validate_option(config: Config) -> Literal['sync', 'report', 'remove', 'debug', None]:
+    option = config.getoption('testomatio')
+    option = option.lower() if option else None
+    if option in ('sync', 'report', 'remove'):
         if os.getenv('TESTOMATIO') is None:
             raise ValueError('TESTOMATIO env variable is not set')
 
-    # if os.getenv('TESTOMATIO_SHARED_RUN') and not os.getenv('TESTOMATIO_TITLE'):
-    #     raise ValueError('TESTOMATIO_SHARED_RUN can only be used together with TESTOMATIO_TITLE')
+    if config.getoption('numprocesses') and option in ('sync', 'debug', 'remove'):
+        raise ValueError('Testomatio does not support parallel sync, remove or report. Remove --numprocesses option')
 
-
-def validate_command_line_args(config: Config):
-    if config.getoption('numprocesses'):
-        if config.getoption('testomatio') and config.getoption('testomatio').lower() in ('sync', 'debug', 'remove'):
-            raise ValueError('Testomatio does not support parallel sync, remove or debug. Remove --numprocesses option')
+    return option
