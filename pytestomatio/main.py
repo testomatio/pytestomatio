@@ -185,9 +185,9 @@ def pytest_unconfigure(config: Config):
     run: TestRunConfig = pytest.testomatio.test_run_config
     # for xdist - main process
     if not hasattr(config, 'workerinput'):
-        pytest.testomatio.connector.finish_test_run(run.test_run_id, False)
+        pytest.testomatio.connector.finish_test_run(run.test_run_id, True)
         run.clear_run_id()
 
     # for xdist - worker process
     else:
-        pytest.testomatio.connector.finish_test_run(run.test_run_id, True)
+        pytest.testomatio.connector.finish_test_run(run.test_run_id, False)

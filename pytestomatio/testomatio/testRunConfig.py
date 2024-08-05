@@ -6,8 +6,10 @@ from re import sub
 class TestRunConfig:
     def __init__(self, parallel: bool = True):
         self.test_run_id = None,
-        title = os.environ.get('TESTOMATIO_RUN')
-        self.title = title if title else 'test run at ' + dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        run = os.environ.get('TESTOMATIO_RUN')
+        title = os.environ.get('TESTOMATIO_TITLE')
+        run_or_title = run if run else title
+        self.title = run_or_title if run_or_title else 'test run at ' + dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.environment = self.safe_string_list(os.environ.get('TESTOMATIO_ENV'))
         self.label = self.safe_string_list(os.environ.get('TESTOMATIO_LABEL'))
         self.group_title = os.environ.get('TESTOMATIO_RUNGROUP_TITLE')
