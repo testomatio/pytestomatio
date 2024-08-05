@@ -4,23 +4,16 @@ from re import sub
 
 
 class TestRunConfig:
-    def __init__(
-            self,
-            id: str = None,
-            title: str = None,
-            group_title: str = None,
-            environment: str = None,
-            label: str = None,
-            parallel: bool = True,
-            shared_run: bool = True
-    ):
-        self.test_run_id = id
+    def __init__(self, parallel: bool = True):
+        self.test_run_id = None,
+        title = os.environ.get('TESTOMATIO_RUN')
         self.title = title if title else 'test run at ' + dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        self.environment = self.safe_string_list(environment)
-        self.label = self.safe_string_list(label)
-        self.group_title = group_title
+        self.environment = self.safe_string_list(os.environ.get('TESTOMATIO_ENV'))
+        self.label = self.safe_string_list(os.environ.get('TESTOMATIO_LABEL'))
+        self.group_title = os.environ.get('TESTOMATIO_RUNGROUP_TITLE')
         self.parallel = parallel
-        self.shared_run = shared_run
+        # stands for run with shards
+        self.shared_run = self.test_run_id is not None
         self.status_request = {}
 
     def to_dict(self) -> dict:

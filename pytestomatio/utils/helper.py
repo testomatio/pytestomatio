@@ -83,18 +83,6 @@ def add_and_enrich_tests(meta: list[TestItem], test_files: set,
         update_tests(test_file, mapping, test_names, decorator_name)
 
 
-
-def read_env_test_run_cfg() -> dict:
-    return {
-        'id': os.environ.get('TESTOMATIO_RUN'),
-        'title': os.environ.get('TESTOMATIO_TITLE'),
-        'group_title': os.environ.get('TESTOMATIO_RUNGROUP_TITLE'),
-        'environment': os.environ.get('TESTOMATIO_ENV'),
-        'shared_run': os.environ.get('TESTOMATIO_SHARED_RUN', default='false').lower() in ['true', '1'],
-        'label': os.environ.get('TESTOMATIO_LABEL'),
-    }
-
-
 def read_env_s3_keys(artifact: dict) -> tuple:
     return (
         os.environ.get('ACCESS_KEY_ID') or artifact.get('ACCESS_KEY_ID'),

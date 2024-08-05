@@ -34,7 +34,9 @@ def pytest_configure(config: Config):
     if option == 'debug':
         return
 
-    pytest.testomatio = Testomatio(TestRunConfig(**helper.read_env_test_run_cfg()))
+    is_parallel = config.getoption('numprocesses') is not None
+
+    pytest.testomatio = Testomatio(TestRunConfig(is_parallel))
 
     url = config.getini('testomatio_url')
     project = os.environ.get('TESTOMATIO')
@@ -177,12 +179,15 @@ def pytest_runtest_logfinish(nodeid, location):
 
 
 def pytest_unconfigure(config: Config):
+    if not hasattr(pytest, 'testomatio'):
+        return
+
     run: TestRunConfig = pytest.testomatio.test_run_config
     # for xdist - main process
     if not hasattr(config, 'workerinput'):
-        pytest.testomatio.connector.finish_test_run(run.test_run_id, True)
+        pytest.testomatio.connector.finish_test_run(run.test_run_id, False)
         run.clear_run_id()
 
     # for xdist - worker process
     else:
-        pytest.testomatio.connector.finish_test_run(run.test_run_id)
+        pytest.testomatio.connector.finish_test_run(run.test_run_id, True)
