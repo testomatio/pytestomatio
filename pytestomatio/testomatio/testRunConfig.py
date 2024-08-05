@@ -1,7 +1,6 @@
+import os
 import datetime as dt
-import uuid
 from re import sub
-from pytestomatio.utils.worker_sync import SyncLock
 
 
 class TestRunConfig:
@@ -23,7 +22,6 @@ class TestRunConfig:
         self.parallel = parallel
         self.shared_run = shared_run
         self.status_request = {}
-        self.lock = SyncLock()
 
     def to_dict(self) -> dict:
         result = dict()
@@ -44,3 +42,21 @@ class TestRunConfig:
         if not param:
             return None
         return ",".join([sub(r"\s", "", part) for part in param.split(',')])
+
+    def save_run_id(self, run_id: str) -> None:
+        self.test_run_id = run_id
+        with open('.temp_test_run_id', 'w') as f:
+            f.write(run_id)
+
+    def get_run_id(self) -> str or None:
+        if self.test_run_id:
+            return self.test_run_id
+        if os.path.exists('.temp_test_run_id'):
+            with open('.temp_test_run_id', 'r') as f:
+                self.test_run_id = f.read()
+                return self.test_run_id
+        return None
+
+    def clear_run_id(self) -> None:
+        if os.path.exists('.temp_test_run_id'):
+            os.remove('.temp_test_run_id')
