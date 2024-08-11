@@ -42,28 +42,18 @@ Run pytest with debug parameter to get test data collected in metadata.json file
 pytest --testomatio debug
 ```
 
-## configuration
-Create environment variable `TESTOMATIO` and set your testomat.io API key.
-```bash
-TESTOMATIO=<key>
-```
-Select code style by set environment variable `TESTOMATIO_CODE_STYLE`. Available options are 'default' and 'pep8'  
-If you are not sure, don't set this variable. Default value is 'default'
-```bash
-TESTOMATIO_CODE_STYLE=pep8
-```
-Set test run name in Testomat.io
-```bash
-TESTOMATIO_RUN=test_run_name
-```
-Set test run environment in Testomat.io
-```bash
-TESTOMATIO_ENV=linux,chrome,1920x1080
-```
-Set test run labels in Testomat.io
-TESTOMATIO_LABELS=smoke,regression
+## Configuration with environment variables
+You can use environment variable to control certain features of testomat.io
 
-```bash
+| Env variable |  What it does | Examples |
+|--------|--------|-------|
+| TESTOMATIO| Provides token for pytestomatio to access and push data to testomat.io | TESTOMATIO=tstmt_***** pytest --testomatio sync|
+|TESTOMATIO_RUN|Name of a test run to create on testomat.io|TESTOMATIO_RUN="Smoke test" pytest --testomatio report|
+|TESTOMATIO_RUNGROUP_TITLE| Create a group (folder) for a test run | TESTOMATIO_RUNGROUP_TITLE="Release 2.0" pytest --testomatio report|
+|TESTOMATIO_ENV|Assign environment to a test run |TESTOMATIO_ENV="linux,chrome,1920x1080" pytest --testomatio report|
+|TESTOMATIO_LABELS|Assign labels to a test run |TESTOMATIO_ENV="smoke,regression" pytest --testomatio report|
+|TESTOMATIO_SYNC_LABELS|Assign labels to a test case when you synchronise test from code with testomat.io|TESTOMATIO_SYNC_LABELS="number:1,list:one,standalone" pytest --testomatio report|
+|TESTOMATIO_CODE_STYLE|If you are not sure, don't set this variable. Default value is 'default'|TESTOMATIO_CODE_STYLE=pep8 pytest --testomatio sync|
 
 
 ### Run groups parameter
