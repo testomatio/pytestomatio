@@ -1,3 +1,16 @@
+## 2.8.1rc0 (2024-08-11)
+
+### Feat
+
+- Pytestomatio sends test executor url to Testomatio test run (on CI)
+- Allow user to asign label at test synchronisation
+- Allow filtering tests by ids when running test execution
+
+### Fix
+
+- Handle pytest.skip() so that test status on testomatio is valid
+- fix dependencies and gitignore
+
 ## 2.6.1 (2024-08-05)
 
 ### Feat
