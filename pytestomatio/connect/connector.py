@@ -2,7 +2,8 @@ import requests
 from requests.exceptions import HTTPError, ConnectionError
 import logging
 from os.path import join, normpath
-
+from os import getenv
+from pytestomatio.utils.helper import safe_string_list
 from pytestomatio.testing.testItem import TestItem
 
 log = logging.getLogger('pytestomatio')
@@ -44,6 +45,7 @@ class Connector:
                 "code": test.source_code,
                 "file": test.file_path if structure else (
                     test.file_name if directory is None else normpath(join(directory, test.file_name))),
+                "labels": safe_string_list(getenv('TESTOMATIO_SYNC_LABELS')),
             })
 
         try:

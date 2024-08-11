@@ -1,6 +1,6 @@
 import os
 import datetime as dt
-from re import sub
+from pytestomatio.utils.helper import safe_string_list
 
 
 class TestRunConfig:
@@ -10,8 +10,8 @@ class TestRunConfig:
         title = os.environ.get('TESTOMATIO_TITLE')
         run_or_title = run if run else title
         self.title = run_or_title if run_or_title else 'test run at ' + dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        self.environment = self.safe_string_list(os.environ.get('TESTOMATIO_ENV'))
-        self.label = self.safe_string_list(os.environ.get('TESTOMATIO_LABEL'))
+        self.environment = safe_string_list(os.environ.get('TESTOMATIO_ENV'))
+        self.label = safe_string_list(os.environ.get('TESTOMATIO_LABEL'))
         self.group_title = os.environ.get('TESTOMATIO_RUNGROUP_TITLE')
         self.parallel = parallel
         # stands for run with shards
@@ -31,12 +31,7 @@ class TestRunConfig:
         return result
 
     def set_env(self, env: str) -> None:
-        self.environment = self.safe_string_list(env)
-
-    def safe_string_list(self, param: str):
-        if not param:
-            return None
-        return ",".join([sub(r"\s", "", part) for part in param.split(',')])
+        self.environment = safe_string_list(env)
 
     def save_run_id(self, run_id: str) -> None:
         self.test_run_id = run_id
