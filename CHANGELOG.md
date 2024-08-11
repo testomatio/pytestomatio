@@ -1,3 +1,9 @@
+## 2.8.1rc1 (2024-08-11)
+
+### Fix
+
+- Accept testid provided by testomatio before test starts
+
 ## 2.8.1rc0 (2024-08-11)
 
 ### Feat
