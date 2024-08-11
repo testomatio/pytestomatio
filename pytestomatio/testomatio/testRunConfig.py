@@ -17,6 +17,7 @@ class TestRunConfig:
         # stands for run with shards
         self.shared_run = run_or_title is not None
         self.status_request = {}
+        self.build_url = self.resolve_build_url()
 
     def to_dict(self) -> dict:
         result = dict()
@@ -28,6 +29,7 @@ class TestRunConfig:
         result['label'] = self.label
         result['parallel'] = self.parallel
         result['shared_run'] = self.shared_run
+        result['ci_build_url'] = self.build_url
         return result
 
     def set_env(self, env: str) -> None:
@@ -50,3 +52,25 @@ class TestRunConfig:
     def clear_run_id(self) -> None:
         if os.path.exists('.temp_test_run_id'):
             os.remove('.temp_test_run_id')
+
+    def resolve_build_url(self) -> str or None:
+        build_url = os.getenv('BUILD_URL') or os.getenv('CI_JOB_URL') or os.getenv('CIRCLE_BUILD_URL')
+
+        # GitHub Actions URL
+        if not build_url and os.getenv('GITHUB_RUN_ID'):
+            github_server_url = os.getenv('GITHUB_SERVER_URL')
+            github_repository = os.getenv('GITHUB_REPOSITORY')
+            github_run_id = os.getenv('GITHUB_RUN_ID')
+            build_url = f"{github_server_url}/{github_repository}/actions/runs/{github_run_id}"
+
+        # Azure DevOps URL
+        if not build_url and os.getenv('SYSTEM_TEAMFOUNDATIONCOLLECTIONURI'):
+            collection_uri = os.getenv('SYSTEM_TEAMFOUNDATIONCOLLECTIONURI')
+            project = os.getenv('SYSTEM_TEAMPROJECT')
+            build_id = os.getenv('BUILD_BUILDID')
+            build_url = f"{collection_uri}/{project}/_build/results?buildId={build_id}"
+
+        if build_url and not build_url.startswith('http'):
+            build_url = None
+
+        return build_url

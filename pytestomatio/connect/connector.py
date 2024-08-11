@@ -70,7 +70,7 @@ class Connector:
         response = self.session.get(f'{self.base_url}/api/test_data?api_key={self.api_key}')
         return response.json()
 
-    def create_test_run(self, title: str, group_title, env: str, label: str, shared_run: bool, parallel) -> dict | None:
+    def create_test_run(self, title: str, group_title, env: str, label: str, shared_run: bool, parallel, ci_build_url: str) -> dict | None:
         request = {
             "api_key": self.api_key,
             "title": title,
@@ -78,9 +78,9 @@ class Connector:
             "env": env,
             "label": label,
             "parallel": parallel,
+            "ci_build_url": ci_build_url,
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
-        print('create_test_run', filtered_request)
         try:
             response = self.session.post(f'{self.base_url}/api/reporter', json=filtered_request)
         except ConnectionError:
@@ -98,7 +98,7 @@ class Connector:
             return response.json()
 
     def update_test_run(self, id: str, title: str, group_title,
-                        env: str, label: str, shared_run: bool, parallel) -> dict | None:
+                        env: str, label: str, shared_run: bool, parallel, ci_build_url: str) -> dict | None:
         request = {
             "api_key": self.api_key,
             "title": title,
@@ -106,6 +106,7 @@ class Connector:
             # "env": env, TODO: enabled when bug with 500 response fixed
             # "label": label, TODO: enabled when bug with 500 response fixed
             "parallel": parallel,
+            "ci_build_url": ci_build_url,
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
 
