@@ -49,6 +49,7 @@ You can use environment variable to control certain features of testomat.io
 |--------|--------|-------|
 | TESTOMATIO| Provides token for pytestomatio to access and push data to testomat.io | TESTOMATIO=tstmt_***** pytest --testomatio sync|
 |TESTOMATIO_RUN|Name of a test run to create on testomat.io|TESTOMATIO_RUN="Smoke test" pytest --testomatio report|
+|TESTOMATIO_RUN_ID| Id of existing test run to use for sending test results to | TESTOMATIO_RUN_ID=98dfas0 pytest --testomatio report |
 |TESTOMATIO_RUNGROUP_TITLE| Create a group (folder) for a test run | TESTOMATIO_RUNGROUP_TITLE="Release 2.0" pytest --testomatio report|
 |TESTOMATIO_ENV|Assign environment to a test run |TESTOMATIO_ENV="linux,chrome,1920x1080" pytest --testomatio report|
 |TESTOMATIO_LABELS|Assign labels to a test run |TESTOMATIO_ENV="smoke,regression" pytest --testomatio report|

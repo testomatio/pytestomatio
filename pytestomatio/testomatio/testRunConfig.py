@@ -5,14 +5,14 @@ from pytestomatio.utils.helper import safe_string_list
 
 class TestRunConfig:
     def __init__(self, parallel: bool = True):
-        self.test_run_id = None
-        run = os.environ.get('TESTOMATIO_RUN')
-        title = os.environ.get('TESTOMATIO_TITLE')
+        self.test_run_id = os.environ.get('TESTOMATIO_RUN_ID') or None
+        run = os.environ.get('TESTOMATIO_RUN') or None
+        title = os.environ.get('TESTOMATIO_TITLE') or None
         run_or_title = run if run else title
         self.title = run_or_title if run_or_title else 'test run at ' + dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.environment = safe_string_list(os.environ.get('TESTOMATIO_ENV'))
         self.label = safe_string_list(os.environ.get('TESTOMATIO_LABEL'))
-        self.group_title = os.environ.get('TESTOMATIO_RUNGROUP_TITLE')
+        self.group_title = os.environ.get('TESTOMATIO_RUNGROUP_TITLE') or None
         self.parallel = parallel
         # stands for run with shards
         self.shared_run = run_or_title is not None

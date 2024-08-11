@@ -51,8 +51,11 @@ def pytest_configure(config: Config):
 
         # for xdist - main process
         if not hasattr(config, 'workerinput'):
-            run_details = pytest.testomatio.connector.create_test_run(**run.to_dict())
-            run.save_run_id(run_details.get('uid'))
+            run_id = pytest.testomatio.test_run_config.test_run_id
+            if not run_id:
+                run_details = pytest.testomatio.connector.create_test_run(**run.to_dict())
+                run_id = run_details.get('uid')
+            run.save_run_id(run_id)
         else:
             # for xdist - worker process - do nothing
             pass
