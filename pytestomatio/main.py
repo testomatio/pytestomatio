@@ -160,21 +160,18 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         'code': None,
     }
 
-    if call.when == 'setup':
+    if call.when in ['setup', 'call']:
         if call.excinfo is not None:
             if call.excinfo.typename == 'Skipped':
                 request['status'] = 'skipped'
+                request['message'] = str(call.excinfo.value)
             else:
                 request['message'] = str(call.excinfo.value)
                 request['stack'] = '\n'.join((str(tb) for tb in call.excinfo.traceback))
                 request['status'] = 'failed'
-    if call.when == 'call':
-        if call.excinfo is not None:
-            request['message'] = str(call.excinfo.value)
-            request['stack'] = '\n'.join((str(tb) for tb in call.excinfo.traceback))
-            request['status'] = 'failed'
         else:
-            request['status'] = 'passed'
+            request['status'] = 'passed' if call.when == 'call' else request['status']
+
         if hasattr(item, 'callspec'):
             request['example'] = item.callspec.params
 

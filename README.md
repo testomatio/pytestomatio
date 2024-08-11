@@ -196,9 +196,6 @@ def test_example():
 
 ## TODO
 - Fix test duration
-- Require more back references from testomatio
-- pytest.skip should behave as @pytest.mark.skip
-- Refactor test run and make run url available
 
 ## Contribution
 1. `pip install -e .`
