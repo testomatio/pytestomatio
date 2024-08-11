@@ -179,11 +179,13 @@ def test_example():
 
 | Action |  Compatibility | Method |
 |--------|--------|-------|
+| Report tests to testomat.io | complete | `pytest --testomatio report` |
+| Filter test by id to run | complete | `pytest --testomatio report --test-id="T00C73028\|T00C73029"` |
 | Importing test into testomat.io | complete | `pytest --testomatio sync` |
 | Exclude hook code of a test | N/A | N/A |
 | Include line number code of a test | N/A | N/A |
 | Import Parametrized Tests | complete | default behaviour |
-| Disable Detached Tests | complete | `pytest --testomatio sync --no-detached` |
+| Disable Detached Tests | complete | `pytest --testomatio sync --no-detach` |
 | Synchronous Import | complete | default behaviour |
 | Auto-assign Test IDs in Source Code | complete | default behaviour |
 | Keep Test IDs Between Projects | complete | `pytest --testomatio sync --create` |
@@ -191,7 +193,7 @@ def test_example():
 | Import Into a Branch | N/A | N/A |
 | Keep Structure of Source Code | complete | `pytest --testomatio sync --keep-structure` |
 | Delete Empty Suites | complete | `pytest --testomatio sync --no-empty` |
-| Import Into a Specific Folder | complete | `pytest --testomatio --directory "Windows\smoke"` |
+| Import Into a Specific Folder | complete | `pytest --testomatio sync --directory "Windows\smoke"` |
 | Debugging | parity | `pytest --testomatio debug` |
 
 
