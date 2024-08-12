@@ -55,6 +55,7 @@ You can use environment variable to control certain features of testomat.io
 |TESTOMATIO_LABELS|Assign labels to a test run |TESTOMATIO_ENV="smoke,regression" pytest --testomatio report|
 |TESTOMATIO_SYNC_LABELS|Assign labels to a test case when you synchronise test from code with testomat.io|TESTOMATIO_SYNC_LABELS="number:1,list:one,standalone" pytest --testomatio report|
 |TESTOMATIO_CODE_STYLE|If you are not sure, don't set this variable. Default value is 'default'|TESTOMATIO_CODE_STYLE=pep8 pytest --testomatio sync|
+|TESTOMATIO_CI_DOWNSTREAM|If set, pytestomatio will not set or update build url for a test run. This is useful in scenarios where build url is already set in the test run by Testomat.io for test runs that a created directly on Testomat.io.|TESTOMATIO_CI_DOWNSTREAM=true pytest --testomatio report|
 
 
 ### Run groups parameter

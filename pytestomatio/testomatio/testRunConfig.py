@@ -1,6 +1,7 @@
 import os
 import datetime as dt
 from pytestomatio.utils.helper import safe_string_list
+from typing import Optional
 
 
 class TestRunConfig:
@@ -40,7 +41,7 @@ class TestRunConfig:
         with open('.temp_test_run_id', 'w') as f:
             f.write(run_id)
 
-    def get_run_id(self) -> str or None:
+    def get_run_id(self) -> Optional[str]:
         if self.test_run_id:
             return self.test_run_id
         if os.path.exists('.temp_test_run_id'):
@@ -53,7 +54,10 @@ class TestRunConfig:
         if os.path.exists('.temp_test_run_id'):
             os.remove('.temp_test_run_id')
 
-    def resolve_build_url(self) -> str or None:
+    def resolve_build_url(self) -> Optional[str]:
+        # You might not always want the build URL to change in the Testomat.io test run
+        if os.getenv('TESTOMATIO_CI_DOWNSTREAM'): 
+            return None
         build_url = os.getenv('BUILD_URL') or os.getenv('CI_JOB_URL') or os.getenv('CIRCLE_BUILD_URL')
 
         # GitHub Actions URL
