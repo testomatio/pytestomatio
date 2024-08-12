@@ -71,6 +71,8 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
     test_ids_option = config.getoption("test_id")
     if test_ids_option:
         test_ids = test_ids_option.split("|")
+        # Remove "@" from the start of test IDs if present
+        test_ids = [test_id.lstrip("@") for test_id in test_ids]
         selected_items = []
         deselected_items = []
 
