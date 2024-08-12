@@ -1,3 +1,13 @@
+## 2.8.1rc2 (2024-08-12)
+
+### Feat
+
+- Provide an option to not update build URL in a test run
+
+### Fix
+
+- process test id that might start with @
+
 ## 2.8.1rc1 (2024-08-11)
 
 ### Fix
