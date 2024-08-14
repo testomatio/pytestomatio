@@ -1,3 +1,32 @@
+## 2.8.1rc2 (2024-08-12)
+
+### Feat
+
+- Provide an option to not update build URL in a test run
+
+### Fix
+
+- process test id that might start with @
+
+## 2.8.1rc1 (2024-08-11)
+
+### Fix
+
+- Accept testid provided by testomatio before test starts
+
+## 2.8.1rc0 (2024-08-11)
+
+### Feat
+
+- Pytestomatio sends test executor url to Testomatio test run (on CI)
+- Allow user to asign label at test synchronisation
+- Allow filtering tests by ids when running test execution
+
+### Fix
+
+- Handle pytest.skip() so that test status on testomatio is valid
+- fix dependencies and gitignore
+
 ## 2.6.1 (2024-08-05)
 
 ### Feat

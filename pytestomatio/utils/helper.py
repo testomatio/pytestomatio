@@ -5,6 +5,7 @@ from pytestomatio.testomatio.testomat_item import TestomatItem
 from pytestomatio.testing.testItem import TestItem
 from pytestomatio.decor.decorator_updater import update_tests
 from pytestomatio.testing.code_collector import get_functions_source_by_name
+from re import sub
 
 
 def collect_tests(items: list[Item]):
@@ -90,3 +91,8 @@ def read_env_s3_keys(artifact: dict) -> tuple:
         os.environ.get('ENDPOINT') or artifact.get('ENDPOINT'),
         os.environ.get('BUCKET') or artifact.get('BUCKET')
     )
+
+def safe_string_list(param: str):
+    if not param:
+        return None
+    return ",".join([sub(r"\s", "", part) for part in param.split(',')])

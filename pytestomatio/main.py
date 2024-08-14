@@ -51,8 +51,11 @@ def pytest_configure(config: Config):
 
         # for xdist - main process
         if not hasattr(config, 'workerinput'):
-            run_details = pytest.testomatio.connector.create_test_run(**run.to_dict())
-            run.save_run_id(run_details.get('uid'))
+            run_id = pytest.testomatio.test_run_config.test_run_id
+            if not run_id:
+                run_details = pytest.testomatio.connector.create_test_run(**run.to_dict())
+                run_id = run_details.get('uid')
+            run.save_run_id(run_id)
         else:
             # for xdist - worker process - do nothing
             pass
@@ -61,53 +64,77 @@ def pytest_configure(config: Config):
 
 
 def pytest_collection_modifyitems(session: Session, config: Config, items: list[Item]) -> None:
-    if config.getoption(testomatio):
-        meta, test_files, test_names = collect_tests(items)
-        match config.getoption(testomatio):
-            case 'sync':
-                pytest.testomatio.connector.load_tests(
-                    meta,
-                    no_empty=config.getoption('no_empty'),
-                    no_detach=config.getoption('no_detach'),
-                    structure=config.getoption('keep_structure'),
-                    create=config.getoption('create'),
-                    directory=config.getoption('directory')
-                )
-                testomatio_tests = pytest.testomatio.connector.get_tests(meta)
-                add_and_enrich_tests(meta, test_files, test_names, testomatio_tests, decorator_name)
-                pytest.exit('Sync completed without test execution')
-            case 'remove':
-                mapping = get_test_mapping(meta)
-                for test_file in test_files:
-                    update_tests(test_file, mapping, test_names, decorator_name, remove=True)
-                pytest.exit('Sync completed without test execution')
-            case 'report':
-                # for xdist workers - get run id from the main process
-                run: TestRunConfig = pytest.testomatio.test_run_config
-                run.get_run_id()
+    if config.getoption(testomatio) is None:
+        return
+    
+    # Filter by --test-ids if provided
+    test_ids_option = config.getoption("test_id")
+    if test_ids_option:
+        test_ids = test_ids_option.split("|")
+        # Remove "@" from the start of test IDs if present
+        test_ids = [test_id.lstrip("@") for test_id in test_ids]
+        selected_items = []
+        deselected_items = []
 
-                # send update without status just to get artifact details from the server
-                run_details = pytest.testomatio.connector.update_test_run(**run.to_dict())
+        for item in items:
+            # Check if the test has the marker with the ID we are looking for
+            for marker in item.iter_markers(name="testomatio"):
+                marker_id = marker.args[0].strip("@")  # Strip "@" from the marker argument
+                if marker_id in test_ids:
+                    selected_items.append(item)
+                    break
+            else:
+                deselected_items.append(item)
 
-                if run_details is None:
-                    raise Exception('Test run failed to create. Reporting skipped')
+        items[:] = selected_items
+        config.hook.pytest_deselected(items=deselected_items)
 
-                artifact = run_details.get('artifacts')
-                if artifact:
-                    s3_details = helper.read_env_s3_keys(artifact)
+    meta, test_files, test_names = collect_tests(items)
+    match config.getoption(testomatio):
+        case 'sync':
+            pytest.testomatio.connector.load_tests(
+                meta,
+                no_empty=config.getoption('no_empty'),
+                no_detach=config.getoption('no_detach'),
+                structure=config.getoption('keep_structure'),
+                create=config.getoption('create'),
+                directory=config.getoption('directory')
+            )
+            testomatio_tests = pytest.testomatio.connector.get_tests(meta)
+            add_and_enrich_tests(meta, test_files, test_names, testomatio_tests, decorator_name)
+            pytest.exit('Sync completed without test execution')
+        case 'remove':
+            mapping = get_test_mapping(meta)
+            for test_file in test_files:
+                update_tests(test_file, mapping, test_names, decorator_name, remove=True)
+            pytest.exit('Sync completed without test execution')
+        case 'report':
+            # for xdist workers - get run id from the main process
+            run: TestRunConfig = pytest.testomatio.test_run_config
+            run.get_run_id()
 
-                    if all(s3_details):
-                        pytest.testomatio.s3_connector = S3Connector(*s3_details)
-                        pytest.testomatio.s3_connector.login()
-                    else:
-                        pytest.testomatio.s3_connector = S3Connector()
-            case 'debug':
-                with open(metadata_file, 'w') as file:
-                    data = json.dumps([i.to_dict() for i in meta], indent=4)
-                    file.write(data)
-                    pytest.exit('Debug file created. Exiting...')
-            case _:
-                raise Exception('Unknown pytestomatio parameter. Use one of: add, remove, sync, debug')
+            # send update without status just to get artifact details from the server
+            run_details = pytest.testomatio.connector.update_test_run(**run.to_dict())
+
+            if run_details is None:
+                raise Exception('Test run failed to create. Reporting skipped')
+
+            artifact = run_details.get('artifacts')
+            if artifact:
+                s3_details = helper.read_env_s3_keys(artifact)
+
+                if all(s3_details):
+                    pytest.testomatio.s3_connector = S3Connector(*s3_details)
+                    pytest.testomatio.s3_connector.login()
+                else:
+                    pytest.testomatio.s3_connector = S3Connector()
+        case 'debug':
+            with open(metadata_file, 'w') as file:
+                data = json.dumps([i.to_dict() for i in meta], indent=4)
+                file.write(data)
+                pytest.exit('Debug file created. Exiting...')
+        case _:
+            raise Exception('Unknown pytestomatio parameter. Use one of: add, remove, sync, debug')
 
 
 def pytest_runtest_makereport(item: Item, call: CallInfo):
@@ -138,21 +165,18 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         'code': None,
     }
 
-    if call.when == 'setup':
+    if call.when in ['setup', 'call']:
         if call.excinfo is not None:
             if call.excinfo.typename == 'Skipped':
                 request['status'] = 'skipped'
+                request['message'] = str(call.excinfo.value)
             else:
                 request['message'] = str(call.excinfo.value)
                 request['stack'] = '\n'.join((str(tb) for tb in call.excinfo.traceback))
                 request['status'] = 'failed'
-    if call.when == 'call':
-        if call.excinfo is not None:
-            request['message'] = str(call.excinfo.value)
-            request['stack'] = '\n'.join((str(tb) for tb in call.excinfo.traceback))
-            request['status'] = 'failed'
         else:
-            request['status'] = 'passed'
+            request['status'] = 'passed' if call.when == 'call' else request['status']
+
         if hasattr(item, 'callspec'):
             request['example'] = item.callspec.params
 

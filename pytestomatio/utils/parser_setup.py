@@ -67,4 +67,11 @@ def parser_options(parser: Parser, testomatio='testomatio') -> None:
                         Note: --structure option takes precedence over --directory option. If both are used --structure will be used.
                         """
                      )
+    group.addoption('--test-id',
+                    default=None,
+                    dest="test_id",
+                    help="""
+                        help="Filter tests by Test IDs (e.g., single test id 'T00C73028' or multiply 'T00C73028|T00C73029')
+                        """
+                    )
     parser.addini('testomatio_url', 'testomat.io base url', default='https://app.testomat.io')

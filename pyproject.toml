@@ -13,7 +13,7 @@ version_provider = "pep621"
 update_changelog_on_bump = true
 [project]
 name = "pytestomatio"
-version = "2.6.1"
+version = "2.8.1rc2"
 
 dependencies = [
     "requests>=2.29.0",
@@ -22,6 +22,7 @@ dependencies = [
     "libcst==1.1.0",
     "commitizen>=3.18.1",
     "autopep8>=2.1.0",
+    "pytest-xdist>=3.6.1"
 ]
 
 authors = [
