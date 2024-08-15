@@ -34,9 +34,7 @@ def pytest_configure(config: Config):
     if option == 'debug':
         return
 
-    is_parallel = config.getoption('numprocesses') is not None
-
-    pytest.testomatio = Testomatio(TestRunConfig(is_parallel))
+    pytest.testomatio = Testomatio(TestRunConfig())
 
     url = config.getini('testomatio_url')
     project = os.environ.get('TESTOMATIO')

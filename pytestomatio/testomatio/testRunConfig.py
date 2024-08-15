@@ -5,7 +5,7 @@ from typing import Optional
 
 
 class TestRunConfig:
-    def __init__(self, parallel: bool = True):
+    def __init__(self):
         self.test_run_id = os.environ.get('TESTOMATIO_RUN_ID') or None
         run = os.environ.get('TESTOMATIO_RUN') or None
         title = os.environ.get('TESTOMATIO_TITLE') or None
@@ -14,7 +14,7 @@ class TestRunConfig:
         self.environment = safe_string_list(os.environ.get('TESTOMATIO_ENV'))
         self.label = safe_string_list(os.environ.get('TESTOMATIO_LABEL'))
         self.group_title = os.environ.get('TESTOMATIO_RUNGROUP_TITLE') or None
-        self.parallel = parallel
+        self.parallel = True
         # stands for run with shards
         self.shared_run = run_or_title is not None
         self.status_request = {}
