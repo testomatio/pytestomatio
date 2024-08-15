@@ -1,3 +1,9 @@
+## 2.8.2.dev2 (2024-08-16)
+
+### Fix
+
+- Parallel run must be True all the time so that testomatio doesn't create new test runs when update test status
+
 ## 2.8.1 (2024-08-14)
 
 ## 2.8.1rc2 (2024-08-12)
