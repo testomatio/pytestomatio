@@ -11,7 +11,6 @@ from pytestomatio.utils.helper import add_and_enrich_tests, get_test_mapping, co
 from pytestomatio.utils.parser_setup import parser_options
 from pytestomatio.utils import helper
 from pytestomatio.utils import validations
-from xdist.plugin import is_xdist_controller, get_xdist_worker_id
 
 log = logging.getLogger(__name__)
 log.setLevel('INFO')
@@ -54,9 +53,6 @@ def pytest_configure(config: Config):
                 run_details = pytest.testomatio.connector.create_test_run(**run.to_dict())
                 run_id = run_details.get('uid')
             run.save_run_id(run_id)
-        else:
-            # for xdist - worker process - do nothing
-            pass
 
 
 
