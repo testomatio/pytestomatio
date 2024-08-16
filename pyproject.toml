@@ -20,7 +20,7 @@ dependencies = [
     "pytest>7.2.0",
     "boto3>=1.28.28",
     "libcst==1.1.0",
-    "commitizen>=3.18.1",
+    "commitizen>=3.29.0",
     "autopep8>=2.1.0"
 ]
 
