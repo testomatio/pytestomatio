@@ -1,3 +1,17 @@
+## 2.8.2.dev5 (2024-08-24)
+
+### Feat
+
+- support HTTP_PROXY var
+
+### Fix
+
+- Fix shared runs
+
+### Refactor
+
+- Use system temp folder
+
 ## 2.8.2.dev4 (2024-08-16)
 
 ### Fix
