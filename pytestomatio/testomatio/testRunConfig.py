@@ -1,8 +1,10 @@
 import os
 import datetime as dt
+import tempfile
 from pytestomatio.utils.helper import safe_string_list
 from typing import Optional
 
+TESTOMATIO_TEST_RUN_LOCK_FILE = ".testomatio_test_run_id_lock"
 
 class TestRunConfig:
     def __init__(self):
@@ -39,21 +41,28 @@ class TestRunConfig:
 
     def save_run_id(self, run_id: str) -> None:
         self.test_run_id = run_id
-        with open('.temp_test_run_id', 'w') as f:
+        temp_dir = tempfile.gettempdir()
+        temp_file_path = os.path.join(temp_dir, TESTOMATIO_TEST_RUN_LOCK_FILE)
+        with open(temp_file_path, 'w') as f:
             f.write(run_id)
+
 
     def get_run_id(self) -> Optional[str]:
         if self.test_run_id:
             return self.test_run_id
-        if os.path.exists('.temp_test_run_id'):
-            with open('.temp_test_run_id', 'r') as f:
+        temp_dir = tempfile.gettempdir()
+        temp_file_path = os.path.join(temp_dir, TESTOMATIO_TEST_RUN_LOCK_FILE)
+        if os.path.exists(temp_file_path):
+            with open(temp_file_path, 'r') as f:
                 self.test_run_id = f.read()
                 return self.test_run_id
         return None
 
     def clear_run_id(self) -> None:
-        if os.path.exists('.temp_test_run_id'):
-            os.remove('.temp_test_run_id')
+        temp_dir = tempfile.gettempdir()
+        temp_file_path = os.path.join(temp_dir, TESTOMATIO_TEST_RUN_LOCK_FILE)
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
 
     def resolve_build_url(self) -> Optional[str]:
         # You might not always want the build URL to change in the Testomat.io test run
