@@ -17,6 +17,13 @@ class Connector:
         self.jwt: str = ''
         self.api_key = api_key
 
+        if getenv('HTTP_PROXY'):
+            self.session.proxies = {
+                'http': getenv('HTTP_PROXY'),
+                'https': getenv('HTTP_PROXY')
+            }
+            self.session.verify = False
+
     def load_tests(
             self,
             tests: list[TestItem],
