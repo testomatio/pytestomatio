@@ -61,19 +61,19 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
     if config.getoption(testomatio) is None:
         return
     
-    # Filter by --test-ids if provided
+    # Filter by --test-id if provided
     test_ids_option = config.getoption("test_id")
     if test_ids_option:
         test_ids = test_ids_option.split("|")
         # Remove "@" from the start of test IDs if present
-        test_ids = [test_id.lstrip("@") for test_id in test_ids]
+        test_ids = [test_id.lstrip("@T") for test_id in test_ids]
         selected_items = []
         deselected_items = []
 
         for item in items:
             # Check if the test has the marker with the ID we are looking for
             for marker in item.iter_markers(name="testomatio"):
-                marker_id = marker.args[0].strip("@")  # Strip "@" from the marker argument
+                marker_id = marker.args[0].lstrip("@T")  # Strip "@" from the marker argument
                 if marker_id in test_ids:
                     selected_items.append(item)
                     break
