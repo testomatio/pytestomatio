@@ -121,14 +121,14 @@ class Connector:
 
         try:
             response = self.session.put(f'{self.base_url}/api/reporter/{id}', json=filtered_request)
-        except ConnectionError:
-            log.error(f'Failed to connect to {self.base_url}')
+        except ConnectionError as ce:
+            log.error(f'Failed to connect to {self.base_url}: {ce}')
             return
-        except HTTPError:
-            log.error(f'Failed to connect to {self.base_url}')
+        except HTTPError as he:
+            log.error(f'Failed to connect to {self.base_url}: {he}')
             return
         except Exception as e:
-            log.error(f'Generic exception happened. Please report an issue. {e}')
+            log.error(f'Generic exception happened. Please report an issue: {e}')
             return
 
         if response.status_code == 200:

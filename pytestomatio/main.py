@@ -111,7 +111,8 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
             run_details = pytest.testomatio.connector.update_test_run(**run.to_dict())
 
             if run_details is None:
-                raise Exception('Test run failed to create. Reporting skipped')
+                log.error('Test run failed to create. Reporting skipped')
+                return
 
             artifact = run_details.get('artifacts')
             if artifact:
