@@ -111,10 +111,11 @@ class Connector:
             "api_key": self.api_key,
             "title": title,
             "group_title": group_title,
-            # "env": env, TODO: enabled when bug with 500 response fixed
-            # "label": label, TODO: enabled when bug with 500 response fixed
+            "env": env,
+            "label": label,
             "parallel": parallel,
             "ci_build_url": ci_build_url,
+            "shared_run": shared_run
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
 
