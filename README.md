@@ -197,6 +197,8 @@ def test_example():
 - test run labels, tags
 
 ## TODO
+- retry test run update with less attributes, we get 500 from api
+- handler non configured s3 bucket error
 - Fix test duration
 
 ## Contribution

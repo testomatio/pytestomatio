@@ -1,3 +1,4 @@
+from typing import Optional
 import boto3
 import logging
 from io import BytesIO
@@ -6,7 +7,7 @@ log = logging.getLogger(__name__)
 log.setLevel('INFO')
 
 
-def parse_endpoint(endpoint: str or None) -> str or None:
+def parse_endpoint(endpoint: str = None) -> Optional[str]:
     if endpoint is None:
         return
     if endpoint.startswith('https://'):
@@ -17,11 +18,14 @@ def parse_endpoint(endpoint: str or None) -> str or None:
 
 
 class S3Connector:
-    def __init__(self, aws_access_key_id: str or None = None,
-                 aws_secret_access_key: str or None = None,
-                 endpoint: str or None = None,
-                 bucket_name: str or None = None):
+    def __init__(self,
+                 aws_region_name: Optional[str],
+                 aws_access_key_id: Optional[str],
+                 aws_secret_access_key: Optional[str],
+                 endpoint: Optional[str],
+                 bucket_name: Optional[str]):
 
+        self.aws_region_name = aws_region_name
         self.endpoint = parse_endpoint(endpoint)
         self.bucket_name = bucket_name
         self.client = None
@@ -35,11 +39,14 @@ class S3Connector:
             's3',
             endpoint_url=f'https://{self.endpoint}',
             aws_access_key_id=self.aws_access_key_id,
-            aws_secret_access_key=self.aws_secret_access_key)
+            aws_secret_access_key=self.aws_secret_access_key,
+            region_name=self.aws_region_name
+            ),
+
         self._is_logged_in = True
         log.info('s3 session created')
 
-    def upload_file(self, file_path: str, key: str = None, bucket_name: str = None) -> str or None:
+    def upload_file(self, file_path: str, key: str = None, bucket_name: str = None) -> Optional[str]:
         if not self._is_logged_in:
             log.warning('s3 session is not created, creating new one')
             return
@@ -54,7 +61,7 @@ class S3Connector:
         log.info(f'artifact {file_path} uploaded to s3://{bucket_name}/{key}')
         return f'https://{bucket_name}.{self.endpoint}/{key}'
 
-    def upload_file_object(self, file_bytes: bytes, key: str, bucket_name: str = None) -> str or None:
+    def upload_file_object(self, file_bytes: bytes, key: str, bucket_name: str = None) -> Optional[str]:
         if not self._is_logged_in:
             log.warning('s3 session is not created, creating new one')
             return

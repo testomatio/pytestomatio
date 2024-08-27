@@ -86,10 +86,11 @@ def add_and_enrich_tests(meta: list[TestItem], test_files: set,
 
 def read_env_s3_keys(artifact: dict) -> tuple:
     return (
-        os.environ.get('ACCESS_KEY_ID') or artifact.get('ACCESS_KEY_ID'),
-        os.environ.get('SECRET_ACCESS_KEY') or artifact.get('SECRET_ACCESS_KEY'),
-        os.environ.get('ENDPOINT') or artifact.get('ENDPOINT'),
-        os.environ.get('BUCKET') or artifact.get('BUCKET')
+        os.environ.get('REGION') or os.environ.get('S3_REGION') or artifact.get('REGION'),
+        os.environ.get('ACCESS_KEY_ID') or os.environ.get('S3_ACCESS_KEY_ID') or artifact.get('ACCESS_KEY_ID'),
+        os.environ.get('SECRET_ACCESS_KEY') or os.environ.get('S3_SECRET_ACCESS_KEY') or artifact.get('SECRET_ACCESS_KEY'),
+        os.environ.get('ENDPOINT') or  os.environ.get('S3_ENDPOINT') or artifact.get('ENDPOINT'),
+        os.environ.get('BUCKET') or os.environ.get('S3_BUCKET') or artifact.get('BUCKET')
     )
 
 def safe_string_list(param: str):
