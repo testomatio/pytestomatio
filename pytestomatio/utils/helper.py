@@ -85,7 +85,7 @@ def add_and_enrich_tests(meta: list[TestItem], test_files: set,
 
 
 def read_env_s3_keys(testRunConfig: dict) -> tuple:
-    artifacts = testRunConfig.get('artifacts')
+    artifacts = testRunConfig.get('artifacts', {})
     bucket_path = (getenv('BUCKET_PATH') or getenv('S3_BUCKET_PATH'))
     return (
         getenv('REGION') or getenv('S3_REGION') or artifacts.get('REGION'),
