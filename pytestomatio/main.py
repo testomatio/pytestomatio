@@ -114,15 +114,14 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                 log.error('Test run failed to create. Reporting skipped')
                 return
 
-            artifact = run_details.get('artifacts')
-            if artifact:
-                s3_details = helper.read_env_s3_keys(artifact)
+            s3_details = helper.read_env_s3_keys(run_details)
 
-                if all(s3_details):
-                    pytest.testomatio.s3_connector = S3Connector(*s3_details)
-                    pytest.testomatio.s3_connector.login()
-                else:
-                    pytest.testomatio.s3_connector = S3Connector()
+            if all(s3_details):
+                pytest.testomatio.s3_connector = S3Connector(*s3_details)
+                pytest.testomatio.s3_connector.login()
+            else:
+                pytest.testomatio.s3_connector = S3Connector()
+                
         case 'debug':
             with open(metadata_file, 'w') as file:
                 data = json.dumps([i.to_dict() for i in meta], indent=4)

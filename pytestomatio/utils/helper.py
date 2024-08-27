@@ -84,13 +84,16 @@ def add_and_enrich_tests(meta: list[TestItem], test_files: set,
         update_tests(test_file, mapping, test_names, decorator_name)
 
 
-def read_env_s3_keys(artifact: dict) -> tuple:
+def read_env_s3_keys(testRunConfig: dict) -> tuple:
+    artifacts = testRunConfig.get('artifacts')
+    bucket_path = (os.environ.get('BUCKET_PATH') or os.environ.get('S3_BUCKET_PATH'))
     return (
-        os.environ.get('REGION') or os.environ.get('S3_REGION') or artifact.get('REGION'),
-        os.environ.get('ACCESS_KEY_ID') or os.environ.get('S3_ACCESS_KEY_ID') or artifact.get('ACCESS_KEY_ID'),
-        os.environ.get('SECRET_ACCESS_KEY') or os.environ.get('S3_SECRET_ACCESS_KEY') or artifact.get('SECRET_ACCESS_KEY'),
-        os.environ.get('ENDPOINT') or  os.environ.get('S3_ENDPOINT') or artifact.get('ENDPOINT'),
-        os.environ.get('BUCKET') or os.environ.get('S3_BUCKET') or artifact.get('BUCKET')
+        os.environ.get('REGION') or os.environ.get('S3_REGION') or artifacts.get('REGION'),
+        os.environ.get('ACCESS_KEY_ID') or os.environ.get('S3_ACCESS_KEY_ID') or artifacts.get('ACCESS_KEY_ID'),
+        os.environ.get('SECRET_ACCESS_KEY') or os.environ.get('S3_SECRET_ACCESS_KEY') or artifacts.get('SECRET_ACCESS_KEY'),
+        os.environ.get('ENDPOINT') or  os.environ.get('S3_ENDPOINT') or artifacts.get('ENDPOINT'),
+        os.environ.get('BUCKET') or os.environ.get('S3_BUCKET') or artifacts.get('BUCKET'),
+        bucket_path + "/" + testRunConfig.get("uid") if bucket_path else testRunConfig.get("uid")
     )
 
 def safe_string_list(param: str):

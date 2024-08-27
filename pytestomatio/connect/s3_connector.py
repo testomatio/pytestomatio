@@ -16,18 +16,20 @@ def parse_endpoint(endpoint: str = None) -> Optional[str]:
         return endpoint[7:]
     return endpoint
 
-
 class S3Connector:
     def __init__(self,
                  aws_region_name: Optional[str],
                  aws_access_key_id: Optional[str],
                  aws_secret_access_key: Optional[str],
                  endpoint: Optional[str],
-                 bucket_name: Optional[str]):
+                 bucket_name: Optional[str],
+                 bucker_prefix: Optional[str]
+                 ):
 
         self.aws_region_name = aws_region_name
         self.endpoint = parse_endpoint(endpoint)
         self.bucket_name = bucket_name
+        self.bucker_prefix = bucker_prefix
         self.client = None
         self._is_logged_in = False
         self.aws_access_key_id = aws_access_key_id
@@ -41,7 +43,7 @@ class S3Connector:
             aws_access_key_id=self.aws_access_key_id,
             aws_secret_access_key=self.aws_secret_access_key,
             region_name=self.aws_region_name
-            ),
+            )
 
         self._is_logged_in = True
         log.info('s3 session created')
@@ -52,10 +54,10 @@ class S3Connector:
             return
         if not key:
             key = file_path
+        key = f"{self.bucker_prefix}/{key}"
         if not bucket_name:
             bucket_name = self.bucket_name
-        if bucket_name is None:
-            raise Exception('bucket name is not defined')
+
         log.info(f'uploading artifact {file_path} to s3://{bucket_name}/{key}')
         self.client.upload_file(file_path, bucket_name, key)
         log.info(f'artifact {file_path} uploaded to s3://{bucket_name}/{key}')
@@ -68,9 +70,9 @@ class S3Connector:
         file = BytesIO(file_bytes)
         if not bucket_name:
             bucket_name = self.bucket_name
-        if bucket_name is None:
-            raise Exception('bucket name is not defined')
+        key = f"{self.bucker_prefix}/{key}"
+
         log.info(f'uploading artifact {key} to s3://{bucket_name}/{key}')
         self.client.upload_fileobj(file, bucket_name, key)
         log.info(f'artifact {key} uploaded to s3://{bucket_name}/{key}')
-        return f'https://{bucket_name}.{self.endpoint}/{key}'
+        return f'https://{bucket_name}.{self.endpoint}/{key}' 
