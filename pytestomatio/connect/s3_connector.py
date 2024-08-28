@@ -23,7 +23,8 @@ class S3Connector:
                  aws_secret_access_key: Optional[str],
                  endpoint: Optional[str],
                  bucket_name: Optional[str],
-                 bucker_prefix: Optional[str]
+                 bucker_prefix: Optional[str],
+                 acl: Optional[str] = 'public-read'
                  ):
 
         self.aws_region_name = aws_region_name
@@ -34,6 +35,7 @@ class S3Connector:
         self._is_logged_in = False
         self.aws_access_key_id = aws_access_key_id
         self.aws_secret_access_key = aws_secret_access_key
+        self.acl = acl
 
     def login(self):
         log.debug('creating s3 session')
@@ -59,7 +61,7 @@ class S3Connector:
             bucket_name = self.bucket_name
 
         log.info(f'uploading artifact {file_path} to s3://{bucket_name}/{key}')
-        self.client.upload_file(file_path, bucket_name, key)
+        self.client.upload_file(file_path, bucket_name, key, ExtraArgs={'ACL': self.acl})
         log.info(f'artifact {file_path} uploaded to s3://{bucket_name}/{key}')
         return f'https://{bucket_name}.{self.endpoint}/{key}'
 
@@ -73,6 +75,6 @@ class S3Connector:
         key = f"{self.bucker_prefix}/{key}"
 
         log.info(f'uploading artifact {key} to s3://{bucket_name}/{key}')
-        self.client.upload_fileobj(file, bucket_name, key)
+        self.client.upload_fileobj(file, bucket_name, key, ExtraArgs={'ACL': self.acl})
         log.info(f'artifact {key} uploaded to s3://{bucket_name}/{key}')
         return f'https://{bucket_name}.{self.endpoint}/{key}' 

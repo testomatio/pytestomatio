@@ -120,6 +120,7 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                 pytest.testomatio.s3_connector = S3Connector(*s3_details)
                 pytest.testomatio.s3_connector.login()
             else:
+                # TODO: handle missing credentials
                 pytest.testomatio.s3_connector = S3Connector()
                 
         case 'debug':

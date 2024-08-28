@@ -87,13 +87,15 @@ def add_and_enrich_tests(meta: list[TestItem], test_files: set,
 def read_env_s3_keys(testRunConfig: dict) -> tuple:
     artifacts = testRunConfig.get('artifacts', {})
     bucket_path = (getenv('BUCKET_PATH') or getenv('S3_BUCKET_PATH'))
+    acl = 'private' if (getenv('TESTOMATIO_PRIVATE_ARTIFACTS') or artifacts.get('presign')) else "public-read"
     return (
         getenv('REGION') or getenv('S3_REGION') or artifacts.get('REGION'),
         getenv('ACCESS_KEY_ID') or getenv('S3_ACCESS_KEY_ID') or artifacts.get('ACCESS_KEY_ID'),
         getenv('SECRET_ACCESS_KEY') or getenv('S3_SECRET_ACCESS_KEY') or artifacts.get('SECRET_ACCESS_KEY'),
         getenv('ENDPOINT') or  getenv('S3_ENDPOINT') or artifacts.get('ENDPOINT'),
         getenv('BUCKET') or getenv('S3_BUCKET') or artifacts.get('BUCKET'),
-        bucket_path + "/" + testRunConfig.get("uid") if bucket_path else testRunConfig.get("uid")
+        bucket_path + "/" + testRunConfig.get("uid") if bucket_path else testRunConfig.get("uid"),
+        acl
     )
 
 def safe_string_list(param: str):
