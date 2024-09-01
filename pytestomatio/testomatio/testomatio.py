@@ -26,4 +26,4 @@ class Testomatio:
     def add_artifacts(self, node: Function, urls: list[str]) -> None:
         artifact_urls = node.stash.get("artifact_urls", [])
         artifact_urls.extend(urls)
-        node.stash["artifact_urls"] = artifact_urls
+        node.stash["artifact_urls"] = [ url for url in artifact_urls if url is not None]

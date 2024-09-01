@@ -2,14 +2,13 @@ from typing import Optional
 import boto3
 import logging
 from io import BytesIO
+import mimetypes
 
 log = logging.getLogger(__name__)
 log.setLevel('INFO')
 
 
 def parse_endpoint(endpoint: str = None) -> Optional[str]:
-    if endpoint is None:
-        return
     if endpoint.startswith('https://'):
         return endpoint[8:]
     elif endpoint.startswith('http://'):
@@ -60,10 +59,17 @@ class S3Connector:
         if not bucket_name:
             bucket_name = self.bucket_name
 
-        log.info(f'uploading artifact {file_path} to s3://{bucket_name}/{key}')
-        self.client.upload_file(file_path, bucket_name, key, ExtraArgs={'ACL': self.acl})
-        log.info(f'artifact {file_path} uploaded to s3://{bucket_name}/{key}')
-        return f'https://{bucket_name}.{self.endpoint}/{key}'
+        content_type, _ = mimetypes.guess_type(key)
+        if content_type is None:
+            content_type = 'application/octet-stream'
+
+        try:
+            log.info(f'uploading artifact {file_path} to s3://{bucket_name}/{key}')
+            self.client.upload_file(file_path, bucket_name, key, ExtraArgs={'ACL': self.acl, 'ContentType': content_type})
+            log.info(f'artifact {file_path} uploaded to s3://{bucket_name}/{key}')
+            return f'https://{bucket_name}.{self.endpoint}/{key}'
+        except Exception as e:
+            log.error(f'failed to upload file {file_path} to s3://{bucket_name}/{key}: {e}')
 
     def upload_file_object(self, file_bytes: bytes, key: str, bucket_name: str = None) -> Optional[str]:
         if not self._is_logged_in:
@@ -74,7 +80,14 @@ class S3Connector:
             bucket_name = self.bucket_name
         key = f"{self.bucker_prefix}/{key}"
 
-        log.info(f'uploading artifact {key} to s3://{bucket_name}/{key}')
-        self.client.upload_fileobj(file, bucket_name, key, ExtraArgs={'ACL': self.acl})
-        log.info(f'artifact {key} uploaded to s3://{bucket_name}/{key}')
-        return f'https://{bucket_name}.{self.endpoint}/{key}' 
+        content_type, _ = mimetypes.guess_type(key)
+        if content_type is None:
+            content_type = 'application/octet-stream'
+
+        try:
+            log.info(f'uploading artifact {key} to s3://{bucket_name}/{key}')
+            self.client.upload_fileobj(file, bucket_name, key, ExtraArgs={'ACL': self.acl, 'ContentType': content_type})
+            log.info(f'artifact {key} uploaded to s3://{bucket_name}/{key}')
+            return f'https://{bucket_name}.{self.endpoint}/{key}'
+        except Exception as e:
+            log.error(f'failed to upload file {key} to s3://{bucket_name}/{key}: {e}')
