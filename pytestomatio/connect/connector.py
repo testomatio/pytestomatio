@@ -20,7 +20,7 @@ class Connector:
     def __getattribute__(self, name):
         if name == "session":
             self._proxy_resolve()
-            return self.session
+            return super().__getattribute__('session')
         return super().__getattribute__(name)
 
 
