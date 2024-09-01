@@ -20,18 +20,19 @@ class Connector:
     def __getattribute__(self, name):
         if name == "session":
             self._proxy_resolve()
-            return super().__getattribute__('session')
+            return super().__getattribute__('__dict__')['session']
         return super().__getattribute__(name)
 
 
     def _proxy_resolve(self):
         http_proxy = getenv('HTTP_PROXY')
         if http_proxy:
-            self.session.proxies = {
+            session = super().__getattribute__('__dict__')['session']
+            session.proxies = {
                 'http': http_proxy,
                 'https': http_proxy
             }
-            self.session.verify = False
+            session.verify = False
 
     def load_tests(
             self,
