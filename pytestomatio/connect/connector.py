@@ -17,10 +17,19 @@ class Connector:
         self.jwt: str = ''
         self.api_key = api_key
 
-        if getenv('HTTP_PROXY'):
+    def __getattribute__(self, name):
+        if name == "session":
+            self._proxy_resolve()
+            return self.session
+        return super().__getattribute__(name)
+
+
+    def _proxy_resolve(self):
+        http_proxy = getenv('HTTP_PROXY')
+        if http_proxy:
             self.session.proxies = {
-                'http': getenv('HTTP_PROXY'),
-                'https': getenv('HTTP_PROXY')
+                'http': http_proxy,
+                'https': http_proxy
             }
             self.session.verify = False
 
