@@ -17,20 +17,28 @@ class Connector:
         self.api_key = api_key
 
     @property
-    def _session(self):
-        """Resolve and apply proxy settings each time session is accessed."""
+    def session(self):
+        """Get the session, creating it and applying proxy settings if necessary."""
         if self._session is None:
             self._session = requests.Session()
+            self._apply_proxy_settings()
+        return self._session
 
+    @session.setter
+    def session(self, value):
+        """Allow setting a custom session, while still applying proxy settings."""
+        self._session = value
+        self._apply_proxy_settings()
+
+    def _apply_proxy_settings(self):
+        """Apply proxy settings based on environment variables."""
         http_proxy = getenv("HTTP_PROXY")
         if http_proxy:
             self._session.proxies = {"http": http_proxy, "https": http_proxy}
             self._session.verify = False
         else:
-            self._session.proxies.clear()
+            self._session.proxies.clear()  # Clear proxies if HTTP_PROXY is not set
             self._session.verify = True
-
-        return self._session
 
     def load_tests(
             self,
