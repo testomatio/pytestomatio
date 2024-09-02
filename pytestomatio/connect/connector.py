@@ -16,20 +16,6 @@ class Connector:
         self.session.verify = True
         self.jwt: str = ''
         self.api_key = api_key
-        self._proxy_resolve()
-
-    def _proxy_resolve(self):
-        http_proxy = getenv("HTTP_PROXY")
-        if http_proxy:
-            self.session.proxies = {"http": http_proxy, "https": http_proxy}
-            self.session.verify = False
-        else:
-            self.session.verify = True
-
-    def __getattribute__(self, name: str):
-        if name == "session":
-            self._proxy_resolve()
-        return super().__getattribute__(name)
 
     def load_tests(
             self,
