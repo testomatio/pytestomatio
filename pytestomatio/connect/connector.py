@@ -12,27 +12,25 @@ log = logging.getLogger('pytestomatio')
 class Connector:
     def __init__(self, base_url: str = 'https://app.testomat.io', api_key: str = None):
         self.base_url = base_url
-        self.session = requests.Session()
-        self.session.verify = True
+        self._session = requests.Session()
         self.jwt: str = ''
         self.api_key = api_key
-        self.proxies = {}
 
     @property
-    def session(self):
+    def _session(self):
         """Resolve and apply proxy settings each time session is accessed."""
-        if self.session is None:
-            self.session = requests.Session()
+        if self._session is None:
+            self._session = requests.Session()
 
         http_proxy = getenv("HTTP_PROXY")
         if http_proxy:
-            self.session.proxies = {"http": http_proxy, "https": http_proxy}
-            self.session.verify = False
+            self._session.proxies = {"http": http_proxy, "https": http_proxy}
+            self._session.verify = False
         else:
-            self.session.proxies.clear()
-            self.session.verify = True
+            self._session.proxies.clear()
+            self._session.verify = True
 
-        return self.session
+        return self._session
 
     def load_tests(
             self,
@@ -66,7 +64,7 @@ class Connector:
             })
 
         try:
-            response = self.session.post(f'{self.base_url}/api/load?api_key={self.api_key}', json=request)
+            response = self._session.post(f'{self.base_url}/api/load?api_key={self.api_key}', json=request)
         except ConnectionError:
             log.error(f'Failed to connect to {self.base_url}')
             return
@@ -84,7 +82,7 @@ class Connector:
 
     def get_tests(self, test_metadata: list[TestItem]) -> dict:
         # with safe_request('Failed to get test ids from testomat.io'):
-        response = self.session.get(f'{self.base_url}/api/test_data?api_key={self.api_key}')
+        response = self._session.get(f'{self.base_url}/api/test_data?api_key={self.api_key}')
         return response.json()
 
     def create_test_run(self, title: str, group_title, env: str, label: str, shared_run: bool, parallel, ci_build_url: str) -> dict | None:
@@ -100,7 +98,7 @@ class Connector:
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
         try:
-            response = self.session.post(f'{self.base_url}/api/reporter', json=filtered_request)
+            response = self._session.post(f'{self.base_url}/api/reporter', json=filtered_request)
         except ConnectionError:
             log.error(f'Failed to connect to {self.base_url}')
             return
@@ -130,7 +128,7 @@ class Connector:
         filtered_request = {k: v for k, v in request.items() if v is not None}
 
         try:
-            response = self.session.put(f'{self.base_url}/api/reporter/{id}', json=filtered_request)
+            response = self._session.put(f'{self.base_url}/api/reporter/{id}', json=filtered_request)
         except ConnectionError as ce:
             log.error(f'Failed to connect to {self.base_url}: {ce}')
             return
@@ -175,7 +173,7 @@ class Connector:
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
         try:
-            response = self.session.post(f'{self.base_url}/api/reporter/{run_id}/testrun?api_key={self.api_key}',
+            response = self._session.post(f'{self.base_url}/api/reporter/{run_id}/testrun?api_key={self.api_key}',
                                          json=filtered_request)
         except ConnectionError:
             log.error(f'Failed to connect to {self.base_url}')
@@ -193,7 +191,7 @@ class Connector:
     def finish_test_run(self, run_id: str, is_final=False) -> None:
         status_event = 'finish_parallel' if is_final else 'finish'
         try:
-            self.session.put(f'{self.base_url}/api/reporter/{run_id}?api_key={self.api_key}',
+            self._session.put(f'{self.base_url}/api/reporter/{run_id}?api_key={self.api_key}',
                              json={"status_event": status_event})
         except ConnectionError:
             log.error(f'Failed to connect to {self.base_url}')
@@ -206,4 +204,4 @@ class Connector:
             return
 
     def disconnect(self):
-        self.session.close()
+        self._session.close()
