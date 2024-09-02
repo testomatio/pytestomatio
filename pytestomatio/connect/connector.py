@@ -73,14 +73,14 @@ class Connector:
 
         try:
             response = self._session.post(f'{self.base_url}/api/load?api_key={self.api_key}', json=request)
-        except ConnectionError:
-            log.error(f'Failed to connect to {self.base_url}')
+        except ConnectionError as ce:
+            log.error(f'Failed to connect to {self.base_url}: {ce}')
             return
-        except HTTPError:
-            log.error(f'Failed to connect to {self.base_url}')
+        except HTTPError as he:
+            log.error(f'HTTP error occurred while connecting to {self.base_url}: {he}')
             return
         except Exception as e:
-            log.error(f'Generic exception happened. Please report an issue. {e}')
+            log.error(f'An unexpected exception occurred. Please report an issue: {e}')
             return
 
         if response.status_code < 400:
@@ -107,14 +107,14 @@ class Connector:
         filtered_request = {k: v for k, v in request.items() if v is not None}
         try:
             response = self._session.post(f'{self.base_url}/api/reporter', json=filtered_request)
-        except ConnectionError:
-            log.error(f'Failed to connect to {self.base_url}')
+        except ConnectionError as ce:
+            log.error(f'Failed to connect to {self.base_url}: {ce}')
             return
-        except HTTPError:
-            log.error(f'Failed to connect to {self.base_url}')
+        except HTTPError as he:
+            log.error(f'HTTP error occurred while connecting to {self.base_url}: {he}')
             return
         except Exception as e:
-            log.error(f'Generic exception happened. Please report an issue. {e}')
+            log.error(f'An unexpected exception occurred. Please report an issue: {e}')
             return
 
         if response.status_code == 200:
@@ -141,10 +141,10 @@ class Connector:
             log.error(f'Failed to connect to {self.base_url}: {ce}')
             return
         except HTTPError as he:
-            log.error(f'Failed to connect to {self.base_url}: {he}')
+            log.error(f'HTTP error occurred while connecting to {self.base_url}: {he}')
             return
         except Exception as e:
-            log.error(f'Generic exception happened. Please report an issue: {e}')
+            log.error(f'An unexpected exception occurred. Please report an issue: {e}')
             return
 
         if response.status_code == 200:
@@ -183,14 +183,14 @@ class Connector:
         try:
             response = self._session.post(f'{self.base_url}/api/reporter/{run_id}/testrun?api_key={self.api_key}',
                                          json=filtered_request)
-        except ConnectionError:
-            log.error(f'Failed to connect to {self.base_url}')
+        except ConnectionError as ce:
+            log.error(f'Failed to connect to {self.base_url}: {ce}')
             return
-        except HTTPError:
-            log.error(f'Failed to connect to {self.base_url}')
+        except HTTPError as he:
+            log.error(f'HTTP error occurred while connecting to {self.base_url}: {he}')
             return
         except Exception as e:
-            log.error(f'Generic exception happened. Please report an issue. {e}')
+            log.error(f'An unexpected exception occurred. Please report an issue: {e}')
             return
         if response.status_code == 200:
             log.info('Test status updated')
@@ -201,14 +201,14 @@ class Connector:
         try:
             self._session.put(f'{self.base_url}/api/reporter/{run_id}?api_key={self.api_key}',
                              json={"status_event": status_event})
-        except ConnectionError:
-            log.error(f'Failed to connect to {self.base_url}')
+        except ConnectionError as ce:
+            log.error(f'Failed to connect to {self.base_url}: {ce}')
             return
-        except HTTPError:
-            log.error(f'Failed to connect to {self.base_url}')
+        except HTTPError as he:
+            log.error(f'HTTP error occurred while connecting to {self.base_url}: {he}')
             return
         except Exception as e:
-            log.error(f'Generic exception happened. Please report an issue. {e}')
+            log.error(f'An unexpected exception occurred. Please report an issue: {e}')
             return
 
     def disconnect(self):
