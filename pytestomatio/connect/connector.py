@@ -31,14 +31,28 @@ class Connector:
         self._apply_proxy_settings()
 
     def _apply_proxy_settings(self):
-        """Apply proxy settings based on environment variables."""
+        """Apply proxy settings based on environment variables, fallback to no proxy if unavailable."""
         http_proxy = getenv("HTTP_PROXY")
         if http_proxy:
             self._session.proxies = {"http": http_proxy, "https": http_proxy}
             self._session.verify = False
+
+            if not self._test_proxy_connection():
+                print("Proxy is unavailable. Falling back to a direct connection.")
+                self._session.proxies.clear()
+                self._session.verify = True
         else:
-            self._session.proxies.clear()  # Clear proxies if HTTP_PROXY is not set
+            self._session.proxies.clear()
             self._session.verify = True
+
+    def _test_proxy_connection(self, test_url="https://api.ipify.org?format=json"):
+        """Test if the proxy connection is available."""
+        try:
+            response = self._session.get(test_url, timeout=5)
+            response.raise_for_status()
+            return True
+        except requests.exceptions.RequestException:
+            return False
 
     def load_tests(
             self,
