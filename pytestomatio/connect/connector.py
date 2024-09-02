@@ -16,6 +16,23 @@ class Connector:
         self.session.verify = True
         self.jwt: str = ''
         self.api_key = api_key
+        self.proxies = {}
+
+    @property
+    def session(self):
+        """Resolve and apply proxy settings each time session is accessed."""
+        if self.session is None:
+            self.session = requests.Session()
+
+        http_proxy = getenv("HTTP_PROXY")
+        if http_proxy:
+            self.session.proxies = {"http": http_proxy, "https": http_proxy}
+            self.session.verify = False
+        else:
+            self.session.proxies.clear()
+            self.session.verify = True
+
+        return self.session
 
     def load_tests(
             self,
