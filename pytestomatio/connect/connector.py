@@ -21,7 +21,7 @@ class Connector:
         """Get the session, creating it and applying proxy settings if necessary."""
         if self._session is None:
             self._session = requests.Session()
-            self._apply_proxy_settings()
+        self._apply_proxy_settings()
         return self._session
 
     @session.setter
