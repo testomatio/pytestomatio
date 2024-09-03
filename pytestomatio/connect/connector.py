@@ -19,8 +19,6 @@ class Connector:
     @property
     def session(self):
         """Get the session, creating it and applying proxy settings if necessary."""
-        if self._session is None:
-            self._session = requests.Session()
         self._apply_proxy_settings()
         return self._session
 
@@ -37,14 +35,14 @@ class Connector:
         if http_proxy:
             self._session.proxies = {"http": http_proxy, "https": http_proxy}
             self._session.verify = False
-            log.debug(f"Proxy settings applied: {self._session.proxies}")
+            log.info(f"Proxy settings applied: {self._session.proxies}")
 
             if not self._test_proxy_connection():
                 log.info("Proxy is unavailable. Falling back to a direct connection.")
                 self._session.proxies.clear()
                 self._session.verify = True
         else:
-            log.debug("No proxy settings found. Using a direct connection.")
+            log.info("No proxy settings found. Using a direct connection.")
             self._session.proxies.clear()
             self._session.verify = True
 
@@ -89,7 +87,7 @@ class Connector:
             })
 
         try:
-            response = self._session.post(f'{self.base_url}/api/load?api_key={self.api_key}', json=request)
+            response = self.session.post(f'{self.base_url}/api/load?api_key={self.api_key}', json=request)
         except ConnectionError as ce:
             log.error(f'Failed to connect to {self.base_url}: {ce}')
             return
@@ -107,7 +105,7 @@ class Connector:
 
     def get_tests(self, test_metadata: list[TestItem]) -> dict:
         # with safe_request('Failed to get test ids from testomat.io'):
-        response = self._session.get(f'{self.base_url}/api/test_data?api_key={self.api_key}')
+        response = self.session.get(f'{self.base_url}/api/test_data?api_key={self.api_key}')
         return response.json()
 
     def create_test_run(self, title: str, group_title, env: str, label: str, shared_run: bool, parallel, ci_build_url: str) -> dict | None:
@@ -123,7 +121,7 @@ class Connector:
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
         try:
-            response = self._session.post(f'{self.base_url}/api/reporter', json=filtered_request)
+            response = self.session.post(f'{self.base_url}/api/reporter', json=filtered_request)
         except ConnectionError as ce:
             log.error(f'Failed to connect to {self.base_url}: {ce}')
             return
@@ -153,7 +151,7 @@ class Connector:
         filtered_request = {k: v for k, v in request.items() if v is not None}
 
         try:
-            response = self._session.put(f'{self.base_url}/api/reporter/{id}', json=filtered_request)
+            response = self.session.put(f'{self.base_url}/api/reporter/{id}', json=filtered_request)
         except ConnectionError as ce:
             log.error(f'Failed to connect to {self.base_url}: {ce}')
             return
@@ -198,7 +196,7 @@ class Connector:
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
         try:
-            response = self._session.post(f'{self.base_url}/api/reporter/{run_id}/testrun?api_key={self.api_key}',
+            response = self.session.post(f'{self.base_url}/api/reporter/{run_id}/testrun?api_key={self.api_key}',
                                          json=filtered_request)
         except ConnectionError as ce:
             log.error(f'Failed to connect to {self.base_url}: {ce}')
@@ -216,7 +214,7 @@ class Connector:
     def finish_test_run(self, run_id: str, is_final=False) -> None:
         status_event = 'finish_parallel' if is_final else 'finish'
         try:
-            self._session.put(f'{self.base_url}/api/reporter/{run_id}?api_key={self.api_key}',
+            self.session.put(f'{self.base_url}/api/reporter/{run_id}?api_key={self.api_key}',
                              json={"status_event": status_event})
         except ConnectionError as ce:
             log.error(f'Failed to connect to {self.base_url}: {ce}')
@@ -229,4 +227,4 @@ class Connector:
             return
 
     def disconnect(self):
-        self._session.close()
+        self.session.close()
