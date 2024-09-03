@@ -45,14 +45,17 @@ class Connector:
             log.info("No proxy settings found. Using a direct connection.")
             self._session.proxies.clear()
             self._session.verify = True
+            self._test_proxy_connection()
 
     def _test_proxy_connection(self, test_url="https://api.ipify.org?format=json"):
         """Test if the proxy connection is available."""
         try:
             response = self._session.get(test_url, timeout=5)
             response.raise_for_status()
+            log.info("Internet connection is available.")
             return True
         except requests.exceptions.RequestException:
+            log.error("Internet connection is unavailable.")
             return False
 
     def load_tests(
