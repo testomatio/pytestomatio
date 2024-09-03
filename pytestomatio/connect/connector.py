@@ -33,15 +33,18 @@ class Connector:
     def _apply_proxy_settings(self):
         """Apply proxy settings based on environment variables, fallback to no proxy if unavailable."""
         http_proxy = getenv("HTTP_PROXY")
+        log.debug(f"HTTP_PROXY: {http_proxy}")
         if http_proxy:
             self._session.proxies = {"http": http_proxy, "https": http_proxy}
             self._session.verify = False
+            log.debug(f"Proxy settings applied: {self._session.proxies}")
 
             if not self._test_proxy_connection():
-                print("Proxy is unavailable. Falling back to a direct connection.")
+                log.info("Proxy is unavailable. Falling back to a direct connection.")
                 self._session.proxies.clear()
                 self._session.verify = True
         else:
+            log.debug("No proxy settings found. Using a direct connection.")
             self._session.proxies.clear()
             self._session.verify = True
 
