@@ -49,6 +49,8 @@ class Connector:
 
     def _test_proxy_connection(self, test_url="https://api.ipify.org?format=json"):
         """Test if the proxy connection is available."""
+        log.debug("Current session: %s", self._session.proxies)
+        log.debug("Current verify: %s", self._session.verify)
         try:
             response = self._session.get(test_url, timeout=5)
             response.raise_for_status()
