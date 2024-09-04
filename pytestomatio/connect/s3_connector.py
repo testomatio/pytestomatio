@@ -54,7 +54,7 @@ class S3Connector:
         links = []
         for file_path, key in file_list:
             link = self.upload_file(file_path=file_path, key=key, bucket_name=bucket_name)
-            links.extend(link)
+            links.append(link)
         return [link for link in links if link is not None]
 
 

@@ -14,15 +14,21 @@ class Testomatio:
         self.test_run_config: TestRunConfig or None = test_run_config
         self.connector: Connector or None = None
 
+    def upload_files(self, files_list, bucket_name: str = None) -> str:
+        if self.test_run_config.test_run_id is None:
+            log.debug("Skipping file upload when testomatio test run is not created")
+            return ""
+        return self.s3_connector.upload_files(files_list, bucket_name)
+    
     def upload_file(self, file_path: str, key: str = None, bucket_name: str = None) -> str:
         if self.test_run_config.test_run_id is None:
-            print("Skipping file upload when testomatio test run is not created")
+            log.debug("Skipping file upload when testomatio test run is not created")
             return ""
         return self.s3_connector.upload_file(file_path, key, bucket_name)
 
     def upload_file_object(self, file_bytes: bytes, key: str, bucket_name: str = None) -> str:
         if self.test_run_config.test_run_id is None:
-            print("Skipping file upload when testomatio test run is not created")
+            log.debug("Skipping file upload when testomatio test run is not created")
             return ""
         return self.s3_connector.upload_file_object(file_bytes, key, bucket_name)
 
