@@ -36,14 +36,14 @@ class Connector:
         if http_proxy:
             self._session.proxies = {"http": http_proxy, "https": http_proxy}
             self._session.verify = False
-            log.info(f"Proxy settings applied: {self._session.proxies}")
+            log.debug(f"Proxy settings applied: {self._session.proxies}")
 
             if not self._test_proxy_connection(timeout=1):
-                log.info("Proxy is unavailable. Falling back to a direct connection.")
+                log.debug("Proxy is unavailable. Falling back to a direct connection.")
                 self._session.proxies.clear()
                 self._session.verify = True
         else:
-            log.info("No proxy settings found. Using a direct connection.")
+            log.debug("No proxy settings found. Using a direct connection.")
             self._session.proxies.clear()
             self._session.verify = True
             self._test_proxy_connection()
@@ -57,7 +57,7 @@ class Connector:
             try:
                 response = self._session.get(test_url, timeout=5)
                 response.raise_for_status()
-                log.info("Internet connection is available.")
+                log.debug("Internet connection is available.")
                 return True
             except requests.exceptions.RequestException as e:
                 log.error("Internet connection is unavailable. Error: %s", e)

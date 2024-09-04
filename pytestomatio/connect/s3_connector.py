@@ -49,6 +49,15 @@ class S3Connector:
         self._is_logged_in = True
         log.info('s3 session created')
 
+    # TODO: upload files async
+    def upload_files(self, file_list, bucket_name: str = None):
+        links = []
+        for file_path, key in file_list:
+            link = self.upload_file(file_path=file_path, key=key, bucket_name=bucket_name)
+            links.extend(link)
+        return [link for link in links if link is not None]
+
+
     def upload_file(self, file_path: str, key: str = None, bucket_name: str = None) -> Optional[str]:
         if not self._is_logged_in:
             log.warning('s3 session is not created, creating new one')
