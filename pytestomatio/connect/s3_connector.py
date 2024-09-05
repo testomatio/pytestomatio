@@ -75,7 +75,16 @@ class S3Connector:
 
         try:
             log.info(f'uploading artifact {file_path} to s3://{bucket_name}/{key}')
-            self.client.upload_file(file_path, bucket_name, key, ExtraArgs={'ACL': self.acl, 'ContentType': content_type})
+            self.client.upload_file(
+                file_path,
+                bucket_name,
+                key,
+                ExtraArgs={
+                    'ACL': self.acl,
+                    'ContentType': content_type,
+                    'ContentDisposition': 'inline'
+                }
+            )
             log.info(f'artifact {file_path} uploaded to s3://{bucket_name}/{key}')
             return f'https://{bucket_name}.{self.endpoint}/{key}'
         except Exception as e:
@@ -96,7 +105,16 @@ class S3Connector:
 
         try:
             log.info(f'uploading artifact {key} to s3://{bucket_name}/{key}')
-            self.client.upload_fileobj(file, bucket_name, key, ExtraArgs={'ACL': self.acl, 'ContentType': content_type})
+            self.client.upload_fileobj(
+                file,
+                bucket_name,
+                key,
+                ExtraArgs={
+                    'ACL': self.acl,
+                    'ContentType': content_type,
+                    'ContentDisposition': 'inline'
+                }
+            )
             log.info(f'artifact {key} uploaded to s3://{bucket_name}/{key}')
             return f'https://{bucket_name}.{self.endpoint}/{key}'
         except Exception as e:
