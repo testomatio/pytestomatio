@@ -51,8 +51,12 @@ def pytest_configure(config: Config):
             run_id = pytest.testomatio.test_run_config.test_run_id
             if not run_id:
                 run_details = pytest.testomatio.connector.create_test_run(**run.to_dict())
-                run_id = run_details.get('uid')
-            run.save_run_id(run_id)
+                if run_details:
+                    run_id = run_details.get('uid')
+                    run.save_run_id(run_id)
+                else:
+                    log.error("Failed to create testrun on Testomat.io")
+
 
 
 
