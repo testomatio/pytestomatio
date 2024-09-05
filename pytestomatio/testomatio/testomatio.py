@@ -32,19 +32,8 @@ class Testomatio:
             return ""
         return self.s3_connector.upload_file_object(file_bytes, key, bucket_name)
 
-    def add_artifacts(self, *args) -> None:
-        urls = None
-        for arg in args:
-            if isinstance(arg, list):
-                urls = arg
-        if not urls:
-            log.warn("Failed to add artifacts. No valid list of url has been provided")
-            return
+    def add_artifacts(self, node: Function, url_list) -> None:        
+        artifact_urls = node.stash.get("artifact_urls", [])
+        artifact_urls.extend(url_list)
+        node.stash["artifact_urls"] = [ url for url in artifact_urls if url is not None]
 
-        if not hasattr(self, "request"):
-            log.warn("Couldn't attach link to the test. Make sure pytestomatio is configured correctly.")
-            return
-        
-        artifact_urls = self.request.node.stash.get("artifact_urls", [])
-        artifact_urls.extend(urls)
-        self.request.node.stash["artifact_urls"] = [ url for url in artifact_urls if url is not None]
