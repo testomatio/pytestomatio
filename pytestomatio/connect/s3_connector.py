@@ -15,6 +15,7 @@ def parse_endpoint(endpoint: str = None) -> Optional[str]:
         return endpoint[7:]
     return endpoint
 
+# TODO: review error handling. It should be save, and only create log entries without effecting test execution.
 class S3Connector:
     def __init__(self,
                  aws_region_name: Optional[str],
