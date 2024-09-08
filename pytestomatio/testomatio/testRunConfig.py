@@ -1,22 +1,25 @@
 import os
 import datetime as dt
+import tempfile
 from pytestomatio.utils.helper import safe_string_list
 from typing import Optional
 
+TESTOMATIO_TEST_RUN_LOCK_FILE = ".testomatio_test_run_id_lock"
 
 class TestRunConfig:
-    def __init__(self, parallel: bool = True):
-        self.test_run_id = os.environ.get('TESTOMATIO_RUN_ID') or None
-        run = os.environ.get('TESTOMATIO_RUN') or None
-        title = os.environ.get('TESTOMATIO_TITLE') or None
-        run_or_title = run if run else title
-        self.title = run_or_title if run_or_title else 'test run at ' + dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    def __init__(self):
+        run_id = os.environ.get('TESTOMATIO_RUN_ID') or os.environ.get('TESTOMATIO_RUN')
+        title = os.environ.get('TESTOMATIO_TITLE') if os.environ.get('TESTOMATIO_TITLE') else 'test run at ' + dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        shared_run = os.environ.get('TESTOMATIO_SHARED_RUN') in ['True', 'true', '1']
+        self.test_run_id = run_id
+        self.title = title
         self.environment = safe_string_list(os.environ.get('TESTOMATIO_ENV'))
         self.label = safe_string_list(os.environ.get('TESTOMATIO_LABEL'))
-        self.group_title = os.environ.get('TESTOMATIO_RUNGROUP_TITLE') or None
-        self.parallel = parallel
-        # stands for run with shards
-        self.shared_run = run_or_title is not None
+        self.group_title = os.environ.get('TESTOMATIO_RUNGROUP_TITLE')
+        # This allows to report tests to the test run by it's id. https://docs.testomat.io/getting-started/running-automated-tests/#reporting-parallel-tests
+        self.parallel = False if shared_run else True
+        # This allows using test run title to group tests under a single test run. This is needed when running tests in different processes or servers.
+        self.shared_run = shared_run
         self.status_request = {}
         self.build_url = self.resolve_build_url()
 
@@ -38,21 +41,28 @@ class TestRunConfig:
 
     def save_run_id(self, run_id: str) -> None:
         self.test_run_id = run_id
-        with open('.temp_test_run_id', 'w') as f:
+        temp_dir = tempfile.gettempdir()
+        temp_file_path = os.path.join(temp_dir, TESTOMATIO_TEST_RUN_LOCK_FILE)
+        with open(temp_file_path, 'w') as f:
             f.write(run_id)
+
 
     def get_run_id(self) -> Optional[str]:
         if self.test_run_id:
             return self.test_run_id
-        if os.path.exists('.temp_test_run_id'):
-            with open('.temp_test_run_id', 'r') as f:
+        temp_dir = tempfile.gettempdir()
+        temp_file_path = os.path.join(temp_dir, TESTOMATIO_TEST_RUN_LOCK_FILE)
+        if os.path.exists(temp_file_path):
+            with open(temp_file_path, 'r') as f:
                 self.test_run_id = f.read()
                 return self.test_run_id
         return None
 
     def clear_run_id(self) -> None:
-        if os.path.exists('.temp_test_run_id'):
-            os.remove('.temp_test_run_id')
+        temp_dir = tempfile.gettempdir()
+        temp_file_path = os.path.join(temp_dir, TESTOMATIO_TEST_RUN_LOCK_FILE)
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
 
     def resolve_build_url(self) -> Optional[str]:
         # You might not always want the build URL to change in the Testomat.io test run

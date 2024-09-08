@@ -10,7 +10,7 @@ def validate_option(config: Config) -> Literal['sync', 'report', 'remove', 'debu
         if os.getenv('TESTOMATIO') is None:
             raise ValueError('TESTOMATIO env variable is not set')
 
-    if config.getoption('numprocesses') and option in ('sync', 'debug', 'remove'):
+    if hasattr(config.option, 'numprocesses') and option in ('sync', 'debug', 'remove'):
         raise ValueError('Testomatio does not support parallel sync, remove or report. Remove --numprocesses option')
 
     return option

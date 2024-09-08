@@ -11,7 +11,6 @@ from pytestomatio.utils.helper import add_and_enrich_tests, get_test_mapping, co
 from pytestomatio.utils.parser_setup import parser_options
 from pytestomatio.utils import helper
 from pytestomatio.utils import validations
-from xdist.plugin import is_xdist_controller, get_xdist_worker_id
 
 log = logging.getLogger(__name__)
 log.setLevel('INFO')
@@ -34,9 +33,7 @@ def pytest_configure(config: Config):
     if option == 'debug':
         return
 
-    is_parallel = config.getoption('numprocesses') is not None
-
-    pytest.testomatio = Testomatio(TestRunConfig(is_parallel))
+    pytest.testomatio = Testomatio(TestRunConfig())
 
     url = config.getini('testomatio_url')
     project = os.environ.get('TESTOMATIO')
@@ -54,11 +51,12 @@ def pytest_configure(config: Config):
             run_id = pytest.testomatio.test_run_config.test_run_id
             if not run_id:
                 run_details = pytest.testomatio.connector.create_test_run(**run.to_dict())
-                run_id = run_details.get('uid')
-            run.save_run_id(run_id)
-        else:
-            # for xdist - worker process - do nothing
-            pass
+                if run_details:
+                    run_id = run_details.get('uid')
+                    run.save_run_id(run_id)
+                else:
+                    log.error("Failed to create testrun on Testomat.io")
+
 
 
 
@@ -67,19 +65,19 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
     if config.getoption(testomatio) is None:
         return
     
-    # Filter by --test-ids if provided
+    # Filter by --test-id if provided
     test_ids_option = config.getoption("test_id")
     if test_ids_option:
         test_ids = test_ids_option.split("|")
         # Remove "@" from the start of test IDs if present
-        test_ids = [test_id.lstrip("@") for test_id in test_ids]
+        test_ids = [test_id.lstrip("@T") for test_id in test_ids]
         selected_items = []
         deselected_items = []
 
         for item in items:
             # Check if the test has the marker with the ID we are looking for
             for marker in item.iter_markers(name="testomatio"):
-                marker_id = marker.args[0].strip("@")  # Strip "@" from the marker argument
+                marker_id = marker.args[0].lstrip("@T")  # Strip "@" from the marker argument
                 if marker_id in test_ids:
                     selected_items.append(item)
                     break
@@ -117,17 +115,18 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
             run_details = pytest.testomatio.connector.update_test_run(**run.to_dict())
 
             if run_details is None:
-                raise Exception('Test run failed to create. Reporting skipped')
+                log.error('Test run failed to create. Reporting skipped')
+                return
 
-            artifact = run_details.get('artifacts')
-            if artifact:
-                s3_details = helper.read_env_s3_keys(artifact)
+            s3_details = helper.read_env_s3_keys(run_details)
 
-                if all(s3_details):
-                    pytest.testomatio.s3_connector = S3Connector(*s3_details)
-                    pytest.testomatio.s3_connector.login()
-                else:
-                    pytest.testomatio.s3_connector = S3Connector()
+            if all(s3_details):
+                pytest.testomatio.s3_connector = S3Connector(*s3_details)
+                pytest.testomatio.s3_connector.login()
+            else:
+                # TODO: handle missing credentials
+                pytest.testomatio.s3_connector = S3Connector()
+                
         case 'debug':
             with open(metadata_file, 'w') as file:
                 data = json.dumps([i.to_dict() for i in meta], indent=4)
