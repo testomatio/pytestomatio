@@ -92,7 +92,7 @@ https://docs.testomat.io/usage/test-artifacts/
 Analyser needs to be aware of the cloud storage credentials.
 There are two options:
 1. Enable **Share credentials with testomat.io Reporter** option in testomat.io Settings -> Artifacts.
-2. Use environment variables   `ACCESS_KEY_ID, SECRET_ACCESS_KEY, ENDPOINT, BUCKET, BUCKET_PATH`
+2. Use environment variables   `ACCESS_KEY_ID, SECRET_ACCESS_KEY, ENDPOINT, BUCKET`
 
 You would need to decide when you want to upload your test artifacts to cloud storage
 
@@ -197,8 +197,6 @@ def test_example():
 - test run labels, tags
 
 ## TODO
-- retry test run update with less attributes, we get 500 from api
-- handler non configured s3 bucket error
 - Fix test duration
 
 ## Contribution
