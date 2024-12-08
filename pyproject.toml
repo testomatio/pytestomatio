@@ -51,8 +51,12 @@ pytestomatio = "pytestomatio.main"
 [options.extras_require]
 dev = [
     "pytest>=7.2.0",
-    "pytest-testdox>=2.0.0"
+    "pytest-testdox>=2.0.0",
+    "pytest-xdist==3.6.1"
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "smoke: indicates smoke tests"
+]

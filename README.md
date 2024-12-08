@@ -203,7 +203,9 @@ def test_example():
 Use python 3.12
 
 1. `pip install ".[dev]"` (note, there are still issues with imports in edit mode `pip install -e ".[dev]"`)
+1. `TESTOMATIO_URL=https://beta.testomat.io   TESTOMATIO=$TT pytest -p pytester -m smoke`
 1. Test things manually (automated test are WIP)
-2. `cz commit`
-3. `cz bump`
-4. `git push remoteName branchName --tags`
+1. Verify no regression bugs
+1. `cz commit`
+1. `cz bump`
+1. `git push remoteName branchName --tags`

@@ -7,7 +7,9 @@
 # ======================================= 3 passed, 50 deselected in 0.89s =======================================
 
 import pytest
+pytestmark = pytest.mark.smoke
 
+@pytest.mark.testomatio("@T55ecbca9")
 def test_smoke():
     pass
 
@@ -19,5 +21,6 @@ def test_testomatio_only():
 def test_smoke_and_testomatio():
     pass
 
+@pytest.mark.testomatio("@T06f3da52")
 def test_neither_marker():
     pass
