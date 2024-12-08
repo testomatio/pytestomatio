@@ -11,7 +11,7 @@ log = logging.getLogger('pytestomatio')
 
 
 class Connector:
-    def __init__(self, base_url: str = 'https://app.testomat.io', api_key: str = None):
+    def __init__(self, base_url: str = '', api_key: str = None):
         self.base_url = base_url
         self._session = requests.Session()
         self.jwt: str = ''

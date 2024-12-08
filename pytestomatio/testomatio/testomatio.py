@@ -10,9 +10,9 @@ log = logging.getLogger(__name__)
 class Testomatio:
     def __init__(self, test_run_config: TestRunConfig = None,
                  s3_connector: S3Connector = None) -> None:
-        self.s3_connector: S3Connector or None = s3_connector
-        self.test_run_config: TestRunConfig or None = test_run_config
-        self.connector: Connector or None = None
+        self.s3_connector: S3Connector = s3_connector
+        self.test_run_config: TestRunConfig = test_run_config
+        self.connector: Connector = None
 
     def upload_files(self, files_list, bucket_name: str = None) -> str:
         if self.test_run_config.test_run_id is None:
