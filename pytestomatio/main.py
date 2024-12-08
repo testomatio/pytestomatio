@@ -1,17 +1,18 @@
-import os, pytest, logging, json
-import time
-from pytest import Parser, Session, Config, Item, CallInfo, hookimpl
+import os, pytest, logging, json, time
+
+from pytest import Parser, Session, Config, Item, CallInfo
 from pytestomatio.connect.connector import Connector
 from pytestomatio.decor.decorator_updater import update_tests
-from pytestomatio.testomatio.testRunConfig import TestRunConfig
 from pytestomatio.testing.testItem import TestItem
 from pytestomatio.connect.s3_connector import S3Connector
-from .testomatio.testomatio import Testomatio
-from pytestomatio.utils.helper import add_and_enrich_tests, get_test_mapping, collect_tests
+from pytestomatio.utils.helper import add_and_enrich_tests, get_test_mapping, collect_tests, read_env_s3_keys
 from pytestomatio.utils.parser_setup import parser_options
-from pytestomatio.utils import helper
 from pytestomatio.utils import validations
 from xdist.plugin import is_xdist_controller, get_xdist_worker_id
+
+from pytestomatio.testomatio.testRunConfig import TestRunConfig
+from pytestomatio.testomatio.testomatio import Testomatio
+from pytestomatio.testomatio.filter_plugin import TestomatioFilterPlugin
 
 log = logging.getLogger(__name__)
 log.setLevel('INFO')
@@ -23,6 +24,13 @@ testomatio = 'testomatio'
 
 def pytest_addoption(parser: Parser) -> None:
     parser_options(parser, testomatio)
+
+
+def pytest_collection(session):
+    """Capture original collected items before any filters are applied."""
+    # This hook is called after initial test collection, before other filters.
+    # We'll store the items in a session attribute for later use.
+    session._pytestomatio_original_collected_items = []
 
 
 def pytest_configure(config: Config):
@@ -38,7 +46,7 @@ def pytest_configure(config: Config):
 
     pytest.testomatio = Testomatio(TestRunConfig(is_parallel))
 
-    url = config.getini('testomatio_url')
+    url = os.environ.get('TESTOMATIO_URL') or config.getini('testomatio_url')
     project = os.environ.get('TESTOMATIO')
 
     pytest.testomatio.connector = Connector(url, project)
@@ -54,40 +62,33 @@ def pytest_configure(config: Config):
             run_id = pytest.testomatio.test_run_config.test_run_id
             if not run_id:
                 run_details = pytest.testomatio.connector.create_test_run(**run.to_dict())
-                run_id = run_details.get('uid')
-            run.save_run_id(run_id)
-        else:
-            # for xdist - worker process - do nothing
-            pass
+                if run_details:
+                    run_id = run_details.get('uid')
+                    run.save_run_id(run_id)
+                else:
+                    log.error("Failed to create testrun on Testomat.io")
 
+    # Mark our pytest_collection_modifyitems hook to run last,
+    # so that it sees the effect of all built-in and other filters first.
+    # This ensures we only apply our OR logic after other filters have done their job.
+    config.pluginmanager.register(TestomatioFilterPlugin(), "testomatio_filter_plugin")
 
-
-
+@pytest.hookimpl(tryfirst=True)
 def pytest_collection_modifyitems(session: Session, config: Config, items: list[Item]) -> None:
     if config.getoption(testomatio) is None:
         return
-    
-    # Filter by --test-ids if provided
-    test_ids_option = config.getoption("test_id")
-    if test_ids_option:
-        test_ids = test_ids_option.split("|")
-        # Remove "@" from the start of test IDs if present
-        test_ids = [test_id.lstrip("@") for test_id in test_ids]
-        selected_items = []
-        deselected_items = []
 
-        for item in items:
-            # Check if the test has the marker with the ID we are looking for
-            for marker in item.iter_markers(name="testomatio"):
-                marker_id = marker.args[0].strip("@")  # Strip "@" from the marker argument
-                if marker_id in test_ids:
-                    selected_items.append(item)
-                    break
-            else:
-                deselected_items.append(item)
+    # Store a copy of all initially collected items (the first time this hook runs)
+    # The first call to this hook happens before built-in filters like -k, -m fully apply.
+    # By the time this runs, items might still be unfiltered or only partially filtered.
+    # To ensure we get the full original list, we use pytest_collection hook above.
+    if not session._pytestomatio_original_collected_items:
+        # The initial call here gives us the full collected list of tests
+        session._pytestomatio_original_collected_items = items[:]
 
-        items[:] = selected_items
-        config.hook.pytest_deselected(items=deselected_items)
+    # At this point, if other plugins or internal filters like -m and -k run,
+    # they may modify `items` (removing some tests). We run after them by using a hook wrapper
+    # or a trylast marker to ensure our logic runs after most filters.
 
     meta, test_files, test_names = collect_tests(items)
     match config.getoption(testomatio):
@@ -119,15 +120,12 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
             if run_details is None:
                 raise Exception('Test run failed to create. Reporting skipped')
 
-            artifact = run_details.get('artifacts')
-            if artifact:
-                s3_details = helper.read_env_s3_keys(artifact)
+            s3_details = read_env_s3_keys(run_details)
 
-                if all(s3_details):
-                    pytest.testomatio.s3_connector = S3Connector(*s3_details)
-                    pytest.testomatio.s3_connector.login()
-                else:
-                    pytest.testomatio.s3_connector = S3Connector()
+            if all(s3_details):
+                pytest.testomatio.s3_connector = S3Connector(*s3_details)
+                pytest.testomatio.s3_connector.login()
+                
         case 'debug':
             with open(metadata_file, 'w') as file:
                 data = json.dumps([i.to_dict() for i in meta], indent=4)
@@ -135,7 +133,6 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                 pytest.exit('Debug file created. Exiting...')
         case _:
             raise Exception('Unknown pytestomatio parameter. Use one of: add, remove, sync, debug')
-
 
 def pytest_runtest_makereport(item: Item, call: CallInfo):
     pytest.testomatio_config_option = item.config.getoption(testomatio)
