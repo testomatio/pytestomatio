@@ -200,7 +200,10 @@ def test_example():
 - Fix test duration
 
 ## Contribution
-1. `pip install -e .`
+Use python 3.12
+
+1. `pip install ".[dev]"` (note, there are still issues with imports in edit mode `pip install -e ".[dev]"`)
+1. Test things manually (automated test are WIP)
 2. `cz commit`
 3. `cz bump`
 4. `git push remoteName branchName --tags`
