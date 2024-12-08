@@ -1,4 +1,6 @@
 import pytest
+pytestmark = pytest.mark.smoke
+
 test_file = """
         import pytest
 
@@ -17,6 +19,7 @@ test_file = """
             pass
 """
 
+@pytest.mark.testomatio("@T7b058966")
 def test_cli_param_test_id_without_filters(pytester):
     pytester.makepyfile(test_file)
 
@@ -29,6 +32,7 @@ def test_cli_param_test_id_without_filters(pytester):
         "*::test_neither_marker PASSED*",
     ])
 
+@pytest.mark.testomatio("@T3cf626ca")
 def test_cli_param_test_id_with_k_filter(pytester):
     pytester.makepyfile(test_file)
 
@@ -38,6 +42,7 @@ def test_cli_param_test_id_with_k_filter(pytester):
         "*::test_neither_marker PASSED*",
     ])
 
+@pytest.mark.testomatio("@T709adc8a")
 def test_cli_param_test_id_without_k_filter_matching_2_tests(pytester):
     pytester.makepyfile(test_file)
 
@@ -51,6 +56,7 @@ def test_cli_param_test_id_without_k_filter_matching_2_tests(pytester):
 # TODO: troubleshoot pytester env
 # The testomatio and test-id parameters are lost in the pytester env.
 # Please test it in a semiautomated way with "test_cli_params.py" test
+@pytest.mark.testomatio("@T5a965adf")
 @pytest.mark.skip
 def test_cli_param_test_id_with_test_id_filter(pytester):
     pytester.makepyfile(test_file)
