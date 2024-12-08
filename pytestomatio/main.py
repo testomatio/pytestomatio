@@ -2,13 +2,13 @@ import os, pytest, logging, json, time
 
 from pytest import Parser, Session, Config, Item, CallInfo
 from pytestomatio.connect.connector import Connector
-from pytestomatio.decor.decorator_updater import update_tests
-from pytestomatio.testing.testItem import TestItem
 from pytestomatio.connect.s3_connector import S3Connector
+from pytestomatio.testing.testItem import TestItem
+from pytestomatio.decor.decorator_updater import update_tests
+
 from pytestomatio.utils.helper import add_and_enrich_tests, get_test_mapping, collect_tests, read_env_s3_keys
 from pytestomatio.utils.parser_setup import parser_options
 from pytestomatio.utils import validations
-from xdist.plugin import is_xdist_controller, get_xdist_worker_id
 
 from pytestomatio.testomatio.testRunConfig import TestRunConfig
 from pytestomatio.testomatio.testomatio import Testomatio
@@ -20,6 +20,7 @@ log.setLevel('INFO')
 metadata_file = 'metadata.json'
 decorator_name = 'testomatio'
 testomatio = 'testomatio'
+TESTOMATIO_URL = 'https://app.testomat.io'
 
 
 def pytest_addoption(parser: Parser) -> None:
@@ -46,7 +47,7 @@ def pytest_configure(config: Config):
 
     pytest.testomatio = Testomatio(TestRunConfig(is_parallel))
 
-    url = os.environ.get('TESTOMATIO_URL') or config.getini('testomatio_url')
+    url = os.environ.get('TESTOMATIO_URL') or config.getini('testomatio_url') or TESTOMATIO_URL
     project = os.environ.get('TESTOMATIO')
 
     pytest.testomatio.connector = Connector(url, project)
