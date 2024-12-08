@@ -43,7 +43,7 @@ def pytest_configure(config: Config):
     if option == 'debug':
         return
 
-    is_parallel = config.getoption('numprocesses') is not None
+    is_parallel = hasattr(config.option, 'numprocesses')
 
     pytest.testomatio = Testomatio(TestRunConfig(is_parallel))
 
