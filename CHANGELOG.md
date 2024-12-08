@@ -1,3 +1,225 @@
+## 2.8.2.dev37 (2024-12-09)
+
+### Fix
+
+- fix imports and default params
+- pytestomatio plugin usage with xdist, add tests, sync tests
+- test-id filter works together with other filters using OR
+
+## 2.8.2.dev35 (2024-09-05)
+
+### Fix
+
+- enforce artifacts to be returning inline when requested
+
+## 2.8.2.dev34 (2024-09-05)
+
+### Fix
+
+- handle not created test run
+
+## 2.8.2.dev33 (2024-09-05)
+
+### Fix
+
+- add_artifacts depends on the pytest node
+
+## 2.8.2.dev32 (2024-09-04)
+
+### Fix
+
+- fix resolving urls
+
+## 2.8.2.dev31 (2024-09-04)
+
+### Fix
+
+- upload files in bulk
+
+## 2.8.2.dev30 (2024-09-03)
+
+### Fix
+
+- retry connection for a while
+
+## 2.8.2.dev29 (2024-09-03)
+
+### Fix
+
+- more debug logs
+
+## 2.8.2.dev28 (2024-09-03)
+
+### Fix
+
+- debug further
+
+## 2.8.2.dev27 (2024-09-03)
+
+### Fix
+
+- Fix session usage
+
+## 2.8.2.dev26 (2024-09-03)
+
+### Fix
+
+- debug
+
+## 2.8.2.dev25 (2024-09-03)
+
+### Fix
+
+- connection fallback when proxy is unavilable
+
+## 2.8.2.dev24 (2024-09-02)
+
+### Fix
+
+- alway check proxy settings
+
+## 2.8.2.dev23 (2024-09-02)
+
+### Refactor
+
+- debug connectivity error
+
+## 2.8.2.dev22 (2024-09-02)
+
+### Fix
+
+- fix setter
+
+## 2.8.2.dev21 (2024-09-02)
+
+### Fix
+
+- fix getter
+
+## 2.8.2.dev20 (2024-09-02)
+
+### Feat
+
+- proxy aware session
+
+## 2.8.2.dev19 (2024-09-02)
+
+### Fix
+
+- remove proxy for now as I can't resolve it reliably
+
+## 2.8.2.dev18 (2024-09-02)
+
+### Fix
+
+- fix proxy once again
+
+## 2.8.2.dev17 (2024-09-02)
+
+### Fix
+
+- recursion must not happen
+
+## 2.8.2.dev16 (2024-09-02)
+
+### Fix
+
+- fix infinitive loop
+
+## 2.8.2.dev15 (2024-09-02)
+
+### Fix
+
+- resolve proxy for entire session duration
+
+## 2.8.2.dev14 (2024-09-01)
+
+### Feat
+
+- resolve content type for uploaded artifacts
+
+## 2.8.2.dev13 (2024-08-28)
+
+### Feat
+
+- support private and public artifact configuration
+
+## 2.8.2.dev12 (2024-08-27)
+
+### Fix
+
+- empty dict
+
+## 2.8.2.dev11 (2024-08-27)
+
+### Fix
+
+- fix get env
+
+## 2.8.2.dev10 (2024-08-27)
+
+### Fix
+
+- Fix uploading artifacts to the bucket with user defined path
+
+## 2.8.2.dev9 (2024-08-27)
+
+### Fix
+
+- read S3 creads from env acc to the testomatio docs
+
+## 2.8.2.dev8 (2024-08-25)
+
+### Fix
+
+- log error message on test run update failure
+
+## 2.8.2.dev7 (2024-08-25)
+
+### Feat
+
+- do not rely on @T in test id, it's optional part, but still accept such test ids. ex. @T322453 -> 322453
+
+## 2.8.2.dev6 (2024-08-25)
+
+### Feat
+
+- send lables and tags on the test run update call
+
+## 2.8.2.dev5 (2024-08-24)
+
+### Feat
+
+- support HTTP_PROXY var
+
+### Fix
+
+- Fix shared runs
+
+### Refactor
+
+- Use system temp folder
+
+## 2.8.2.dev4 (2024-08-16)
+
+### Fix
+
+- Fix option check
+
+## 2.8.2.dev3 (2024-08-16)
+
+### Fix
+
+- Fix shared run
+
+## 2.8.2.dev2 (2024-08-16)
+
+## 2.8.2.dev1 (2024-08-16)
+
+### Fix
+
+- Parallel run must be True all the time so that testomatio doesn't create new test runs when update test status
+
 ## 2.8.1 (2024-08-14)
 
 ## 2.8.1rc2 (2024-08-12)
