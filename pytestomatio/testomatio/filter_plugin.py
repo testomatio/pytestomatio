@@ -45,7 +45,8 @@ class TestomatioFilterPlugin:
         if other_filters_active:
             # If other filters are applied, use OR logic:
             # the final set is all items that passed previous filters plus those matched by test-ids
-            items[:] = list(set(items) | set(testomatio_matched))
+            # preserving original order of test
+            items[:] = items + [item for item in testomatio_matched if item not in items]
         else:
             # If no other filters are applied, test-ids filter acts as an exclusive filter:
             # only run tests that match the given test IDs
