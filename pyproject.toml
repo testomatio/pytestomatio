@@ -11,9 +11,6 @@ tag_format = "$version"
 version_scheme = "pep440"
 version_provider = "pep621"
 update_changelog_on_bump = false
-[project]
-name = "pytestomatio"
-version = "2.8.2.dev42"
 
 dependencies = [
     "requests>=2.29.0",
@@ -24,11 +21,31 @@ dependencies = [
     "autopep8>=2.1.0"
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.2.0",
+    "pytest-testdox>=2.0.0",
+    "pytest-xdist==3.6.1",
+    "python-dotenv==1.0.1",
+    "toml==0.10.2"
+]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = ["tests"]
+markers = [
+    "smoke: Run smoke tests",
+]
+
+[project]
+version = "2.8.2.dev42"
+name = "pytestomatio"
+description = "Pytest plugin to sync test with testomat.io"
 authors = [
     { name = "Oleksii Ostapov" },
     { name = "TikoQA" },
 ]
-description = "Pytest plugin to sync test with testomat.io"
 readme = "README.md"
 requires-python = ">=3.10"
 classifiers = [
@@ -42,19 +59,3 @@ classifiers = [
 "Testomat.io" = "https://testomat.io/"
 "Homepage" = "https://github.com/testomatio/pytestomatio"
 "Bug Tracker" = "https://github.com/testomatio/pytestomatio/issues"
-
-[project.entry-points.pytest11]
-pytestomatio = "pytestomatio.main"
-
-[options.extras_require]
-dev = [
-    "pytest>=7.2.0",
-    "pytest-testdox>=2.0.0",
-    "pytest-xdist==3.6.1"
-]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-markers = [
-    "smoke: indicates smoke tests"
-]

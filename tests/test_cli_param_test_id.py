@@ -57,8 +57,8 @@ def test_cli_param_test_id_without_k_filter_matching_2_tests(pytester):
 # The testomatio and test-id parameters are lost in the pytester env.
 # Please test it in a semiautomated way with "test_cli_params.py" test
 @pytest.mark.testomatio("@T5a965adf")
-@pytest.mark.skip
 def test_cli_param_test_id_with_test_id_filter(pytester):
+    pytest.skip()
     pytester.makepyfile(test_file)
 
     result = pytester.runpytest_inprocess("--testomatio", "report", '--test-id="@T123"', "-vv")
