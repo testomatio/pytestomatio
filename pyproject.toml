@@ -39,7 +39,7 @@ markers = [
 ]
 
 [project]
-version = "2.8.2.dev42"
+version = "2.8.2.dev43"
 name = "pytestomatio"
 description = "Pytest plugin to sync test with testomat.io"
 authors = [
