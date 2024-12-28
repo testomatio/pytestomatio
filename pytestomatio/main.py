@@ -15,6 +15,8 @@ from pytestomatio.testomatio.testRunConfig import TestRunConfig
 from pytestomatio.testomatio.testomatio import Testomatio
 from pytestomatio.testomatio.filter_plugin import TestomatioFilterPlugin
 
+import pdb
+
 log = logging.getLogger(__name__)
 log.setLevel('INFO')
 
@@ -162,6 +164,7 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         'code': None,
     }
 
+    # TODO: refactor it and use TestItem setter to upate those attributes
     if call.when in ['setup', 'call']:
         if call.excinfo is not None:
             if call.excinfo.typename == 'Skipped':
@@ -175,7 +178,7 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
             request['status'] = 'passed' if call.when == 'call' else request['status']
 
         if hasattr(item, 'callspec'):
-            request['example'] = item.callspec.params
+            request['example'] = test_item.safe_params(item.callspec.params)
 
     if item.nodeid not in pytest.testomatio.test_run_config.status_request:
         pytest.testomatio.test_run_config.status_request[item.nodeid] = request

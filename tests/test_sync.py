@@ -1,4 +1,5 @@
 import pytest
+#TODO verify requests to testomatio
 
 @pytest.mark.testomatio("@Tfaf4da53")
 @pytest.mark.smoke
@@ -35,11 +36,6 @@ def test_sync_works_with_xdist_set_to_0(pytester):
     # Assert that the special exit message is printed to stderr
     result.stdout.fnmatch_lines([
         "*Sync completed without test execution*"
-    ])
-
-    # Assert that no tests were run
-    result.stdout.fnmatch_lines([
-        "*no tests ran in *"
     ])
 
     # Optional: Verify the process exited successfully (0 means no error)

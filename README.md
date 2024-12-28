@@ -202,9 +202,9 @@ def test_example():
 ## Contribution
 Use python 3.12
 
-1. `pip install ".[dev]"` (note, there are still issues with imports in edit mode `pip install -e ".[dev]"`)
-1. `TESTOMATIO_URL=https://beta.testomat.io   TESTOMATIO=$TT pytest -p pytester -m smoke`
-1. Test things manually (automated test are WIP)
+1. `pip install -e ".[dev]"`
+1. `python ./smoke.py`
+1. Test things manually
 1. Verify no regression bugs
 1. `cz commit`
 1. `cz bump`

@@ -124,21 +124,31 @@ class TestItem:
             return test_name
         if not item.callspec:
             return test_name
-        
+
         pattern = r'\$\{(.*?)\}'
 
         def repl(match):
             key = match.group(1)
-            
             value = item.callspec.params.get(key, '')
-            if type(value) is bytes:
-                string_value = value.decode('utf-8')
-            elif isinstance(value, (str, int, float, bool)):
-                string_value = str(value)
-            else:
-                string_value = 'Unsupported type'
+            
+            string_value = self._to_string_value(value)
             # TODO: handle "value with space" on testomatio BE https://github.com/testomatio/check-tests/issues/147
-            return sub(r"[\.\s]", "_", string_value) # Temporary fix for spaces in parameter values
+            return sub(r"[\.\s]", "_", string_value)  # Temporary fix for spaces in parameter values
 
         test_name = sub(pattern, repl, sync_title)
         return test_name
+
+    def _to_string_value(self, value):
+        if callable(value):
+            return value.__name__ if hasattr(value, "__name__") else "anonymous_function"
+        elif isinstance(value, bytes):
+            return value.decode('utf-8')
+        elif isinstance(value, (str, int, float, bool)) or value is None:
+            return str(value)
+        else:
+            return str(value)  # Fallback to a string representation
+
+    # TODO: leverage as an attribute setter
+    def safe_params(self, params):
+        return {key: self._to_string_value(value) for key, value in params.items()}
+
