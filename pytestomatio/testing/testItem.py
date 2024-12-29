@@ -95,15 +95,34 @@ class TestItem:
         else:
             return name
 
-    def _get_test_parameter_key(self, item: Item) -> bool:
-        params = []
+    def _get_test_parameter_key(self, item: Item):
+        """Return a list of parameter names for a given test item."""
+        param_names = set()
+
+        # 1) Look for @pytest.mark.parametrize
         for mark in item.iter_markers('parametrize'):
-            is_list = mark.args[0].find(',') > -1
-            if is_list:
-                params.extend([p.strip() for p in mark.args[0].split(',')])
-            else:
-                params.append(mark.args[0])
-        return params
+            # mark.args[0] is often a string like "param1,param2" 
+            # or just "param1" if there's only one.
+            if len(mark.args) > 0 and isinstance(mark.args[0], str):
+                arg_string = mark.args[0]
+                # If the string has commas, split it into multiple names
+                if ',' in arg_string:
+                    param_names.update(name.strip() for name in arg_string.split(','))
+                else:
+                    param_names.add(arg_string.strip())
+
+        # 2) Look for fixture parameterization (including dynamically generated)
+        #    via callspec, which holds *all* final parameters for an item.
+        callspec = getattr(item, 'callspec', None)
+        if callspec:
+            # callspec.params is a dict: fixture_name -> parameter_value
+            # We only want fixture names, not the values.
+            param_names.update(callspec.params.keys())
+
+        print('_get_test_parameter_key ->', param_names)
+        # Return them as a list, or keep it as a set—whatever you prefer.
+        return list(param_names)
+
     
     def _resolve_parameter_key_in_test_name(self, item: Item, test_name: str) -> str:
         test_params = self._get_test_parameter_key(item)
@@ -120,6 +139,7 @@ class TestItem:
     def _resolve_parameter_value_in_test_name(self, item: Item, test_name: str) -> str:
         param_keys = self._get_test_parameter_key(item)
         sync_title = self._get_sync_test_title(item)
+
         if not param_keys:
             return test_name
         if not item.callspec:

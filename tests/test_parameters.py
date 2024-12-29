@@ -29,8 +29,39 @@ test_file = """
 def test_callable_in_params(pytester):
     pytester.makepyfile(test_file)
 
+    pytester.runpytest("--testomatio", "sync", "-n", "0", "--no-detach")
     result = pytester.runpytest("--testomatio", "report", "-vv")
     result.assert_outcomes(passed=2, failed=0, skipped=0)
-    assert "test_callable_in_params.py::test_operations[add-2-3-5] PASSED" in result.stdout.str()
-    assert "test_callable_in_params.py::test_operations[multiply-2-3-6] PASSED" in result.stdout.str()
+    cleaned_lines = [line.strip() for line in result.stdout.lines if line.strip()]
+
+    assert any("test_callable_in_params.py::test_operations[add-2-3-5]" in line for line in cleaned_lines)
+    assert any("test_callable_in_params.py::test_operations[multiply-2-3-6]" in line for line in cleaned_lines)
+
+session_fixture_file = """
+    import pytest
+
+    @pytest.fixture(scope="session", params=["db_connection_1", "db_connection_2"])
+    def session_fixture(request):
+        # Simulate setting up a database connection
+        db_connection = request.param
+        yield db_connection
+        # Simulate tearing down the database connection
+
+    def test_session_fixture_usage(session_fixture):
+        assert session_fixture in ["db_connection_1", "db_connection_2"], (
+            f"Unexpected session fixture value: {session_fixture}"
+        )
+"""
+
+def test_session_fixture_with_param(pytester):
+    pytester.makepyfile(session_fixture_file)
+
+    pytester.runpytest("--testomatio", "sync", "-n", "0", "--no-detach")
+    result = pytester.runpytest("--testomatio", "report", "-vv", "--full-trace")
+    result.assert_outcomes(passed=2, failed=0, skipped=0)
+
+    cleaned_lines = [line.strip() for line in result.stdout.lines if line.strip()]
+
+    assert any("test_session_fixture_usage[db_connection_1]" in line for line in cleaned_lines)
+    assert any("test_session_fixture_usage[db_connection_2]" in line for line in cleaned_lines)
 
