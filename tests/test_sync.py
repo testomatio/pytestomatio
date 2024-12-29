@@ -14,7 +14,7 @@ def test_sync_stop_when_xdist_in_use(pytester):
     # if option == 'sync' and parallel_set:
     #     raise UsageError("The 'sync' mode does not support parallel execution! In order to synchronise test run command sync as '--testomatio sync -n 0'")
 
-    result = pytester.runpytest_inprocess('-p', 'xdist', '--testomatio', 'sync', '-vv')
+    result = pytester.runpytest('-p', 'xdist', '--testomatio', 'sync', '-vv')
 
     # Match the entire error line as it appears in stderr
     result.stderr.fnmatch_lines([
@@ -31,7 +31,7 @@ def test_sync_works_with_xdist_set_to_0(pytester):
         assert True
     """)
 
-    result = pytester.runpytest_inprocess('-p', 'xdist', '--testomatio', 'sync', '-n', '0', '-vv')
+    result = pytester.runpytest_subprocess('-p', 'xdist', '--testomatio', 'sync', '-n', '0', '-vv')
 
     # Assert that the special exit message is printed to stderr
     result.stdout.fnmatch_lines([

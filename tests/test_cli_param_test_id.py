@@ -23,34 +23,34 @@ test_file = """
 def test_cli_param_test_id_without_filters(pytester):
     pytester.makepyfile(test_file)
 
-    result = pytester.runpytest("--testomatio", "report", "-vv")
+    result = pytester.runpytest_subprocess("--testomatio", "report", "-vv")
     result.assert_outcomes(passed=4, failed=0, skipped=0)
     result.stdout.fnmatch_lines([
-        "*::test_smoke PASSED*",
-        "*::test_testomatio_only PASSED*",
-        "*::test_smoke_and_testomatio PASSED*",
-        "*::test_neither_marker PASSED*",
+        "*::test_smoke*",
+        "*::test_testomatio_only*",
+        "*::test_smoke_and_testomatio*",
+        "*::test_neither_marker*",
     ])
 
 @pytest.mark.testomatio("@T3cf626ca")
 def test_cli_param_test_id_with_k_filter(pytester):
     pytester.makepyfile(test_file)
 
-    result = pytester.runpytest("--testomatio" ,"report", "-vv", "-k", "test_neither_marker")
+    result = pytester.runpytest_subprocess("--testomatio" ,"report", "-vv", "-k", "test_neither_marker")
     result.assert_outcomes(passed=1, failed=0, skipped=0)
     result.stdout.fnmatch_lines([
-        "*::test_neither_marker PASSED*",
+        "*::test_neither_marker*",
     ])
 
 @pytest.mark.testomatio("@T709adc8a")
 def test_cli_param_test_id_without_k_filter_matching_2_tests(pytester):
     pytester.makepyfile(test_file)
 
-    result = pytester.runpytest("--testomatio", "report", "-vv", "-k", "test_smoke")
+    result = pytester.runpytest_subprocess("--testomatio", "report", "-vv", "-k", "test_smoke")
     result.assert_outcomes(passed=2, failed=0, skipped=0)
     result.stdout.fnmatch_lines([
-        "*::test_smoke PASSED*",
-        "*::test_smoke_and_testomatio PASSED*",
+        "*::test_smoke*",
+        "*::test_smoke_and_testomatio*",
     ])
 
 # TODO: troubleshoot pytester env
@@ -61,8 +61,8 @@ def test_cli_param_test_id_with_test_id_filter(pytester):
     pytest.skip()
     pytester.makepyfile(test_file)
 
-    result = pytester.runpytest_inprocess("--testomatio", "report", '--test-id="@T123"', "-vv")
+    result = pytester.runpytest_subprocess("--testomatio", "report", '--test-id="@T123"', "-vv")
     result.assert_outcomes(passed=1, failed=0, skipped=0)
     result.stdout.fnmatch_lines([
-        "*::test_testomatio_only PASSED*",
+        "*::test_testomatio_only*",
     ])

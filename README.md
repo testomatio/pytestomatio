@@ -202,7 +202,7 @@ def test_example():
 ## Contribution
 Use python 3.12
 
-1. `pip install -e ".[dev]"`
+1. `pip install ".[dev]"`
 1. `python ./smoke.py`
 1. Test things manually
 1. Verify no regression bugs
