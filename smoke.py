@@ -1,6 +1,5 @@
 import subprocess
 import os
-from dotenv import load_dotenv
 import toml
 
 def get_version_from_pyproject():
@@ -17,9 +16,6 @@ def get_version_from_pyproject():
         return "unknown"
 
 def run_pytest():
-    # Load environment variables from a .env file
-    load_dotenv()
-
     # Get version from pyproject.toml
     version = get_version_from_pyproject()
 
