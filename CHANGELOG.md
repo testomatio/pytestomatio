@@ -1,36 +1,26 @@
-## 2.8.2.dev5 (2024-08-24)
+## 2.9.0 (2024-12-30)
+
+### Fix
+- support test parameters that comes from the fixtures
+- Fix shared runs
+- pytestomatio plugin usage with xdist, add tests, sync tests
+- Parallel run must be True all the time so that testomatio doesn't create new test runs when update test status
+- enforce artifacts to be returning inline when requested
+- add_artifacts depends on the pytest node
+- Fix uploading artifacts to the bucket with user defined path
+- read S3 creads from env acc to the testomatio docs
 
 ### Feat
-
-- support HTTP_PROXY var
-
-### Fix
-
-- Fix shared runs
+- upload artifacts in bulk
+- resolve content type for uploaded artifacts
+- support private and public artifact configuration
+- Support --test-id parameters that accepts testomatio test id to filter tests
+- send labels and tags on the test run update call
+- support HTTP_PROXY, HTTPS_PROXY
 
 ### Refactor
-
-- Use system temp folder
-
-## 2.8.2.dev4 (2024-08-16)
-
-### Fix
-
-- Fix option check
-
-## 2.8.2.dev3 (2024-08-16)
-
-### Fix
-
-- Fix shared run
-
-## 2.8.2.dev2 (2024-08-16)
-
-## 2.8.2.dev1 (2024-08-16)
-
-### Fix
-
-- Parallel run must be True all the time so that testomatio doesn't create new test runs when update test status
+- Smoke tests
+- Use system temp folder when resolving concurrent test run with xdist
 
 ## 2.8.1 (2024-08-14)
 
