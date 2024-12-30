@@ -14,8 +14,6 @@ from pytestomatio.testomatio.testRunConfig import TestRunConfig
 from pytestomatio.testomatio.testomatio import Testomatio
 from pytestomatio.testomatio.filter_plugin import TestomatioFilterPlugin
 
-import pdb
-
 log = logging.getLogger(__name__)
 log.setLevel('INFO')
 
