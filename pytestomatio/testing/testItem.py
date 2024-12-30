@@ -119,7 +119,6 @@ class TestItem:
             # We only want fixture names, not the values.
             param_names.update(callspec.params.keys())
 
-        print('_get_test_parameter_key ->', param_names)
         # Return them as a list, or keep it as a set—whatever you prefer.
         return list(param_names)
 
