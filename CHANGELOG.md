@@ -1,4 +1,4 @@
-## 2.9.0 (2024-12-30)
+## 2.10.0 (2024-12-30)
 
 ### Fix
 - support test parameters that comes from the fixtures
