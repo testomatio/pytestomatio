@@ -74,4 +74,4 @@ def parser_options(parser: Parser, testomatio='testomatio') -> None:
                         help="Filter tests by Test IDs (e.g., single test id 'T00C73028' or multiply 'T00C73028|T00C73029')
                         """
                     )
-    parser.addini('testomatio_url', 'testomat.io base url', default='https://app.testomat.io')
+    parser.addini('testomatio_url', 'testomat.io base url')

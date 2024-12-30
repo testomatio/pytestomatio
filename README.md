@@ -200,7 +200,12 @@ def test_example():
 - Fix test duration
 
 ## Contribution
-1. `pip install -e .`
-2. `cz commit`
-3. `cz bump`
-4. `git push remoteName branchName --tags`
+Use python 3.12
+
+1. `pip install ".[dev]"`
+1. `python ./smoke.py`
+1. Test things manually
+1. Verify no regression bugs
+1. `cz commit`
+1. `cz bump`
+1. `git push remoteName branchName --tags`
