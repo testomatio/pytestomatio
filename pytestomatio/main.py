@@ -9,13 +9,10 @@ from pytestomatio.decor.decorator_updater import update_tests
 from pytestomatio.utils.helper import add_and_enrich_tests, get_test_mapping, collect_tests, read_env_s3_keys
 from pytestomatio.utils.parser_setup import parser_options
 from pytestomatio.utils import validations
-from xdist.plugin import is_xdist_controller, get_xdist_worker_id
 
 from pytestomatio.testomatio.testRunConfig import TestRunConfig
 from pytestomatio.testomatio.testomatio import Testomatio
 from pytestomatio.testomatio.filter_plugin import TestomatioFilterPlugin
-
-import pdb
 
 log = logging.getLogger(__name__)
 log.setLevel('INFO')
