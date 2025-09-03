@@ -187,7 +187,7 @@ class TestPytestCollectionModifyItems:
         with patch('pytestomatio.main.add_and_enrich_tests') as mock_add_enrich:
             main.pytest_collection_modifyitems(mock_session, mock_config, items)
 
-            pytest.testomatio.connector.load_tests.called_once()
+            assert pytest.testomatio.connector.load_tests.call_count == 1
             passed_meta = pytest.testomatio.connector.load_tests.call_args[0][0]
             assert passed_meta[0].title == items[0].name
 
