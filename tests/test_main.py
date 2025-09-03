@@ -13,6 +13,7 @@ testomatio_api_key = 'test_token'
 pytest_plugins = ["pytester"]
 
 
+@pytest.mark.smoke
 class TestPytestAddOption:
     """Tests for pytest_addoption hook"""
 
@@ -24,6 +25,7 @@ class TestPytestAddOption:
         assert mock_parser.method_calls
 
 
+@pytest.mark.smoke
 class TestPytestCollection:
     """Tests for pytest_collection hook"""
 
@@ -38,6 +40,7 @@ class TestPytestCollection:
         assert mock_session._pytestomatio_original_collected_items == []
 
 
+@pytest.mark.smoke
 class TestPytestConfigure:
     """Tests for pytest_configure hook"""
 
@@ -287,6 +290,7 @@ class TestPytestCollectionModifyItems:
                 main.pytest_collection_modifyitems(mock_session, mock_config, items)
 
 
+@pytest.mark.smoke
 class TestPytestRuntestMakereport:
     """Tests for pytest_runtest_makereport hook"""
 
@@ -368,6 +372,7 @@ class TestPytestRuntestMakereport:
         assert request['test_id'] == '12345678'
 
 
+@pytest.mark.smoke
 class TestPytestUnconfigure:
     """Tests for pytest_unconfigure hook"""
 
@@ -420,6 +425,7 @@ class TestPytestUnconfigure:
         pytest.testomatio.test_run_config.clear_run_id.assert_not_called()
 
 
+@pytest.mark.smoke
 class TestPytestRuntestLogfinish:
     """Tests for pytest_runtest_logfinish hook"""
 
