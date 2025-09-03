@@ -74,7 +74,7 @@ class TestPytestConfigure:
 
         main.pytest_configure(mock_config)
 
-        mock_config.addinivalue_line.assert_called_once()
+        assert mock_config.addinivalue_line.call_count == 1
         assert not hasattr(pytest, 'testomatio') or pytest.testomatio is None
 
     @patch('pytestomatio.main.validations.validate_option')
@@ -191,7 +191,7 @@ class TestPytestCollectionModifyItems:
             passed_meta = pytest.testomatio.connector.load_tests.call_args[0][0]
             assert passed_meta[0].title == items[0].name
 
-            mock_add_enrich.assert_called_once()
+            assert mock_add_enrich.call_count == 1
             mock_exit.assert_called_once_with('Sync completed without test execution')
 
     @patch('pytestomatio.main.update_tests')
@@ -261,7 +261,7 @@ class TestPytestCollectionModifyItems:
             assert args.get('id') == run_id
 
             mock_s3_connector.assert_called_once_with('region', 'access_key', 'secret_key', 'endpoint', 'bucket', 'path')
-            pytest.testomatio.s3_connector.login.assert_called_once()
+            assert pytest.testomatio.s3_connector.login.call_count == 1
 
     @patch('builtins.open', new_callable=mock_open)
     @patch('pytestomatio.main.json.dumps')
@@ -275,7 +275,7 @@ class TestPytestCollectionModifyItems:
         main.pytest_collection_modifyitems(mock_session, mock_config, items)
 
         mock_file.assert_called_once_with('metadata.json', 'w')
-        mock_json_dumps.assert_called_once()
+        assert mock_json_dumps.call_count == 1
         mock_exit.assert_called_once_with('Debug file created. Exiting...')
 
     def test_unknown_option_raises_exception(self, mock_session, mock_config, multiple_test_items):
@@ -407,7 +407,7 @@ class TestPytestUnconfigure:
 
         mock_sleep.assert_called_once_with(1)
         pytest.testomatio.connector.finish_test_run.assert_called_once_with('test_run_123', True)
-        pytest.testomatio.test_run_config.clear_run_id.assert_called_once()
+        assert pytest.testomatio.test_run_config.clear_run_id.call_count == 1
 
     def test_unconfigure_xdist_worker_cleanup(self):
         """Test cleanup in xdist worker process"""

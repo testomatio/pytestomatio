@@ -65,7 +65,7 @@ class TestConnector:
         result = connector._test_proxy_connection(timeout=1)
 
         assert result is True
-        mock_get.assert_called_once()
+        assert mock_get.call_count == 1
 
     @patch('requests.Session.get')
     @patch('time.sleep')
@@ -95,7 +95,7 @@ class TestConnector:
         with patch.dict(os.environ, {}, clear=True):
             connector.load_tests([mock_test])
 
-        mock_post.assert_called_once()
+        assert mock_post.call_count == 1
         call_args = mock_post.call_args
 
         assert f'{connector.base_url}/api/load' in call_args[0][0]
@@ -258,7 +258,7 @@ class TestConnector:
             example={"param": "value"}
         )
 
-        mock_post.assert_called_once()
+        assert mock_post.call_count == 1
         call_args = mock_post.call_args
 
         assert f'{connector.base_url}/api/reporter/run_123/testrun' in call_args[0][0]
@@ -302,7 +302,7 @@ class TestConnector:
         """Test session closed"""
         with patch.object(connector._session, 'close') as mock_close:
             connector.disconnect()
-            mock_close.assert_called_once()
+            assert mock_close.call_count == 1
 
     def test_session_property_getter(self, connector):
         """Test getter for session property"""
@@ -310,7 +310,7 @@ class TestConnector:
             session = connector.session
 
             assert session is connector._session
-            mock_apply.assert_called_once()
+            assert mock_apply.call_count == 1
 
     def test_session_property_setter(self, connector):
         """Test setter for session property"""
@@ -320,4 +320,4 @@ class TestConnector:
             connector.session = new_session
 
             assert connector._session is new_session
-            mock_apply.assert_called_once()
+            assert mock_apply.call_count == 1

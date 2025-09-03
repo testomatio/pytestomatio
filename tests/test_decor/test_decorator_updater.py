@@ -63,5 +63,5 @@ class TestUpdateTests:
                 decorator_name="testomatio"
             )
 
-            mock_default.assert_called_once()
+            assert mock_default.call_count == 1
             mock_pep8.assert_not_called()
