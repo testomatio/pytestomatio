@@ -92,6 +92,7 @@ class Connector:
                     test.class_name
                 ],
                 "code": test.source_code,
+                "description": test.docstring,
                 "file": test.file_path if structure else (
                     test.file_name if directory is None else normpath(join(directory, test.file_name))),
                 "labels": safe_string_list(getenv('TESTOMATIO_SYNC_LABELS')),
