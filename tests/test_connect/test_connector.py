@@ -87,6 +87,7 @@ class TestConnector:
         mock_test.source_code = "def test_login(): pass"
         mock_test.file_path = "test_auth.py"
         mock_test.file_name = "test_auth.py"
+        mock_test.docstring = 'docstring'
 
         mock_response = Mock()
         mock_response.status_code = 200

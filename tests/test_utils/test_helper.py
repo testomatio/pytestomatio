@@ -129,6 +129,7 @@ class TestCollectTests:
             assert 'addition' in test_item.title
             assert test_item.file_name.endswith('.py')
             assert isinstance(test_files, set)
+            assert test_item.docstring == 'Test basic addition'
             assert test_item.abs_path is not None
             assert test_item.abs_path in test_files
 
