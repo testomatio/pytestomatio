@@ -1,6 +1,6 @@
+import pytest
 from unittest.mock import patch, Mock
-
-from pytestomatio.testing.code_collector import get_bdd_function_source
+from pytestomatio.testing.code_collector import get_bdd_function_source, extract_source_code
 from pytestomatio.utils.helper import get_functions_source_by_name
 
 
@@ -188,3 +188,92 @@ class TestGetBddFunctionSource:
 
         result = get_bdd_function_source(mock_func)
         assert 'def test_second()' in result
+
+
+class TestExtractSourceCode:
+
+    @pytest.fixture
+    def mock_bdd_function(self):
+        mock_function = Mock()
+        mock_function.__scenario__ = True
+        return mock_function
+
+    @pytest.fixture
+    def bdd_extractor(self):
+        extractor = Mock()
+        extractor.return_value = 'def test_bdd(): pass'
+        return extractor
+
+    @pytest.fixture
+    def regular_extractor(self):
+        extractor = Mock()
+        extractor.return_value = 'def test_regular(): pass'
+        return extractor
+
+    @pytest.fixture
+    def source_extractors(self, regular_extractor, bdd_extractor):
+        test_extractors = [
+            (lambda f: hasattr(f, '__scenario__'), bdd_extractor),
+            (lambda f: True, regular_extractor)
+        ]
+        return test_extractors
+
+    def test_extract_bdd_function_source(self, mock_bdd_function, bdd_extractor, source_extractors):
+        """Test extraction of BDD function source code"""
+
+        with patch('pytestomatio.testing.code_collector.SOURCE_EXTRACTORS', source_extractors):
+            result = extract_source_code(mock_bdd_function)
+            bdd_extractor.assert_called_once_with(mock_bdd_function)
+            assert result == 'def test_bdd(): pass'
+
+    def test_extract_regular_function_source(self, regular_extractor, source_extractors):
+        """Test extraction of regular function source code"""
+        def test_regular():
+            pass
+
+        with patch('pytestomatio.testing.code_collector.SOURCE_EXTRACTORS', source_extractors):
+            result = extract_source_code(test_regular)
+            regular_extractor.assert_called_once_with(test_regular)
+            assert result == 'def test_regular(): pass'
+
+    def test_bdd_function_takes_precedence(self, regular_extractor, bdd_extractor, source_extractors):
+        """Test that BDD extractor takes precedence over fallback"""
+        mock_function = Mock()
+        mock_function.__scenario__ = True
+
+        with patch('pytestomatio.testing.code_collector.SOURCE_EXTRACTORS', source_extractors):
+            result = extract_source_code(mock_function)
+
+            bdd_extractor.assert_called_once_with(mock_function)
+            regular_extractor.assert_not_called()
+            assert result == 'def test_bdd(): pass'
+
+    def test_fallback_for_function_without_scenario(self, regular_extractor, bdd_extractor, source_extractors):
+        """Test that fallback extractor is used when function has no __scenario__"""
+        mock_function = Mock()
+        if hasattr(mock_function, '__scenario__'):
+            del mock_function.__scenario__
+
+        with patch('pytestomatio.testing.code_collector.SOURCE_EXTRACTORS', source_extractors):
+            result = extract_source_code(mock_function)
+
+            bdd_extractor.assert_not_called()
+            regular_extractor.assert_called_once_with(mock_function)
+            assert result == 'def test_regular(): pass'
+
+    def test_multiple_calls_with_different_functions(self, regular_extractor, bdd_extractor, source_extractors):
+        """Test multiple calls with different types of functions"""
+        bdd_function = Mock()
+        bdd_function.__scenario__ = True
+
+        regular_function = Mock()
+
+        with patch('pytestomatio.testing.code_collector.SOURCE_EXTRACTORS', source_extractors):
+            result1 = extract_source_code(bdd_function)
+            assert result1 == 'def test_bdd(): pass'
+
+            result2 = extract_source_code(regular_function)
+            assert result2 == 'def test_regular(): pass'
+
+            bdd_extractor.assert_called_once_with(bdd_function)
+            regular_extractor.assert_called_once_with(regular_function)
