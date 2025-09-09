@@ -15,8 +15,8 @@ TEST_TYPES = [
 class TestItem:
     def __init__(self, item: Item):
         self.uid = uuid.uuid4()
-        self.id: str = TestItem.get_test_id(item)
         self.type = self._get_test_type(item.function)
+        self.id: str = self.get_test_id(item)
         self.title = self._get_pytest_title(item.name)
         self.sync_title = self._get_sync_test_title(item)
         self.resync_title = self._get_resync_test_title(item)
@@ -30,7 +30,7 @@ class TestItem:
         self.source_code = inspect.getsource(item.function)
         self.class_name = item.cls.__name__ if item.cls else None
         self.artifacts = item.stash.get("artifact_urls", [])
-    
+
     def to_dict(self) -> dict:
         result = dict()
         result['uid'] = str(self.uid)
@@ -50,8 +50,11 @@ class TestItem:
     def json(self) -> str:
         return json.dumps(self.to_dict(), indent=4)
 
-    @staticmethod
-    def get_test_id(item: Item) -> str | None:
+    def get_test_id(self, item: Item) -> str | None:
+        if self.type == 'bdd':
+            for marker in item.iter_markers():
+                if marker.name.startswith('T'):
+                    return '@' + marker.name
         for marker in item.iter_markers(MARKER):
             if marker.args:
                 return marker.args[0]
@@ -89,7 +92,7 @@ class TestItem:
         test_name = self._resolve_parameter_key_in_test_name(item, test_name)
         # Test id is present on already synced tests
         # New test don't have testomatio test id.
-        test_id = TestItem.get_test_id(item)
+        test_id = self.id
         if (test_id):
             test_name = f'{test_name} {test_id}'
         # ex. "User adds item to cart"
