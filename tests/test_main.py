@@ -194,6 +194,40 @@ class TestPytestCollectionModifyItems:
             assert mock_add_enrich.call_count == 1
             mock_exit.assert_called_once_with('Sync completed without test execution')
 
+    @patch('pytestomatio.main.pytest.exit')
+    def test_bdd_tests_excluded_from_sync(self, mock_exit, mock_session, mock_config, multiple_test_items):
+        """Test sync mode"""
+        mock_config.getoption.side_effect = lambda x: {
+            'testomatio': 'sync',
+            'no_empty': False,
+            'no_detach': False,
+            'keep_structure': False,
+            'create': False,
+            'directory': None
+        }.get(x)
+        items = multiple_test_items.copy()
+
+        scenario_mock = Mock()
+        feature_mock = Mock()
+        feature_mock.name = 'mock feature'
+        scenario_mock.feature = feature_mock
+        items[0].function.__scenario__ = scenario_mock
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.connector = Mock()
+        pytest.testomatio.connector.get_tests.return_value = []
+
+        with patch('pytestomatio.main.add_and_enrich_tests') as mock_add_enrich:
+            main.pytest_collection_modifyitems(mock_session, mock_config, items)
+
+            assert pytest.testomatio.connector.load_tests.call_count == 1
+            passed_meta = pytest.testomatio.connector.load_tests.call_args[0][0]
+            assert len(passed_meta) != len(items)
+            assert passed_meta[0].title == items[1].name
+
+            assert mock_add_enrich.call_count == 1
+            mock_exit.assert_called_once_with('Sync completed without test execution')
+
     @patch('pytestomatio.main.update_tests')
     @patch('pytestomatio.main.pytest.exit')
     def test_remove_mode(self, mock_exit, mock_update_tests, mock_session, mock_config, single_test_item,

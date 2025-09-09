@@ -50,6 +50,7 @@ class TestTestItem:
         assert test_item.source_code == "def test_example(): pass"
         assert test_item.class_name is None
         assert test_item.artifacts == []
+        assert test_item.type == 'regular'
 
     @patch('inspect.getsource')
     def test_init_with_marker(self, mock_getsource, mock_item_with_marker):
@@ -276,3 +277,42 @@ class TestTestItem:
             result = test_item._resolve_parameter_value_in_test_name(mock_item, "Test name")
 
             assert result == "Test name"
+
+    @patch('inspect.getsource')
+    def test_get_regular_type(self, mock_getsource, mock_item):
+        mock_getsource.return_value = "def test(): pass"
+        test_item = TestItem(mock_item)
+        assert test_item.type == 'regular'
+
+    @patch('inspect.getsource')
+    def test_get_bdd_type(self, mock_getsource, mock_item):
+        mock_getsource.return_value = "def test(): pass"
+        mock_item.function.__scenario__ = True
+        test_item = TestItem(mock_item)
+        assert test_item.type == 'bdd'
+
+    @patch('inspect.getsource')
+    def test_suite_title_for_regular_test(self, mock_getsource, mock_item):
+        mock_getsource.return_value = "def test(): pass"
+        test_item = TestItem(mock_item)
+        assert test_item.suite_title == 'test_file.py'
+
+    @patch('inspect.getsource')
+    def test_suite_title_for_bdd_test(self, mock_getsource, mock_item):
+        mock_getsource.return_value = "def test(): pass"
+        scenario_mock = Mock()
+        feature_mock = Mock()
+        feature_mock.name = 'Test feature'
+        scenario_mock.feature = feature_mock
+        mock_item.function.__scenario__ = scenario_mock
+        test_item = TestItem(mock_item)
+        assert test_item.suite_title == 'Test feature'
+
+    @patch('inspect.getsource')
+    def test_suite_title_return_filename_for_bdd_test(self, mock_getsource, mock_item):
+        """Test suite title returns filename for bdd test if feature unavailable"""
+        mock_getsource.return_value = "def test(): pass"
+        scenario_mock = Mock(spec=[])
+        mock_item.function.__scenario__ = scenario_mock
+        test_item = TestItem(mock_item)
+        assert test_item.suite_title == 'test_file.py'

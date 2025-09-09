@@ -1,4 +1,5 @@
 import os, pytest, logging, json, time
+import warnings
 
 from pytest import Parser, Session, Config, Item, CallInfo
 from pytestomatio.connect.connector import Connector
@@ -92,8 +93,12 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
     meta, test_files, test_names = collect_tests(items)
     match config.getoption(testomatio):
         case 'sync':
+            tests = [item for item in meta if item.type != 'bdd']
+            if not len(tests) == len(meta):
+                warnings.warn('BDD tests excluded from sync. You need to sync them separately into another project '
+                              'via check-cucumber. For details, see https://github.com/testomatio/check-cucumber')
             pytest.testomatio.connector.load_tests(
-                meta,
+                tests,
                 no_empty=config.getoption('no_empty'),
                 no_detach=config.getoption('no_detach'),
                 structure=config.getoption('keep_structure'),
@@ -151,7 +156,7 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         'status': None,
         'title': test_item.exec_title,
         'run_time': call.duration,
-        'suite_title': test_item.file_name,
+        'suite_title': test_item.suite_title,
         'suite_id': None,
         'test_id': test_id,
         'message': None,
