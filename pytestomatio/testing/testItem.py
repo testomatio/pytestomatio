@@ -16,12 +16,12 @@ class TestItem:
     def __init__(self, item: Item):
         self.uid = uuid.uuid4()
         self.id: str = TestItem.get_test_id(item)
+        self.type = self._get_test_type(item.function)
         self.title = self._get_pytest_title(item.name)
         self.sync_title = self._get_sync_test_title(item)
         self.resync_title = self._get_resync_test_title(item)
         self.exec_title = self._get_execution_test_title(item)
         self.parameters = self._get_test_parameter_key(item)
-        self.type = self._get_test_type(item.function)
         self.file_name = item.path.name
         self.suite_title = self._get_suite_title(item.function)
         self.abs_path = str(item.path)
