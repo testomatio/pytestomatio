@@ -151,7 +151,7 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         'status': None,
         'title': test_item.exec_title,
         'run_time': call.duration,
-        'suite_title': test_item.file_name,
+        'suite_title': test_item.suite_title,
         'suite_id': None,
         'test_id': test_id,
         'message': None,
