@@ -145,11 +145,14 @@ class TestItem:
         if callspec:
             # callspec.params is a dict: fixture_name -> parameter_value
             # We only want fixture names, not the values.
-            param_names.update(callspec.params.keys())
-
+            if self.type == 'bdd':
+                param_names.discard('_pytest_bdd_example')
+                callspec_params = callspec.params.get('_pytest_bdd_example', {})
+                param_names.update(callspec_params.keys())
+            else:
+                param_names.update(callspec.params.keys())
         # Return them as a list, or keep it as a set—whatever you prefer.
         return list(param_names)
-
     
     def _resolve_parameter_key_in_test_name(self, item: Item, test_name: str) -> str:
         test_params = self._get_test_parameter_key(item)
@@ -176,7 +179,8 @@ class TestItem:
 
         def repl(match):
             key = match.group(1)
-            value = item.callspec.params.get(key, '')
+            value = item.callspec.params.get(key, '') if not self.type == 'bdd' else \
+                item.callspec.params.get('_pytest_bdd_example', {}).get(key, '')
             
             string_value = self._to_string_value(value)
             # TODO: handle "value with space" on testomatio BE https://github.com/testomatio/check-tests/issues/147
