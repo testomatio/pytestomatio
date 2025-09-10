@@ -225,6 +225,21 @@ class TestTestItem:
         assert set(result) == {"fixture1", "fixture2"}
 
     @patch('inspect.getsource')
+    def test_get_test_parameter_key_keeps_key_order(self, mock_source, mock_item):
+        """Test _get_test_parameter_key keeps key order"""
+        mock_item.iter_markers.return_value = iter([])
+        mock_item.callspec = Mock()
+        mock_item.callspec.params = {"fixture1": "value1", "fixture2": "value2"}
+
+        test_item = TestItem(mock_item)
+
+        result = test_item._get_test_parameter_key(mock_item)
+
+        assert set(result) == {"fixture1", "fixture2"}
+        assert result[0] == 'fixture1'
+        assert result[1] == 'fixture2'
+
+    @patch('inspect.getsource')
     def test_get_test_parameter_key_with_callspec_for_bdd_test(self, mock_source, mock_bdd_item):
         """Test _get_test_parameter_key with callspec for bdd test"""
         mock_bdd_item.iter_markers.return_value = iter([])

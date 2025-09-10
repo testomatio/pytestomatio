@@ -123,9 +123,9 @@ class TestItem:
         else:
             return name
 
-    def _get_test_parameter_key(self, item: Item):
+    def _get_test_parameter_key(self, item: Item) -> list:
         """Return a list of parameter names for a given test item."""
-        param_names = set()
+        param_names = []
 
         # 1) Look for @pytest.mark.parametrize
         for mark in item.iter_markers('parametrize'):
@@ -135,9 +135,9 @@ class TestItem:
                 arg_string = mark.args[0]
                 # If the string has commas, split it into multiple names
                 if ',' in arg_string:
-                    param_names.update(name.strip() for name in arg_string.split(','))
+                    param_names.extend([name.strip() for name in arg_string.split(',') if name not in param_names])
                 else:
-                    param_names.add(arg_string.strip())
+                    param_names.append(arg_string.strip())
 
         # 2) Look for fixture parameterization (including dynamically generated)
         #    via callspec, which holds *all* final parameters for an item.
@@ -145,14 +145,14 @@ class TestItem:
         if callspec:
             # callspec.params is a dict: fixture_name -> parameter_value
             # We only want fixture names, not the values.
+            callspec_params = callspec.params
             if self.type == 'bdd':
-                param_names.discard('_pytest_bdd_example')
-                callspec_params = callspec.params.get('_pytest_bdd_example', {})
-                param_names.update(callspec_params.keys())
-            else:
-                param_names.update(callspec.params.keys())
-        # Return them as a list, or keep it as a set—whatever you prefer.
-        return list(param_names)
+                bdd_fixture_wrapper_name = '_pytest_bdd_example'
+                if bdd_fixture_wrapper_name in param_names:
+                    param_names.remove(bdd_fixture_wrapper_name)
+                callspec_params = callspec.params.get(bdd_fixture_wrapper_name, {})
+            param_names.extend([name for name in callspec_params.keys() if name not in param_names])
+        return param_names
     
     def _resolve_parameter_key_in_test_name(self, item: Item, test_name: str) -> str:
         test_params = self._get_test_parameter_key(item)
