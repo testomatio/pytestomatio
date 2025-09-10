@@ -28,6 +28,11 @@ class TestTestItem:
         return item
 
     @pytest.fixture
+    def mock_bdd_item(self, mock_item):
+        mock_item.function.__scenario__ = True
+        return mock_item
+
+    @pytest.fixture
     def mock_item_with_marker(self, mock_item):
         """Mock Item with testomatio marker"""
         marker = Mock()
@@ -50,6 +55,7 @@ class TestTestItem:
         assert test_item.source_code == "def test_example(): pass"
         assert test_item.class_name is None
         assert test_item.artifacts == []
+        assert test_item.type == 'regular'
 
     @patch('inspect.getsource')
     def test_init_with_marker(self, mock_getsource, mock_item_with_marker):
@@ -71,23 +77,81 @@ class TestTestItem:
 
         assert test_item.class_name == "TestClass"
 
-    def test_get_test_id_with_marker(self, mock_item):
+    @patch("inspect.getsource")
+    def test_get_test_id_with_marker(self, mock_source, mock_item):
         """Test get_test_id with marker"""
         marker = Mock()
+        marker.name = 'testomatio'
         marker.args = ["@T87654321"]
         mock_item.iter_markers.return_value = iter([marker])
-
-        result = TestItem.get_test_id(mock_item)
+        test_item = TestItem(mock_item)
+        mock_item.iter_markers.return_value = iter([marker])
+        result = test_item.get_test_id(mock_item)
 
         assert result == "@T87654321"
+        assert result == test_item.id
 
-    def test_get_test_id_without_marker(self, mock_item):
-        """Test get_test_id without marker"""
-        mock_item.iter_markers.return_value = iter([])
-
-        result = TestItem.get_test_id(mock_item)
+    @patch("inspect.getsource")
+    def test_get_test_id_with_other_markers(self, mock_source, mock_item):
+        """Test get_test_id with other marker"""
+        marker = Mock()
+        marker.name = 'other'
+        marker.args = ["@T87654321"]
+        markers = [marker]
+        mock_item.iter_markers.side_effect = lambda name=None: iter(
+            [m for m in markers if name is None or m.name == name])
+        test_item = TestItem(mock_item)
+        result = test_item.get_test_id(mock_item)
 
         assert result is None
+        assert test_item.id is None
+
+    @patch("inspect.getsource")
+    def test_get_test_id_without_marker(self, mock_source, mock_item):
+        """Test get_test_id without marker"""
+        mock_item.iter_markers.return_value = iter([])
+        test_item = TestItem(mock_item)
+        result = test_item.get_test_id(mock_item)
+
+        assert result is None
+        assert test_item.id is None
+
+    @patch("inspect.getsource")
+    def test_get_test_id_for_bdd_test(self, mock_source, mock_item):
+        """Test get_test_id with correct marker for bdd test"""
+        marker = Mock()
+        marker.name = "T87654321"
+        mock_item.iter_markers.return_value = iter([marker])
+        mock_item.function.__scenario__ = True
+        test_item = TestItem(mock_item)
+        mock_item.iter_markers.return_value = iter([marker])
+        result = test_item.get_test_id(mock_item)
+        assert result == "@T87654321"
+        assert test_item.id == result
+
+    @patch("inspect.getsource")
+    def test_get_test_id_for_bdd_test_with_other_marker(self, mock_source, mock_item):
+        """Test get_test_id without correct marker for bdd test"""
+        marker = Mock()
+        marker.name = 'other_marker'
+        marker.args = ["@T87654321"]
+        mock_item.iter_markers.return_value = iter([marker])
+        mock_item.function.__scenario__ = True
+        test_item = TestItem(mock_item)
+        result = test_item.get_test_id(mock_item)
+        assert result is None
+        assert test_item.id is None
+
+    @patch("inspect.getsource")
+    def test_get_test_id_for_bdd_test_without_marker(self, mock_source, mock_item):
+        """Test get_test_id without marker for bdd test"""
+        mock_item.iter_markers.return_value = iter([])
+        mock_item.function.__scenario__ = True
+        test_item = TestItem(mock_item)
+        result = test_item.get_test_id(mock_item)
+
+        assert result is None
+        assert test_item.id is None
 
     def test_get_pytest_title_simple(self, mock_item):
         """Test _get_pytest_title without params"""
@@ -123,6 +187,17 @@ class TestTestItem:
 
         assert result == []
 
+    @patch('inspect.getsource')
+    def test_get_test_parameter_key_no_params_for_bdd_test(self, mock_source, mock_bdd_item):
+        """Test _get_test_parameter_key without params for bdd test"""
+        mock_bdd_item.iter_markers.return_value = iter([])
+        test_item = TestItem(mock_bdd_item)
+
+        result = test_item._get_test_parameter_key(mock_bdd_item)
+
+        assert test_item.type == 'bdd'
+        assert result == []
+
     def test_get_test_parameter_key_with_parametrize(self, mock_item):
         """Test _get_test_parameter_key with @pytest.mark.parametrize"""
         param_marker = Mock()
@@ -136,25 +211,66 @@ class TestTestItem:
 
         assert set(result) == {"param1", "param2"}
 
-    def test_get_test_parameter_key_with_callspec(self, mock_item):
+    @patch('inspect.getsource')
+    def test_get_test_parameter_key_with_callspec(self, mock_source, mock_item):
         """Test _get_test_parameter_key with callspec"""
         mock_item.iter_markers.return_value = iter([])
         mock_item.callspec = Mock()
         mock_item.callspec.params = {"fixture1": "value1", "fixture2": "value2"}
 
-        test_item = TestItem.__new__(TestItem)
+        test_item = TestItem(mock_item)
 
         result = test_item._get_test_parameter_key(mock_item)
 
         assert set(result) == {"fixture1", "fixture2"}
 
-    def test_resolve_parameter_key_in_test_name(self, mock_item):
+    @patch('inspect.getsource')
+    def test_get_test_parameter_key_keeps_key_order(self, mock_source, mock_item):
+        """Test _get_test_parameter_key keeps key order"""
+        mock_item.iter_markers.return_value = iter([])
+        mock_item.callspec = Mock()
+        mock_item.callspec.params = {"fixture1": "value1", "fixture2": "value2"}
+
+        test_item = TestItem(mock_item)
+
+        result = test_item._get_test_parameter_key(mock_item)
+
+        assert set(result) == {"fixture1", "fixture2"}
+        assert result[0] == 'fixture1'
+        assert result[1] == 'fixture2'
+
+    @patch('inspect.getsource')
+    def test_get_test_parameter_key_with_callspec_for_bdd_test(self, mock_source, mock_bdd_item):
+        """Test _get_test_parameter_key with callspec for bdd test"""
+        mock_bdd_item.iter_markers.return_value = iter([])
+        mock_bdd_item.callspec = Mock()
+        mock_bdd_item.callspec.params = {'_pytest_bdd_example': {"fixture1": "value1", "fixture2": "value2"}}
+        test_item = TestItem(mock_bdd_item)
+
+        result = test_item._get_test_parameter_key(mock_bdd_item)
+
+        assert test_item.type == 'bdd'
+        assert set(result) == {"fixture1", "fixture2"}
+
+    @patch('inspect.getsource')
+    def test_resolve_parameter_key_in_test_name(self, mock_source, mock_item):
         """Test _resolve_parameter_key_in_test_name"""
-        test_item = TestItem.__new__(TestItem)
+        test_item = TestItem(mock_item)
 
         with patch.object(test_item, '_get_test_parameter_key', return_value=["param1", "param2"]):
             result = test_item._resolve_parameter_key_in_test_name(mock_item, "Test name[value]")
 
+            assert result == "Test name ${param1} ${param2}"
+
+    @patch('inspect.getsource')
+    def test_resolve_parameter_key_in_test_name_for_bdd_test(self, mock_source, mock_bdd_item):
+        """Test _resolve_parameter_key_in_test_name for bdd test"""
+        test_item = TestItem(mock_bdd_item)
+
+        with patch.object(test_item, '_get_test_parameter_key', return_value=["param1", "param2"]):
+            result = test_item._resolve_parameter_key_in_test_name(mock_bdd_item, "Test name[value]")
+
+            assert test_item.type == 'bdd'
             assert result == "Test name ${param1} ${param2}"
 
     def test_resolve_parameter_key_no_params(self, mock_item):
@@ -164,6 +280,17 @@ class TestTestItem:
         with patch.object(test_item, '_get_test_parameter_key', return_value=[]):
             result = test_item._resolve_parameter_key_in_test_name(mock_item, "Test name")
 
+            assert result == "Test name"
+
+    @patch('inspect.getsource')
+    def test_resolve_parameter_key_no_params_for_bdd_test(self, mock_source, mock_bdd_item):
+        """Test _resolve_parameter_key_in_test_name without params for bdd test"""
+        test_item = TestItem(mock_bdd_item)
+
+        with patch.object(test_item, '_get_test_parameter_key', return_value=[]):
+            result = test_item._resolve_parameter_key_in_test_name(mock_bdd_item, "Test name")
+
+            assert test_item.type == 'bdd'
             assert result == "Test name"
 
     def test_to_string_value_various_types(self, mock_item):
@@ -253,9 +380,10 @@ class TestTestItem:
         assert str_result == expected
         assert repr_result == expected
 
-    def test_resolve_parameter_value_in_test_name(self, mock_item):
+    @patch('inspect.getsource')
+    def test_resolve_parameter_value_in_test_name(self, mock_source, mock_item):
         """Test _resolve_parameter_value_in_test_name method"""
-        test_item = TestItem.__new__(TestItem)
+        test_item = TestItem(mock_item)
 
         mock_item.callspec = Mock()
         mock_item.callspec.params = {"param1": "value1", "param2": "value with spaces"}
@@ -267,12 +395,68 @@ class TestTestItem:
                 assert "value1" in result
                 assert "value_with_spaces" in result
 
-    def test_resolve_parameter_value_no_callspec(self, mock_item):
+    @patch('inspect.getsource')
+    def test_resolve_parameter_value_in_test_name_for_bdd_test(self, mock_source, mock_bdd_item):
+        """Test _resolve_parameter_value_in_test_name method for bdd test"""
+        test_item = TestItem(mock_bdd_item)
+
+        mock_bdd_item.callspec = Mock()
+        mock_bdd_item.callspec.params = {'_pytest_bdd_example': {"param1": "value1", "param2": "value with spaces"}}
+
+        with patch.object(test_item, '_get_test_parameter_key', return_value=["param1", "param2"]):
+            with patch.object(test_item, '_get_sync_test_title', return_value="Test ${param1} and ${param2}"):
+                result = test_item._resolve_parameter_value_in_test_name(mock_bdd_item, "Test name")
+
+                assert test_item.type == 'bdd'
+                assert "value1" in result
+                assert "value_with_spaces" in result
+
+    @patch("inspect.getsource")
+    def test_resolve_parameter_value_no_callspec(self, mock_source, mock_item):
         """Test _resolve_parameter_value_in_test_name without callspec"""
-        test_item = TestItem.__new__(TestItem)
+        test_item = TestItem(mock_item)
         mock_item.callspec = None
 
         with patch.object(test_item, '_get_test_parameter_key', return_value=["param1"]):
             result = test_item._resolve_parameter_value_in_test_name(mock_item, "Test name")
 
             assert result == "Test name"
+
+    @patch('inspect.getsource')
+    def test_get_regular_type(self, mock_getsource, mock_item):
+        mock_getsource.return_value = "def test(): pass"
+        test_item = TestItem(mock_item)
+        assert test_item.type == 'regular'
+
+    @patch('inspect.getsource')
+    def test_get_bdd_type(self, mock_getsource, mock_item):
+        mock_getsource.return_value = "def test(): pass"
+        mock_item.function.__scenario__ = True
+        test_item = TestItem(mock_item)
+        assert test_item.type == 'bdd'
+
+    @patch('inspect.getsource')
+    def test_suite_title_for_regular_test(self, mock_getsource, mock_item):
+        mock_getsource.return_value = "def test(): pass"
+        test_item = TestItem(mock_item)
+        assert test_item.suite_title == 'test_file.py'
+
+    @patch('inspect.getsource')
+    def test_suite_title_for_bdd_test(self, mock_getsource, mock_item):
+        mock_getsource.return_value = "def test(): pass"
+        scenario_mock = Mock()
+        feature_mock = Mock()
+        feature_mock.name = 'Test feature'
+        scenario_mock.feature = feature_mock
+        mock_item.function.__scenario__ = scenario_mock
+        test_item = TestItem(mock_item)
+        assert test_item.suite_title == 'Test feature'
+
+    @patch('inspect.getsource')
+    def test_suite_title_return_filename_for_bdd_test(self, mock_getsource, mock_item):
+        """Test suite title returns filename for bdd test if feature unavailable"""
+        mock_getsource.return_value = "def test(): pass"
+        scenario_mock = Mock(spec=[])
+        mock_item.function.__scenario__ = scenario_mock
+        test_item = TestItem(mock_item)
+        assert test_item.suite_title == 'test_file.py'

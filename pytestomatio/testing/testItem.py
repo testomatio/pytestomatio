@@ -6,29 +6,39 @@ from pytest import Item
 import inspect
 
 MARKER = 'testomatio'
+TEST_TYPES = [
+    (lambda f: hasattr(f, '__scenario__'), 'bdd'),
+    (lambda f: True, 'regular')
+]
+
+
 class TestItem:
     def __init__(self, item: Item):
         self.uid = uuid.uuid4()
-        self.id: str = TestItem.get_test_id(item)
+        self.type = self._get_test_type(item.function)
+        self.id: str = self.get_test_id(item)
         self.title = self._get_pytest_title(item.name)
         self.sync_title = self._get_sync_test_title(item)
         self.resync_title = self._get_resync_test_title(item)
         self.exec_title = self._get_execution_test_title(item)
         self.parameters = self._get_test_parameter_key(item)
         self.file_name = item.path.name
+        self.suite_title = self._get_suite_title(item.function)
         self.abs_path = str(item.path)
         self.file_path = item.location[0]
         self.module = item.module.__name__
         self.source_code = inspect.getsource(item.function)
         self.class_name = item.cls.__name__ if item.cls else None
         self.artifacts = item.stash.get("artifact_urls", [])
-    
+
     def to_dict(self) -> dict:
         result = dict()
         result['uid'] = str(self.uid)
         result['id'] = self.id
         result['title'] = self.title
         result['fileName'] = self.file_name
+        result['type'] = self.type
+        result['suite_title'] = self.suite_title
         result['absolutePath'] = self.abs_path
         result['filePath'] = self.file_path
         result['module'] = self.module
@@ -40,8 +50,11 @@ class TestItem:
     def json(self) -> str:
         return json.dumps(self.to_dict(), indent=4)
 
-    @staticmethod
-    def get_test_id(item: Item) -> str | None:
+    def get_test_id(self, item: Item) -> str | None:
+        if self.type == 'bdd':
+            for marker in item.iter_markers():
+                if marker.name.startswith('T'):
+                    return '@' + marker.name
         for marker in item.iter_markers(MARKER):
             if marker.args:
                 return marker.args[0]
@@ -58,13 +71,28 @@ class TestItem:
             return name[0:point]
         return name
 
+    def _get_test_type(self, test):
+        """Returns test type based on predicate check."""
+        for predicate, test_type in TEST_TYPES:
+            if predicate(test):
+                return test_type
+
+    def _get_suite_title(self, test):
+        """Returns suite title based on test type. For bdd test suite title equals Feature name,
+        for regular - filename"""
+        if self.type == 'bdd':
+            scenario = test.__scenario__
+            if scenario and hasattr(scenario, 'feature'):
+                return scenario.feature.name
+        return self.file_name
+
     # Testomatio resolves test id on BE by parsing test name to find test id
     def _get_sync_test_title(self, item: Item) -> str:
         test_name = self.pytest_title_to_testomatio_title(item.name)
         test_name = self._resolve_parameter_key_in_test_name(item, test_name)
         # Test id is present on already synced tests
         # New test don't have testomatio test id.
-        test_id = TestItem.get_test_id(item)
+        test_id = self.id
         if (test_id):
             test_name = f'{test_name} {test_id}'
         # ex. "User adds item to cart"
@@ -95,9 +123,9 @@ class TestItem:
         else:
             return name
 
-    def _get_test_parameter_key(self, item: Item):
+    def _get_test_parameter_key(self, item: Item) -> list:
         """Return a list of parameter names for a given test item."""
-        param_names = set()
+        param_names = []
 
         # 1) Look for @pytest.mark.parametrize
         for mark in item.iter_markers('parametrize'):
@@ -107,9 +135,9 @@ class TestItem:
                 arg_string = mark.args[0]
                 # If the string has commas, split it into multiple names
                 if ',' in arg_string:
-                    param_names.update(name.strip() for name in arg_string.split(','))
+                    param_names.extend([name.strip() for name in arg_string.split(',') if name not in param_names])
                 else:
-                    param_names.add(arg_string.strip())
+                    param_names.append(arg_string.strip())
 
         # 2) Look for fixture parameterization (including dynamically generated)
         #    via callspec, which holds *all* final parameters for an item.
@@ -117,11 +145,14 @@ class TestItem:
         if callspec:
             # callspec.params is a dict: fixture_name -> parameter_value
             # We only want fixture names, not the values.
-            param_names.update(callspec.params.keys())
-
-        # Return them as a list, or keep it as a set—whatever you prefer.
-        return list(param_names)
-
+            callspec_params = callspec.params
+            if self.type == 'bdd':
+                bdd_fixture_wrapper_name = '_pytest_bdd_example'
+                if bdd_fixture_wrapper_name in param_names:
+                    param_names.remove(bdd_fixture_wrapper_name)
+                callspec_params = callspec.params.get(bdd_fixture_wrapper_name, {})
+            param_names.extend([name for name in callspec_params.keys() if name not in param_names])
+        return param_names
     
     def _resolve_parameter_key_in_test_name(self, item: Item, test_name: str) -> str:
         test_params = self._get_test_parameter_key(item)
@@ -148,7 +179,8 @@ class TestItem:
 
         def repl(match):
             key = match.group(1)
-            value = item.callspec.params.get(key, '')
+            value = item.callspec.params.get(key, '') if not self.type == 'bdd' else \
+                item.callspec.params.get('_pytest_bdd_example', {}).get(key, '')
             
             string_value = self._to_string_value(value)
             # TODO: handle "value with space" on testomatio BE https://github.com/testomatio/check-tests/issues/147
