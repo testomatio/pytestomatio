@@ -62,7 +62,7 @@ class StepManager:
             if exc_type:
                 step.error = str(exc_val)
             elif failed_children:
-                step.error = f'Child step failed: {failed_children[0].name}'
+                step.error = f'Child step failed: {failed_children[0].title}'
         else:
             step.status = "passed"
 
