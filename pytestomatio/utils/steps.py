@@ -135,6 +135,6 @@ def step_decorator(title: str, category: str = None, options: StepOptions = None
     return decorator
 
 
-def step_function(name: str, category: str = None, options: StepOptions = None):
+def step_function(title: str, category: str = None, options: StepOptions = None):
     """Decorator for test step"""
-    return step_decorator(name, category, options)
+    return step_decorator(title, category, options)

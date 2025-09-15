@@ -81,6 +81,35 @@ pytest --testomatio report --testRunEnv "windows11,chrome,1920x1080"
 
 Environment values are comma separated, please use double quotation.
 
+### Submitting Test Steps
+
+Plugin supports structural division of the test into separate steps. When reporting to
+testomat.io, along with general information about the test, data for each step is displayed(execution status, time, error).
+
+Test steps implemented as decorator and as Context Manager.
+
+```python
+import pytest
+from pytestomatio.utils.steps import step, step_function
+
+class Book:
+    def __init__(self, author):
+        self.author = author
+
+# decorator 
+@step_function(title='Check author step', category='check', options=None)
+def check_author(author_name, expected_name):
+    assert author_name == expected_name
+
+def test_book_create():
+    author_name = 'David Ket'
+    # context manager
+    with step(title='Book create', category='create'):
+        book = Book(author_name)
+        assert book
+        check_author(book.author, author_name)
+```
+
 
 ### Submitting Test Artifacts
 
