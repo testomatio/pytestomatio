@@ -3,7 +3,19 @@ from unittest.mock import patch, Mock
 import pytest
 
 from pytestomatio.utils.steps import Step, StepManager, _step_managers, StepContext, step, step_decorator, \
-    get_step_manager
+    get_step_manager, StepOptions
+
+
+class TestStepOptions:
+
+    def test_options_init(self):
+        options = StepOptions(box=True)
+        assert options.box is True
+
+    def test_to_dict(self):
+        options = StepOptions(box=True)
+        result = options.to_dict()
+        assert result['box'] == options.box
 
 
 class TestStep:
@@ -12,10 +24,34 @@ class TestStep:
     def test_step_init(self):
         step = Step("Test Step")
         assert step.title == 'Test Step'
+        assert step.category is None
         assert step.start_time is None
         assert step.end_time is None
         assert step.status is None
         assert step.error is None
+        assert step.options is None
+        assert step.children == []
+
+    def test_step_init_with_category(self):
+        step = Step("Test Step", "New")
+        assert step.title == 'Test Step'
+        assert step.category == 'New'
+        assert step.start_time is None
+        assert step.end_time is None
+        assert step.status is None
+        assert step.error is None
+        assert step.options is None
+        assert step.children == []
+
+    def test_step_init_with_options(self):
+        step = Step("Test Step", options=StepOptions(box=True))
+        assert step.title == 'Test Step'
+        assert step.category is None
+        assert step.start_time is None
+        assert step.end_time is None
+        assert step.status is None
+        assert step.error is None
+        assert step.options == {'box': True}
         assert step.children == []
 
     def test_step_duration_calculation(self):
@@ -40,15 +76,19 @@ class TestStep:
         result = step.to_dict()
         expected = {
             "title": "Test Step",
+            "category": None,
             "status": "passed",
             "duration": 1.0,
             "error": None,
+            "options": None,
             "steps": [
                 {
                     "title": "Nested step",
+                    "category": None,
                     "status": "failed",
                     "duration": None,
                     "error": "Test error",
+                    "options": None,
                     "steps": []
                 }
             ]

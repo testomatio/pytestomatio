@@ -8,14 +8,26 @@ from typing import Dict, List
 _step_managers = {}
 
 
+class StepOptions:
+    def __init__(self, box: bool = False):
+        self.box = box
+
+    def to_dict(self):
+        return {
+            "box": self.box
+        }
+
+
 class Step:
-    def __init__(self, title: str):
+    def __init__(self, title: str, category: str = None, options: StepOptions = None):
         self.title = title
+        self.category = category
         self.start_time = None
         self.end_time = None
         self.status = None
         self.error = None
         self.children = []
+        self.options = options.to_dict() if options else options
 
     @property
     def duration(self):
@@ -26,9 +38,11 @@ class Step:
         """Returns dict representation of Step"""
         return {
             "title": self.title,
+            "category": self.category,
             "status": self.status,
             "duration": self.duration,
             "error": self.error,
+            "options": self.options,
             "steps": [child.to_dict() for child in self.children]
         }
 
@@ -85,8 +99,8 @@ def get_step_manager() -> StepManager:
 
 
 class StepContext:
-    def __init__(self, title: str):
-        self.step = Step(title)
+    def __init__(self, title: str, category: str = None, options: StepOptions = None):
+        self.step = Step(title, category, options)
         self.manager = get_step_manager()
 
     def __enter__(self):
@@ -98,17 +112,17 @@ class StepContext:
         return False
 
 
-def step(title: str):
+def step(title: str, category: str = None, options: StepOptions = None):
     """Context manager for test step"""
-    return StepContext(title)
+    return StepContext(title, category, options)
 
 
-def step_decorator(title: str):
+def step_decorator(title: str, category: str = None, options: StepOptions = None):
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             manager = get_step_manager()
-            step_obj = Step(title)
+            step_obj = Step(title, category, options)
             manager.start_step(step_obj)
             try:
                 result = func(*args, **kwargs)
@@ -121,6 +135,6 @@ def step_decorator(title: str):
     return decorator
 
 
-def step_function(name: str):
+def step_function(name: str, category: str = None, options: StepOptions = None):
     """Decorator for test step"""
-    return step_decorator(name)
+    return step_decorator(name, category, options)
