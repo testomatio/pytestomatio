@@ -81,6 +81,68 @@ pytest --testomatio report --testRunEnv "windows11,chrome,1920x1080"
 
 Environment values are comma separated, please use double quotation.
 
+### Submitting Test Steps
+
+The plugin supports dividing tests into separate, trackable steps. When reporting to testomat.io, you can view detailed information for each step including execution status, duration, and any errors that occurred.
+
+**Important**: This plugin only supports **reporting** test steps to testomat.io during test execution. Test steps cannot be imported to testomat.io using **sync** option.
+
+Test steps can be implemented using either decorators or context managers, giving you flexibility in how you structure your tests.
+
+**Error Handling**: If a step fails, the error is captured and reported to testomat.io while the test execution continues with remaining steps.
+
+**Parameters**:
+```
+@step_function(
+    title = "Step1", # Step name displayed in testomat.io
+    category = "user" # Optional: categorize steps(user, system, framework)
+)
+with step(
+    title = "Step1", # Step name displayed in testomat.io
+    category = "user" # Optional: categorize steps(user, system, framework)
+)
+
+```
+
+**Example**:
+```python
+import pytest
+from pytestomatio.utils.steps import step, step_function
+
+class Book:
+    def __init__(self, author, text):
+        self.author = author
+        self.text = text
+        
+    def read(self):
+        return self.text
+
+# decorator 
+@step_function(title='Check author step', category='user')
+def check_author(author_name, expected_name):
+    assert author_name == expected_name
+
+def test_book_create():
+    author_name = 'David Ket'
+    # context manager
+    with step(title='Book create', category='user'):
+        book = Book(author_name, 'text')
+        assert book
+        check_author(book.author, author_name)
+
+# nested steps also supported
+def test_book_read():
+    text = 'book text'
+    author_name = 'David Ket'
+    
+    with step(title='Read book'):
+        with step(title='Book create', category='user'):
+            book = Book(author_name, 'text')
+            assert book
+            check_author(book.author, author_name)
+        assert book.read() == text
+```
+
 
 ### Submitting Test Artifacts
 

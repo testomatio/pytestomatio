@@ -8,6 +8,7 @@ from pytestomatio.decor.decorator_updater import update_tests
 
 from pytestomatio.utils.helper import add_and_enrich_tests, get_test_mapping, collect_tests, read_env_s3_keys
 from pytestomatio.utils.parser_setup import parser_options
+from pytestomatio.utils.steps import _step_managers
 from pytestomatio.utils import validations
 
 from pytestomatio.testomatio.testRunConfig import TestRunConfig
@@ -25,6 +26,20 @@ TESTOMATIO_URL = 'https://app.testomat.io'
 
 def pytest_addoption(parser: Parser) -> None:
     parser_options(parser, testomatio)
+
+
+def pytest_runtest_setup(item):
+    """Assign current item for test steps handling, clear step manager for current item if exists"""
+    pytest._current_item = item
+    if item.nodeid in _step_managers:
+        _step_managers.pop(item.nodeid)
+
+
+def pytest_runtest_teardown(item, nextitem):
+    """Clear current item and current item step manager"""
+    if item.nodeid in _step_managers:
+        _step_managers.pop(item.nodeid)
+    pytest._current_item = None
 
 
 def pytest_collection(session):
@@ -177,6 +192,10 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
 
         if hasattr(item, 'callspec'):
             request['example'] = test_item.safe_params(item.callspec.params)
+
+        step_manager = _step_managers.get(item.nodeid)
+        if step_manager:
+            request['steps'] = step_manager.get_steps()
 
     if item.nodeid not in pytest.testomatio.test_run_config.status_request:
         pytest.testomatio.test_run_config.status_request[item.nodeid] = request
