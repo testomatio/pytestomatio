@@ -3,19 +3,7 @@ from unittest.mock import patch, Mock
 import pytest
 
 from pytestomatio.utils.steps import Step, StepManager, _step_managers, StepContext, step, step_decorator, \
-    get_step_manager, StepOptions
-
-
-class TestStepOptions:
-
-    def test_options_init(self):
-        options = StepOptions(box=True)
-        assert options.box is True
-
-    def test_to_dict(self):
-        options = StepOptions(box=True)
-        result = options.to_dict()
-        assert result['box'] == options.box
+    get_step_manager
 
 
 class TestStep:
@@ -29,29 +17,26 @@ class TestStep:
         assert step.end_time is None
         assert step.status is None
         assert step.error is None
-        assert step.options is None
         assert step.children == []
 
-    def test_step_init_with_category(self):
-        step = Step("Test Step", "New")
+    def test_step_init_with_allowed_category(self):
+        step = Step("Test Step", "system")
         assert step.title == 'Test Step'
-        assert step.category == 'New'
+        assert step.category == 'system'
         assert step.start_time is None
         assert step.end_time is None
         assert step.status is None
         assert step.error is None
-        assert step.options is None
         assert step.children == []
 
-    def test_step_init_with_options(self):
-        step = Step("Test Step", options=StepOptions(box=True))
+    def test_step_init_with_not_allowed_category(self):
+        step = Step("Test Step", "New")
         assert step.title == 'Test Step'
         assert step.category is None
         assert step.start_time is None
         assert step.end_time is None
         assert step.status is None
         assert step.error is None
-        assert step.options == {'box': True}
         assert step.children == []
 
     def test_step_duration_calculation(self):
@@ -63,7 +48,7 @@ class TestStep:
         assert step.duration == 1.5
 
     def test_step_to_dict(self):
-        step = Step("Test Step")
+        step = Step("Test Step", 'system')
         step.status = "passed"
         step.start_time = 1.0
         step.end_time = 2.0
@@ -76,11 +61,10 @@ class TestStep:
         result = step.to_dict()
         expected = {
             "title": "Test Step",
-            "category": None,
+            "category": 'system',
             "status": "passed",
             "duration": 1.0,
             "error": None,
-            "options": None,
             "steps": [
                 {
                     "title": "Nested step",
@@ -88,7 +72,6 @@ class TestStep:
                     "status": "failed",
                     "duration": None,
                     "error": "Test error",
-                    "options": None,
                     "steps": []
                 }
             ]
