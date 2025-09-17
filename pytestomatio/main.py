@@ -146,6 +146,7 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         test_id = None
     else:
         test_id = test_item.id if not test_item.id.startswith("@T") else test_item.id[2:]
+    rid = f'{pytest.testomatio.test_run_config.environment}-{item.name}-{test_id}'
 
     request = {
         'status': None,
@@ -160,6 +161,7 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         'artifacts': test_item.artifacts,
         'steps': None,
         'code': None,
+        'rid': rid,
     }
 
     # TODO: refactor it and use TestItem setter to upate those attributes

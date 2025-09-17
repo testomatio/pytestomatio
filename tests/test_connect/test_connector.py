@@ -245,6 +245,7 @@ class TestConnector:
 
         connector.update_test_status(
             run_id="run_123",
+            rid="rid123",
             status="passed",
             title="Test Login",
             suite_title="Auth Suite",
