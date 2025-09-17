@@ -257,7 +257,8 @@ class TestConnector:
             artifacts=["screenshot.png"],
             steps="Step 1\nStep 2",
             code="def test_login(): pass",
-            example={"param": "value"}
+            example={"param": "value"},
+            meta={}
         )
 
         assert mock_post.call_count == 1

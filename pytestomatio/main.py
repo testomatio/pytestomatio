@@ -162,6 +162,7 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         'steps': None,
         'code': None,
         'rid': rid,
+        'meta': pytest.testomatio.test_run_config.meta
     }
 
     # TODO: refactor it and use TestItem setter to upate those attributes

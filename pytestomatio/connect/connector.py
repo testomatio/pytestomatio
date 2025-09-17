@@ -191,7 +191,8 @@ class Connector:
                            artifacts: list[str],
                            steps: str,
                            code: str,
-                           example: dict) -> None:
+                           example: dict,
+                           meta: dict) -> None:
 
         request = {
             "status": status,  # Enum: "passed" "failed" "skipped"
@@ -206,7 +207,8 @@ class Connector:
             "artifacts": artifacts,
             "steps": steps,
             "code": code,
-            "rid": rid
+            "rid": rid,
+            "meta": meta
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
         try:
