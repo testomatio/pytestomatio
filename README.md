@@ -159,13 +159,15 @@ Note: Test id should be started from letter "T"
 You can use environment variable to control certain features of testomat.io
 
 #### Basic configuration
-| Env variable              | What it does                                                                                                                                                                                                          | Examples                                                                         |
-|---------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
-| TESTOMATIO                | Provides token for pytestomatio to access and push data to testomat.io. Required for **sync** and **report** commands                                                                                                 | TESTOMATIO=tstmt_***** pytest --testomatio sync                                  |
-| TESTOMATIO_SYNC_LABELS    | Assign labels to a test case when you synchronise test from code with testomat.io. Labels must exist in project and their scope must be enabled for tests                                                             | TESTOMATIO_SYNC_LABELS="number:1,list:one,standalone" pytest --testomatio report |
-| TESTOMATIO_CODE_STYLE     | Code parsing style for test synchronization. If you are not sure, don't set this variable. Default value is 'default'                                                                                                 | TESTOMATIO_CODE_STYLE=pep8 pytest --testomatio sync                              |
-| TESTOMATIO_CI_DOWNSTREAM  | If set, pytestomatio will not set or update build url for a test run. This is useful in scenarios where build url is already set in the test run by Testomat.io for test runs that a created directly on Testomat.io. | TESTOMATIO_CI_DOWNSTREAM=true pytest --testomatio report                         |
- | TESTOMATIO_URL            | Customize testomat.io url                                                                                                                                                                                             | TESTOMATIO_URL=https://custom.com/ pytest --testomatio report                    |
+| Env variable             | What it does                                                                                                                                                                                                          | Examples                                                                         |
+|--------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
+| TESTOMATIO               | Provides token for pytestomatio to access and push data to testomat.io. Required for **sync** and **report** commands                                                                                                 | TESTOMATIO=tstmt_***** pytest --testomatio sync                                  |
+| TESTOMATIO_SYNC_LABELS   | Assign labels to a test case when you synchronise test from code with testomat.io. Labels must exist in project and their scope must be enabled for tests                                                             | TESTOMATIO_SYNC_LABELS="number:1,list:one,standalone" pytest --testomatio report |
+| TESTOMATIO_CODE_STYLE    | Code parsing style for test synchronization. If you are not sure, don't set this variable. Default value is 'default'                                                                                                 | TESTOMATIO_CODE_STYLE=pep8 pytest --testomatio sync                              |
+| TESTOMATIO_CI_DOWNSTREAM | If set, pytestomatio will not set or update build url for a test run. This is useful in scenarios where build url is already set in the test run by Testomat.io for test runs that a created directly on Testomat.io. | TESTOMATIO_CI_DOWNSTREAM=true pytest --testomatio report                         |
+ | TESTOMATIO_URL           | Customize testomat.io url                                                                                                                                                                                             | TESTOMATIO_URL=https://custom.com/ pytest --testomatio report                    |
+ | BUILD_URL                | Overrides build url run tests                                                                                                                                                                                         | TESTOMATIO_URL=https://custom.com/ pytest --testomatio report                    |
+
 
 #### Test Run configuration
 | Env variable             | What it does                                                                                                               | Examples                                                          |
@@ -175,6 +177,18 @@ You can use environment variable to control certain features of testomat.io
 | TESTOMATIO_RUNGROUP_TITLE | Create a group (folder) for a test run. If group already exists, attach test run to it                                     | TESTOMATIO_RUNGROUP_TITLE="Release 2.0" pytest --testomatio report |
 | TESTOMATIO_ENV           | Assign environment to a test run, env variant of **testRunEnv** option. Has a lower precedence than **testRunEnv** option. | TESTOMATIO_ENV="linux,chrome,1920x1080" pytest --testomatio report |
 | TESTOMATIO_LABEL         | Assign labels to a test run. Labels must exist in project and their scope must be enabled for runs                         | TESTOMATIO_LABEL="smoke,regression" pytest --testomatio report    |
+
+#### S3 Bucket configuration
+| Env variable         | Description                           |
+|----------------------|---------------------------------------|
+| S3_REGION            | Your S3 region                        |
+| S3_ACCESS_KEY_ID     | Your S3 access key ID                 |
+| S3_SECRET_ACCESS_KEY | Your S3 secret access key             |
+| S3_BUCKET            | Your S3 bucket name                   |
+| S3_ENDPOINT          | Your S3 endpoint                      |
+| S3_BUCKET_PATH       | Path to your bucket                   |
+| TESTOMATIO_PRIVATE_ARTIFACTS       | Store artifacts in a bucket privately |
+
 
 ### pytest.ini
 In case you are using private testomat.io service, create `pytest.ini` file in your project root directory. Specify
