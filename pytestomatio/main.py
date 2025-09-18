@@ -53,7 +53,13 @@ def pytest_configure(config: Config):
     if run_env:
         pytest.testomatio.test_run_config.set_env(run_env)
 
-    if config.getoption(testomatio) and config.getoption(testomatio).lower() == 'report':
+    if option == 'finish':
+        run: TestRunConfig = pytest.testomatio.test_run_config
+        pytest.testomatio.connector.finish_test_run(run.test_run_id, True)
+        run.clear_run_id()
+        pytest.exit('Finish command executed. Exiting without test execution...')
+
+    if option and option in {'report', 'launch'}:
         run: TestRunConfig = pytest.testomatio.test_run_config
 
         # for xdist - main process
@@ -66,6 +72,10 @@ def pytest_configure(config: Config):
                     run.save_run_id(run_id)
                 else:
                     log.error("Failed to create testrun on Testomat.io")
+                    pytest.exit("Aborting test run")
+
+                if option == 'launch':
+                    pytest.exit(f'Empty run successfully created. Run ID: {run_id}')
 
     # Mark our pytest_collection_modifyitems hook to run last,
     # so that it sees the effect of all built-in and other filters first.
@@ -132,7 +142,8 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                 file.write(data)
                 pytest.exit('Debug file created. Exiting...')
         case _:
-            raise Exception('Unknown pytestomatio parameter. Use one of: add, remove, sync, debug')
+            raise Exception('Unknown pytestomatio parameter. Use one of: report, remove, sync, debug')
+
 
 def pytest_runtest_makereport(item: Item, call: CallInfo):
     pytest.testomatio_config_option = item.config.getoption(testomatio)

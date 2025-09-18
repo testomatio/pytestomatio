@@ -140,6 +140,57 @@ class TestPytestConfigure:
         mock_connector_instance.create_test_run.assert_called_once_with(title='Test Run')
         mock_testomatio_instance.test_run_config.save_run_id.assert_called_once_with('run_12345')
 
+    @patch('pytestomatio.main.pytest.exit')
+    @patch('pytestomatio.main.validations.validate_option')
+    @patch('pytestomatio.main.Testomatio')
+    @patch('pytestomatio.main.Connector')
+    @patch.dict(os.environ, {'TESTOMATIO': testomatio_api_key})
+    def test_configure_launch_option_creates_new_run_and_exit(self, mock_connector, mock_testomatio, mock_validate,
+                                                              mock_exit, mock_config):
+        mock_validate.return_value = 'launch'
+        mock_config.getoption.side_effect = lambda x: 'launch' if x == 'testomatio' else None
+
+        assert not hasattr(mock_config, 'workerinput')
+
+        mock_testomatio_instance = Mock()
+        mock_testomatio.return_value = mock_testomatio_instance
+        mock_testomatio_instance.test_run_config.test_run_id = None
+        mock_testomatio_instance.test_run_config.to_dict.return_value = {'title': 'Test Run'}
+
+        mock_connector_instance = Mock()
+        mock_connector.return_value = mock_connector_instance
+        mock_connector_instance.create_test_run.return_value = {'uid': 'run_12345'}
+
+        main.pytest_configure(mock_config)
+
+        mock_connector_instance.create_test_run.assert_called_once_with(title='Test Run')
+        mock_testomatio_instance.test_run_config.save_run_id.assert_called_once_with('run_12345')
+        mock_exit.assert_called_once_with('Empty run successfully created. Run ID: run_12345')
+
+    @patch('pytestomatio.main.pytest.exit')
+    @patch('pytestomatio.main.validations.validate_option')
+    @patch('pytestomatio.main.Testomatio')
+    @patch('pytestomatio.main.Connector')
+    @patch.dict(os.environ, {'TESTOMATIO': testomatio_api_key})
+    def test_configure_finish_option_finished_run_and_exit(self, mock_connector, mock_testomatio, mock_validate,
+                                                              mock_exit, mock_config):
+        mock_validate.return_value = 'finish'
+        mock_config.getoption.side_effect = lambda x: 'finish' if x == 'testomatio' else None
+
+        assert not hasattr(mock_config, 'workerinput')
+
+        mock_testomatio_instance = Mock()
+        mock_testomatio.return_value = mock_testomatio_instance
+        mock_testomatio_instance.test_run_config.test_run_id = '123'
+
+        mock_connector_instance = Mock()
+        mock_connector.return_value = mock_connector_instance
+
+        main.pytest_configure(mock_config)
+
+        mock_connector_instance.finish_test_run.assert_called_once_with('123', True)
+        mock_exit.assert_called_once_with('Finish command executed. Exiting without test execution...')
+
 
 class TestPytestCollectionModifyItems:
     """Tests for pytest_collection_modifyitems hook"""
