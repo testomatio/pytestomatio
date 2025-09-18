@@ -24,13 +24,14 @@ class TestTestRunConfig:
                 assert config.parallel is True
                 assert config.shared_run is False
                 assert config.status_request == {}
+                assert config.meta is None
 
     def test_init_with_env_variables(self):
         """Test init with env vars"""
         env_vars = {
             'TESTOMATIO_RUN_ID': 'run_12345',
             'TESTOMATIO_TITLE': 'Custom Test Run',
-            'TESTOMATIO_ENV': 'linux,chrome,1920x1080',
+            'TESTOMATIO_ENV': 'linux,browser:chrome,1920x1080',
             'TESTOMATIO_LABEL': 'smoke,regression',
             'TESTOMATIO_RUNGROUP_TITLE': 'Release 2.0'
         }
@@ -40,11 +41,12 @@ class TestTestRunConfig:
 
             assert config.test_run_id == 'run_12345'
             assert config.title == 'Custom Test Run'
-            assert config.environment == 'linux,chrome,1920x1080'
+            assert config.environment == 'linux,browser:chrome,1920x1080'
             assert config.label == 'smoke,regression'
             assert config.group_title == 'Release 2.0'
             assert config.parallel is True
             assert config.shared_run is False
+            assert config.meta == {'linux': None, 'browser': 'chrome', '1920x1080': None}
 
     @pytest.mark.parametrize('value', ['True', 'true', '1'])
     def test_init_shared_run_true_variations(self, value):
@@ -239,3 +241,13 @@ class TestTestRunConfig:
             config = TestRunConfig()
 
             assert config.build_url is None
+
+    def test_update_meta(self):
+        """Test update_meta"""
+        with patch.dict(os.environ, {}, clear=True):
+            config = TestRunConfig()
+            assert config.meta is None
+
+            config.environment = 'env1, env2:True'
+            result = config.update_meta()
+            assert result == {' env2': 'True', 'env1': None}
