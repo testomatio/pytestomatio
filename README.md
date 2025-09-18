@@ -265,6 +265,20 @@ def pytest_runtest_makereport(item, call):
     pytest.testomatio.add_artifacts([artifact_url])
 ```
 
+### Cross-Platform Testing
+The plugin supports reporting the same test multiple times in a single run. This is especially useful for Cross-Platform
+testing, when you run the same test on different environments. 
+To use this feature you need to specify test run environment through 
+**TESTOMATIO_ENV** environment variable or by using **--testRunEnv** option.
+Example:
+```bash
+TESTOMATIO=***api_key*** TESTOMATIO_RUN_ID=***run_id*** pytest --testomatio report --testRunEnv "os:ubuntu, integration"
+TESTOMATIO=***api_key*** TESTOMATIO_RUN_ID=***run_id*** pytest --testomatio report --testRunEnv "os:windowns, integration"
+```
+Executing these commands will include the tests in the same run, but as separate instances. Each test will contain metadata with information about the test run environment.
+
+**Note**: Only key:value envs will be passed into tests metadata
+
 ## Contributing
 Use python 3.12
 
