@@ -56,6 +56,38 @@ class TestValidateOption:
 
         assert result == 'debug'
 
+    def test_validate_launch_option_requires_api_key(self, mock_config):
+        """Test validation failed if no api key for launch option"""
+        mock_config.getoption.return_value = 'launch'
+
+        with patch.dict(os.environ, {}, clear=True):
+            with pytest.raises(ValueError, match='TESTOMATIO env variable is not set'):
+                validate_option(mock_config)
+
+    def test_validate_finish_option_requires_api_key(self, mock_config):
+        """Test validation failed if no api key for finish option"""
+        mock_config.getoption.return_value = 'launch'
+
+        with patch.dict(os.environ, {}, clear=True):
+            with pytest.raises(ValueError, match='TESTOMATIO env variable is not set'):
+                validate_option(mock_config)
+
+    def test_validate_launch_option_error_if_run_id_set(self, mock_config):
+        """Test validation for launch option failed if test run id set"""
+        mock_config.getoption.return_value = 'launch'
+
+        with patch.dict(os.environ, {'TESTOMATIO': 'ds', 'TESTOMATIO_RUN': "asd"}, clear=True):
+            with pytest.raises(ValueError, match='Test Run id was passed. Please unset TESTOMATIO_RUN_ID or TESTOMATIO_RUN env variablses to create an empty run'):
+                validate_option(mock_config)
+
+    def test_validate_finish_option_error_if_run_id_not_set(self, mock_config):
+        """Test validation for finish option failed if test run id not set"""
+        mock_config.getoption.return_value = 'finish'
+
+        with patch.dict(os.environ, {'TESTOMATIO': 'ds'}, clear=True):
+            with pytest.raises(ValueError, match='TESTOMATIO_RUN_ID env variable is not set'):
+                validate_option(mock_config)
+
     def test_validate_option_unknown_option_passes_through(self, mock_config):
         """Test unknown options passes through"""
         mock_config.getoption.return_value = 'unknown_option'

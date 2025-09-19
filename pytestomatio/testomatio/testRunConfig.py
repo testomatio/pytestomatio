@@ -20,6 +20,7 @@ class TestRunConfig:
         self.parallel = False if shared_run else True
         # This allows using test run title to group tests under a single test run. This is needed when running tests in different processes or servers.
         self.shared_run = shared_run
+        self.proceed = os.getenv('TESTOMATIO_PROCEED', False)
         self.status_request = {}
         self.build_url = self.resolve_build_url()
 
