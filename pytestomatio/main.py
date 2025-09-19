@@ -215,10 +215,16 @@ def pytest_runtest_logfinish(nodeid, location):
 
 
 def pytest_unconfigure(config: Config):
-    if not hasattr(pytest, 'testomatio'):
+    if not hasattr(pytest, 'testomatio') or config.getoption(testomatio) is None:
         return
 
     run: TestRunConfig = pytest.testomatio.test_run_config
+    if config.getoption(testomatio) != 'report':
+        run.clear_run_id()
+        return
+    elif run.proceed:
+        run.clear_run_id()
+        return
     # for xdist - main process
     if not hasattr(config, 'workerinput'):
         time.sleep(1)
