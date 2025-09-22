@@ -16,6 +16,7 @@ class TestTestRunConfig:
 
                 config = TestRunConfig()
 
+                assert config.access_event is None
                 assert config.test_run_id is None
                 assert config.title == "test run at 2024-01-15 10:30:45"
                 assert config.environment is None
@@ -32,12 +33,14 @@ class TestTestRunConfig:
             'TESTOMATIO_TITLE': 'Custom Test Run',
             'TESTOMATIO_ENV': 'linux,chrome,1920x1080',
             'TESTOMATIO_LABEL': 'smoke,regression',
-            'TESTOMATIO_RUNGROUP_TITLE': 'Release 2.0'
+            'TESTOMATIO_RUNGROUP_TITLE': 'Release 2.0',
+            'TESTOMATIO_PUBLISH': '1'
         }
 
         with patch.dict(os.environ, env_vars, clear=True):
             config = TestRunConfig()
 
+            assert config.access_event == 'publish'
             assert config.test_run_id == 'run_12345'
             assert config.title == 'Custom Test Run'
             assert config.environment == 'linux,chrome,1920x1080'
@@ -72,7 +75,8 @@ class TestTestRunConfig:
             'TESTOMATIO_ENV': 'env1,env2',
             'TESTOMATIO_LABEL': 'label1,label2',
             'TESTOMATIO_RUNGROUP_TITLE': 'Group 1',
-            'TESTOMATIO_SHARED_RUN': 'true'
+            'TESTOMATIO_SHARED_RUN': 'true',
+            'TESTOMATIO_PUBLISH': 'true'
         }
 
         with patch.dict(os.environ, env_vars, clear=True):
@@ -82,6 +86,7 @@ class TestTestRunConfig:
 
             expected = {
                 'id': 'run_123',
+                'access_event': 'publish',
                 'title': 'Test Run',
                 'group_title': 'Group 1',
                 'env': 'env1,env2',
