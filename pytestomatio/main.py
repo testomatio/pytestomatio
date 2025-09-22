@@ -64,6 +64,10 @@ def pytest_configure(config: Config):
                 if run_details:
                     run_id = run_details.get('uid')
                     run.save_run_id(run_id)
+                    message = f"\n[TESTOMATIO] Test Run successfully created.\nSee run aggregation at: {run_details.get('url')} \n"
+                    if run.access_event:
+                        message += f"Public url: {run_details.get('public_url')}\n"
+                    print(message)
                 else:
                     log.error("Failed to create testrun on Testomat.io")
 
