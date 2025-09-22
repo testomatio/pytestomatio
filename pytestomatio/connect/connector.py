@@ -120,7 +120,7 @@ class Connector:
         response = self.session.get(f'{self.base_url}/api/test_data?api_key={self.api_key}')
         return response.json()
 
-    def create_test_run(self, title: str, group_title, env: str, label: str, shared_run: bool, parallel, ci_build_url: str) -> dict | None:
+    def create_test_run(self, title: str, group_title, env: str, label: str, shared_run: bool, shared_run_timeout: str, parallel, ci_build_url: str) -> dict | None:
         request = {
             "api_key": self.api_key,
             "title": title,
@@ -129,7 +129,8 @@ class Connector:
             "label": label,
             "parallel": parallel,
             "ci_build_url": ci_build_url,
-            "shared_run": shared_run
+            "shared_run": shared_run,
+            "shared_run_timeout": shared_run_timeout,
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
         try:
@@ -149,7 +150,7 @@ class Connector:
             return response.json()
 
     def update_test_run(self, id: str, title: str, group_title,
-                        env: str, label: str, shared_run: bool, parallel, ci_build_url: str) -> dict | None:
+                        env: str, label: str, shared_run: bool, shared_run_timeout: str, parallel, ci_build_url: str) -> dict | None:
         request = {
             "api_key": self.api_key,
             "title": title,
@@ -158,7 +159,8 @@ class Connector:
             "label": label,
             "parallel": parallel,
             "ci_build_url": ci_build_url,
-            "shared_run": shared_run
+            "shared_run": shared_run,
+            "shared_run_timeout": shared_run_timeout
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
 

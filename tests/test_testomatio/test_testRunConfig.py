@@ -23,6 +23,7 @@ class TestTestRunConfig:
                 assert config.group_title is None
                 assert config.parallel is True
                 assert config.shared_run is False
+                assert config.shared_run_timeout is None
                 assert config.status_request == {}
 
     def test_init_with_env_variables(self):
@@ -49,19 +50,21 @@ class TestTestRunConfig:
     @pytest.mark.parametrize('value', ['True', 'true', '1'])
     def test_init_shared_run_true_variations(self, value):
         """Test different true values for TESTOMATIO_SHARED_RUN"""
-        with patch.dict(os.environ, {'TESTOMATIO_SHARED_RUN': value}, clear=True):
+        with patch.dict(os.environ, {'TESTOMATIO_SHARED_RUN': value, 'TESTOMATIO_SHARED_RUN_TIMEOUT': '10'}, clear=True):
             config = TestRunConfig()
 
             assert config.shared_run is True
+            assert config.shared_run_timeout == '10'
             assert config.parallel is False
 
     @pytest.mark.parametrize('value', ['False', 'false', '0', 'anything'])
     def test_init_shared_run_false_variations(self, value):
         """Test different false values TESTOMATIO_SHARED_RUN"""
-        with patch.dict(os.environ, {'TESTOMATIO_SHARED_RUN': value}, clear=True):
+        with patch.dict(os.environ, {'TESTOMATIO_SHARED_RUN': value, 'TESTOMATIO_SHARED_RUN_TIMEOUT': '1a'}, clear=True):
             config = TestRunConfig()
 
             assert config.shared_run is False
+            assert config.shared_run_timeout is None
             assert config.parallel is True
 
     def test_to_dict_full_data(self):
@@ -72,7 +75,8 @@ class TestTestRunConfig:
             'TESTOMATIO_ENV': 'env1,env2',
             'TESTOMATIO_LABEL': 'label1,label2',
             'TESTOMATIO_RUNGROUP_TITLE': 'Group 1',
-            'TESTOMATIO_SHARED_RUN': 'true'
+            'TESTOMATIO_SHARED_RUN': 'true',
+            'TESTOMATIO_SHARED_RUN_TIMEOUT': "12"
         }
 
         with patch.dict(os.environ, env_vars, clear=True):
@@ -88,6 +92,7 @@ class TestTestRunConfig:
                 'label': 'label1,label2',
                 'parallel': False,
                 'shared_run': True,
+                'shared_run_timeout': '12',
                 'ci_build_url': None
             }
 
