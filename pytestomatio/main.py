@@ -187,6 +187,11 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
             if value is not None:
                 pytest.testomatio.test_run_config.status_request[item.nodeid][key] = value
 
+    # exclude skipped test if TESTOMATIO_EXCLUDE_SKIPPED is enabled
+    if call.when == 'teardown' and (pytest.testomatio.test_run_config.status_request[item.nodeid].get('status') == 'skipped'
+                                    and pytest.testomatio.test_run_config.exclude_skipped):
+        pytest.testomatio.test_run_config.status_request.pop(item.nodeid)
+
 
 def pytest_runtest_logfinish(nodeid, location):
     if not hasattr(pytest, 'testomatio_config_option'):
