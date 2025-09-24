@@ -256,7 +256,46 @@ class TestConnector:
             artifacts=["screenshot.png"],
             steps="Step 1\nStep 2",
             code="def test_login(): pass",
-            example={"param": "value"}
+            example={"param": "value"},
+            overwrite=True
+        )
+
+        assert mock_post.call_count == 1
+        call_args = mock_post.call_args
+
+        assert f'{connector.base_url}/api/reporter/run_123/testrun' in call_args[0][0]
+
+        payload = call_args[1]['json']
+        assert payload['status'] == 'passed'
+        assert payload['title'] == 'Test Login'
+        assert payload['run_time'] == 1.5
+        assert payload['artifacts'] == ["screenshot.png"]
+        assert payload['code'] == "def test_login(): pass"
+        assert payload['overwrite'] is True
+        assert 'message' not in payload
+
+    @patch('requests.Session.post')
+    def test_update_test_status_filters_none_values(self, mock_post, connector):
+        """Test update test status filters keys with none value"""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_post.return_value = mock_response
+
+        connector.update_test_status(
+            run_id="run_123",
+            status="passed",
+            title="Test Login",
+            suite_title="Auth Suite",
+            suite_id="suite_456",
+            test_id="test_789",
+            message=None,
+            stack=None,
+            run_time=1.5,
+            artifacts=["screenshot.png"],
+            steps="Step 1\nStep 2",
+            code=None,
+            example={"param": "value"},
+            overwrite=None
         )
 
         assert mock_post.call_count == 1
@@ -270,6 +309,8 @@ class TestConnector:
         assert payload['run_time'] == 1.5
         assert payload['artifacts'] == ["screenshot.png"]
         assert 'message' not in payload
+        assert 'code' not in payload
+        assert 'overwrite' not in payload
 
     @patch('requests.Session.put')
     def test_finish_test_run_final(self, mock_put, connector):

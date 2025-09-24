@@ -24,6 +24,7 @@ class TestTestRunConfig:
                 assert config.parallel is True
                 assert config.shared_run is False
                 assert config.status_request == {}
+                assert config.update_code is False
 
     def test_init_with_env_variables(self):
         """Test init with env vars"""
@@ -32,7 +33,8 @@ class TestTestRunConfig:
             'TESTOMATIO_TITLE': 'Custom Test Run',
             'TESTOMATIO_ENV': 'linux,chrome,1920x1080',
             'TESTOMATIO_LABEL': 'smoke,regression',
-            'TESTOMATIO_RUNGROUP_TITLE': 'Release 2.0'
+            'TESTOMATIO_RUNGROUP_TITLE': 'Release 2.0',
+            'TESTOMATIO_UPDATE_CODE': '1',
         }
 
         with patch.dict(os.environ, env_vars, clear=True):
@@ -45,6 +47,7 @@ class TestTestRunConfig:
             assert config.group_title == 'Release 2.0'
             assert config.parallel is True
             assert config.shared_run is False
+            assert config.update_code is True
 
     @pytest.mark.parametrize('value', ['True', 'true', '1'])
     def test_init_shared_run_true_variations(self, value):
@@ -63,6 +66,22 @@ class TestTestRunConfig:
 
             assert config.shared_run is False
             assert config.parallel is True
+
+    @pytest.mark.parametrize('value', ['True', 'true', '1'])
+    def test_init_update_code_true_variations(self, value):
+        """Test different true values for TESTOMATIO_UPDATE_CODE"""
+        with patch.dict(os.environ, {'TESTOMATIO_UPDATE_CODE': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.update_code is True
+
+    @pytest.mark.parametrize('value', ['False', 'false', '0', 'anything'])
+    def test_init_update_code_false_variations(self, value):
+        """Test different false values TESTOMATIO_UPDATE_CODE"""
+        with patch.dict(os.environ, {'TESTOMATIO_UPDATE_CODE': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.update_code is False
 
     def test_to_dict_full_data(self):
         """Test to_dict with full data"""

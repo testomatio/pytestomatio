@@ -11,6 +11,7 @@ class TestRunConfig:
         run_id = os.environ.get('TESTOMATIO_RUN_ID') or os.environ.get('TESTOMATIO_RUN')
         title = os.environ.get('TESTOMATIO_TITLE') if os.environ.get('TESTOMATIO_TITLE') else 'test run at ' + dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         shared_run = os.environ.get('TESTOMATIO_SHARED_RUN') in ['True', 'true', '1']
+        update_code = os.environ.get('TESTOMATIO_UPDATE_CODE', False) in ['True', 'true', '1']
         self.test_run_id = run_id
         self.title = title
         self.environment = safe_string_list(os.environ.get('TESTOMATIO_ENV'))
@@ -21,6 +22,7 @@ class TestRunConfig:
         # This allows using test run title to group tests under a single test run. This is needed when running tests in different processes or servers.
         self.shared_run = shared_run
         self.status_request = {}
+        self.update_code = update_code
         self.build_url = self.resolve_build_url()
 
     def to_dict(self) -> dict:

@@ -165,7 +165,12 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         'artifacts': test_item.artifacts,
         'steps': None,
         'code': None,
+        'overwrite': None,
     }
+
+    if pytest.testomatio.test_run_config.update_code and test_item.type != 'bdd':
+        request['code'] = test_item.source_code
+        request['overwrite'] = True
 
     # TODO: refactor it and use TestItem setter to upate those attributes
     if call.when in ['setup', 'call']:
