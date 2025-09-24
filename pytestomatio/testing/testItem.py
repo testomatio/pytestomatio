@@ -28,6 +28,7 @@ class TestItem:
         self.file_path = item.location[0]
         self.module = item.module.__name__
         self.source_code = inspect.getsource(item.function)
+        self.docstring = inspect.getdoc(item.function)
         self.class_name = item.cls.__name__ if item.cls else None
         self.artifacts = item.stash.get("artifact_urls", [])
     

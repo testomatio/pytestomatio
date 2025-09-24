@@ -35,10 +35,12 @@ class TestTestItem:
         mock_item.iter_markers.return_value = iter([marker])
         return mock_item
 
+    @patch('inspect.getdoc')
     @patch('inspect.getsource')
-    def test_init_basic(self, mock_getsource, mock_item):
+    def test_init_basic(self, mock_getsource, mock_getdoc, mock_item):
         """Test basic init TestItem"""
         mock_getsource.return_value = "def test_example(): pass"
+        mock_getdoc.return_value = 'simple test'
 
         test_item = TestItem(mock_item)
 
@@ -48,6 +50,7 @@ class TestTestItem:
         assert test_item.file_name == "test_file.py"
         assert test_item.module == "test_module"
         assert test_item.source_code == "def test_example(): pass"
+        assert test_item.docstring == 'simple test'
         assert test_item.class_name is None
         assert test_item.artifacts == []
         assert test_item.type == 'regular'
