@@ -11,9 +11,11 @@ class TestRunConfig:
         run_id = os.environ.get('TESTOMATIO_RUN_ID') or os.environ.get('TESTOMATIO_RUN')
         title = os.environ.get('TESTOMATIO_TITLE') if os.environ.get('TESTOMATIO_TITLE') else 'test run at ' + dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         shared_run = os.environ.get('TESTOMATIO_SHARED_RUN') in ['True', 'true', '1']
+        disable_timestamp = os.environ.get('TESTOMATIO_NO_TIMESTAMP') in ['True', 'true', '1']
         self.test_run_id = run_id
         self.title = title
         self.environment = safe_string_list(os.environ.get('TESTOMATIO_ENV'))
+        self.disable_timestamp = disable_timestamp
         self.label = safe_string_list(os.environ.get('TESTOMATIO_LABEL'))
         self.group_title = os.environ.get('TESTOMATIO_RUNGROUP_TITLE')
         # This allows to report tests to the test run by it's id. https://docs.testomat.io/getting-started/running-automated-tests/#reporting-parallel-tests
