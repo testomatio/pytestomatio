@@ -120,12 +120,13 @@ class Connector:
         response = self.session.get(f'{self.base_url}/api/test_data?api_key={self.api_key}')
         return response.json()
 
-    def create_test_run(self, title: str, group_title, env: str, label: str, shared_run: bool, parallel, ci_build_url: str) -> dict | None:
+    def create_test_run(self, title: str, group_title, env: str, jira_id: str, label: str, shared_run: bool, parallel, ci_build_url: str) -> dict | None:
         request = {
             "api_key": self.api_key,
             "title": title,
             "group_title": group_title,
             "env": env,
+            "jira_id": jira_id,
             "label": label,
             "parallel": parallel,
             "ci_build_url": ci_build_url,
@@ -148,13 +149,14 @@ class Connector:
             log.info(f'Test run created {response.json()["uid"]}')
             return response.json()
 
-    def update_test_run(self, id: str, title: str, group_title,
+    def update_test_run(self, id: str, title: str, group_title, jira_id: str,
                         env: str, label: str, shared_run: bool, parallel, ci_build_url: str) -> dict | None:
         request = {
             "api_key": self.api_key,
             "title": title,
             "group_title": group_title,
             "env": env,
+            "jira_id": jira_id,
             "label": label,
             "parallel": parallel,
             "ci_build_url": ci_build_url,

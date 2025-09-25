@@ -16,6 +16,7 @@ class TestRunConfig:
         self.environment = safe_string_list(os.environ.get('TESTOMATIO_ENV'))
         self.label = safe_string_list(os.environ.get('TESTOMATIO_LABEL'))
         self.group_title = os.environ.get('TESTOMATIO_RUNGROUP_TITLE')
+        self.jira_id = os.environ.get('TESTOMATIO_JIRA_ID')
         # This allows to report tests to the test run by it's id. https://docs.testomat.io/getting-started/running-automated-tests/#reporting-parallel-tests
         self.parallel = False if shared_run else True
         # This allows using test run title to group tests under a single test run. This is needed when running tests in different processes or servers.
@@ -30,6 +31,7 @@ class TestRunConfig:
         result['title'] = self.title
         result['group_title'] = self.group_title
         result['env'] = self.environment
+        result['jira_id'] = self.jira_id
         result['label'] = self.label
         result['parallel'] = self.parallel
         result['shared_run'] = self.shared_run
