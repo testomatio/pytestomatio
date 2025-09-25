@@ -252,6 +252,7 @@ class TestConnector:
             test_id="test_789",
             message=None,
             stack=None,
+            timestamp=123222.21,
             run_time=1.5,
             artifacts=["screenshot.png"],
             steps="Step 1\nStep 2",
@@ -269,6 +270,7 @@ class TestConnector:
         assert payload['title'] == 'Test Login'
         assert payload['run_time'] == 1.5
         assert payload['artifacts'] == ["screenshot.png"]
+        assert payload['timestamp'] == 123222.21
         assert 'message' not in payload
 
     @patch('requests.Session.put')
