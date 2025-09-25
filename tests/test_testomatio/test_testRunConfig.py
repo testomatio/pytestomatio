@@ -20,6 +20,7 @@ class TestTestRunConfig:
                 assert config.title == "test run at 2024-01-15 10:30:45"
                 assert config.environment is None
                 assert config.label is None
+                assert config.jira_id is None
                 assert config.group_title is None
                 assert config.parallel is True
                 assert config.shared_run is False
@@ -32,7 +33,8 @@ class TestTestRunConfig:
             'TESTOMATIO_TITLE': 'Custom Test Run',
             'TESTOMATIO_ENV': 'linux,chrome,1920x1080',
             'TESTOMATIO_LABEL': 'smoke,regression',
-            'TESTOMATIO_RUNGROUP_TITLE': 'Release 2.0'
+            'TESTOMATIO_RUNGROUP_TITLE': 'Release 2.0',
+            'TESTOMATIO_JIRA_ID': 'TES-1'
         }
 
         with patch.dict(os.environ, env_vars, clear=True):
@@ -45,6 +47,7 @@ class TestTestRunConfig:
             assert config.group_title == 'Release 2.0'
             assert config.parallel is True
             assert config.shared_run is False
+            assert config.jira_id == 'TES-1'
 
     @pytest.mark.parametrize('value', ['True', 'true', '1'])
     def test_init_shared_run_true_variations(self, value):
@@ -72,7 +75,8 @@ class TestTestRunConfig:
             'TESTOMATIO_ENV': 'env1,env2',
             'TESTOMATIO_LABEL': 'label1,label2',
             'TESTOMATIO_RUNGROUP_TITLE': 'Group 1',
-            'TESTOMATIO_SHARED_RUN': 'true'
+            'TESTOMATIO_SHARED_RUN': 'true',
+            'TESTOMATIO_JIRA_ID': "TES-1"
         }
 
         with patch.dict(os.environ, env_vars, clear=True):
@@ -88,7 +92,8 @@ class TestTestRunConfig:
                 'label': 'label1,label2',
                 'parallel': False,
                 'shared_run': True,
-                'ci_build_url': None
+                'ci_build_url': None,
+                'jira_id': 'TES-1'
             }
 
             assert result == expected
