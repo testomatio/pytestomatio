@@ -170,13 +170,15 @@ You can use environment variable to control certain features of testomat.io
 
 
 #### Test Run configuration
-| Env variable             | What it does                                                                                                               | Examples                                                          |
-|--------------------------|----------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|
-| TESTOMATIO_TITLE         | Name of a test run to create on testomat.io                                                                                | TESTOMATIO_TITLE="Nightly Smoke Tests" pytest --testomatio report |
-| TESTOMATIO_RUN_ID        | Id of existing test run to use for sending test results to                                                                 | TESTOMATIO_RUN_ID=98dfas0 pytest --testomatio report              |
-| TESTOMATIO_RUNGROUP_TITLE | Create a group (folder) for a test run. If group already exists, attach test run to it                                     | TESTOMATIO_RUNGROUP_TITLE="Release 2.0" pytest --testomatio report |
-| TESTOMATIO_ENV           | Assign environment to a test run, env variant of **testRunEnv** option. Has a lower precedence than **testRunEnv** option. | TESTOMATIO_ENV="linux,chrome,1920x1080" pytest --testomatio report |
-| TESTOMATIO_LABEL         | Assign labels to a test run. Labels must exist in project and their scope must be enabled for runs                         | TESTOMATIO_LABEL="smoke,regression" pytest --testomatio report    |
+| Env variable              | What it does                                                                                                                                         | Examples                                                           |
+|---------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
+| TESTOMATIO_TITLE          | Name of a test run to create on testomat.io                                                                                                          | TESTOMATIO_TITLE="Nightly Smoke Tests" pytest --testomatio report  |
+| TESTOMATIO_RUN_ID         | Id of existing test run to use for sending test results to                                                                                           | TESTOMATIO_RUN_ID=98dfas0 pytest --testomatio report               |
+| TESTOMATIO_RUNGROUP_TITLE | Create a group (folder) for a test run. If group already exists, attach test run to it                                                               | TESTOMATIO_RUNGROUP_TITLE="Release 2.0" pytest --testomatio report |
+| TESTOMATIO_ENV            | Assign environment to a test run, env variant of **testRunEnv** option. Has a lower precedence than **testRunEnv** option.                           | TESTOMATIO_ENV="linux,chrome,1920x1080" pytest --testomatio report |
+| TESTOMATIO_LABEL          | Assign labels to a test run. Labels must exist in project and their scope must be enabled for runs                                                   | TESTOMATIO_LABEL="smoke,regression" pytest --testomatio report     |
+| TESTOMATIO_NO_STEPS       | Disable reporting of all steps completely. When enabled, no steps will be included in the test report regardless of test status                      | TESTOMATIO_NO_STEPS=True pytest --testomatio report                |
+| TESTOMATIO_STEPS_PASSED   | Enable steps reporting for passed tests(disabled by default). When disabled, only failed and skipped tests will include step details to reduce noise | TESTOMATIO_STEPS_PASSED=True pytest --testomatio report            |
 
 #### S3 Bucket configuration
 | Env variable         | Description                           |
@@ -214,7 +216,7 @@ Environment values are comma separated, please use double quotation.
 
 The plugin supports dividing tests into separate, trackable steps. When reporting to testomat.io, you can view detailed information for each step including execution status, duration, and any errors that occurred.
 
-**Important**: This plugin only supports **reporting** test steps to testomat.io during test execution. Test steps cannot be imported to testomat.io using **sync** option.
+**Important**: This plugin only supports **reporting** test steps to testomat.io during test execution. Test steps cannot be imported to testomat.io using **sync** option. Steps reported for skipped and failed test by default. To enable steps reporting for passed tests use **TESTOMATIO_STEPS_PASSED** env variable.
 
 Test steps can be implemented using either decorators or context managers, giving you flexibility in how you structure your tests.
 
@@ -271,6 +273,37 @@ def test_book_read():
             check_author(book.author, author_name)
         assert book.read() == text
 ```
+
+**Note:** Step is registered when the step code is executed. Therefore, if test mark as skipped(not executed at all) or test code execution stops before step code is executed, step will not be attached to test:
+```python
+import pytest
+from pytestomatio.utils.steps import step
+
+# Step will not be added in report
+@pytest.mark.skip
+def test_skipped():
+    with step('Step1', 'user'):
+        assert True
+
+# Step will not be added in report
+def test_exception_raised():
+    raise ValueError()
+    with step('Step1', 'user'):
+        assert True
+
+# Step will not be added in report
+def test_early_skip():
+    pytest.skip()
+    with step('Step1', 'user'):
+        assert True
+
+# Step1 will be added in report, Step2 will not be
+def test_nested_step_skip_or_exception():
+    with step('Step1', 'user'):
+        with step('Step2', 'user'):
+            pytest.skip() # or AttributeError()
+```
+
 
 
 ### Submitting Test Artifacts

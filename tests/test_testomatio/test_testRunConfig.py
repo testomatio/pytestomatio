@@ -19,6 +19,8 @@ class TestTestRunConfig:
                 assert config.test_run_id is None
                 assert config.title == "test run at 2024-01-15 10:30:45"
                 assert config.environment is None
+                assert config.enable_steps_for_passed_test is False
+                assert config.disable_steps is False
                 assert config.label is None
                 assert config.group_title is None
                 assert config.parallel is True
@@ -32,7 +34,9 @@ class TestTestRunConfig:
             'TESTOMATIO_TITLE': 'Custom Test Run',
             'TESTOMATIO_ENV': 'linux,chrome,1920x1080',
             'TESTOMATIO_LABEL': 'smoke,regression',
-            'TESTOMATIO_RUNGROUP_TITLE': 'Release 2.0'
+            'TESTOMATIO_RUNGROUP_TITLE': 'Release 2.0',
+            'TESTOMATIO_NO_STEPS': '1',
+            'TESTOMATIO_STEPS_PASSED': '1'
         }
 
         with patch.dict(os.environ, env_vars, clear=True):
@@ -41,6 +45,8 @@ class TestTestRunConfig:
             assert config.test_run_id == 'run_12345'
             assert config.title == 'Custom Test Run'
             assert config.environment == 'linux,chrome,1920x1080'
+            assert config.enable_steps_for_passed_test is True
+            assert config.disable_steps is True
             assert config.label == 'smoke,regression'
             assert config.group_title == 'Release 2.0'
             assert config.parallel is True
@@ -63,6 +69,38 @@ class TestTestRunConfig:
 
             assert config.shared_run is False
             assert config.parallel is True
+
+    @pytest.mark.parametrize('value', ['True', 'true', '1'])
+    def test_init_disable_steps_true_variations(self, value):
+        """Test different true values for TESTOMATIO_NO_STEPS"""
+        with patch.dict(os.environ, {'TESTOMATIO_NO_STEPS': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.disable_steps is True
+
+    @pytest.mark.parametrize('value', ['False', 'false', '0', 'anything'])
+    def test_init_disable_steps_false_variations(self, value):
+        """Test different false values TESTOMATIO_NO_STEPS"""
+        with patch.dict(os.environ, {'TESTOMATIO_NO_STEPS': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.disable_steps is False
+
+    @pytest.mark.parametrize('value', ['True', 'true', '1'])
+    def test_enable_passed_steps_run_true_variations(self, value):
+        """Test different true values for TESTOMATIO_STEPS_PASSED"""
+        with patch.dict(os.environ, {'TESTOMATIO_STEPS_PASSED': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.enable_steps_for_passed_test is True
+
+    @pytest.mark.parametrize('value', ['False', 'false', '0', 'anything'])
+    def test_enable_passed_steps_false_variations(self, value):
+        """Test different false values TESTOMATIO_STEPS_PASSED"""
+        with patch.dict(os.environ, {'TESTOMATIO_STEPS_PASSED': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.enable_steps_for_passed_test is False
 
     def test_to_dict_full_data(self):
         """Test to_dict with full data"""

@@ -11,8 +11,12 @@ class TestRunConfig:
         run_id = os.environ.get('TESTOMATIO_RUN_ID') or os.environ.get('TESTOMATIO_RUN')
         title = os.environ.get('TESTOMATIO_TITLE') if os.environ.get('TESTOMATIO_TITLE') else 'test run at ' + dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         shared_run = os.environ.get('TESTOMATIO_SHARED_RUN') in ['True', 'true', '1']
+        disable_steps = os.environ.get('TESTOMATIO_NO_STEPS') in ['True', 'true', '1']
+        enable_steps_for_passed_test = os.environ.get('TESTOMATIO_STEPS_PASSED') in ['True', 'true', '1']
         self.test_run_id = run_id
         self.title = title
+        self.enable_steps_for_passed_test = enable_steps_for_passed_test
+        self.disable_steps = disable_steps
         self.environment = safe_string_list(os.environ.get('TESTOMATIO_ENV'))
         self.label = safe_string_list(os.environ.get('TESTOMATIO_LABEL'))
         self.group_title = os.environ.get('TESTOMATIO_RUNGROUP_TITLE')

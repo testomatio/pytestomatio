@@ -193,9 +193,12 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         if hasattr(item, 'callspec'):
             request['example'] = test_item.safe_params(item.callspec.params)
 
-        step_manager = _step_managers.get(item.nodeid)
-        if step_manager:
-            request['steps'] = step_manager.get_steps()
+        if not pytest.testomatio.test_run_config.disable_steps:
+            step_manager = _step_managers.get(item.nodeid)
+            if step_manager:
+                if call.excinfo is not None or \
+                        (call.excinfo is None and pytest.testomatio.test_run_config.enable_steps_for_passed_test):
+                    request['steps'] = step_manager.get_steps()
 
     if item.nodeid not in pytest.testomatio.test_run_config.status_request:
         pytest.testomatio.test_run_config.status_request[item.nodeid] = request
