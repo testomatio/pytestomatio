@@ -102,3 +102,10 @@ def safe_string_list(param: str):
     if not param:
         return None
     return ",".join([sub(r"\s", "", part) for part in param.split(',')])
+
+
+def parse_env_value(value: str, split_symbol: str):
+    if split_symbol in value:
+        key, value = value.split(split_symbol, 1)
+        return key, value
+    return value, None
