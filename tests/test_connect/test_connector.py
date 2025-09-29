@@ -245,6 +245,7 @@ class TestConnector:
 
         connector.update_test_status(
             run_id="run_123",
+            rid="rid123",
             status="passed",
             title="Test Login",
             suite_title="Auth Suite",
@@ -256,7 +257,8 @@ class TestConnector:
             artifacts=["screenshot.png"],
             steps="Step 1\nStep 2",
             code="def test_login(): pass",
-            example={"param": "value"}
+            example={"param": "value"},
+            meta={}
         )
 
         assert mock_post.call_count == 1

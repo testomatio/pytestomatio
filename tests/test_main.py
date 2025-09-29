@@ -411,7 +411,7 @@ class TestPytestRuntestMakereport:
         request = pytest.testomatio.test_run_config.status_request[item.nodeid]
 
         expected_keys = [
-            'status', 'title', 'run_time', 'suite_title', 'suite_id',
+            'status', 'title', 'run_time', 'suite_title', 'suite_id', "rid",
             'test_id', 'message', 'stack', 'example', 'artifacts', 'steps', 'code'
         ]
         for key in expected_keys:
@@ -421,6 +421,58 @@ class TestPytestRuntestMakereport:
         assert request['run_time'] == 1.5
         assert request['suite_title'] == item.path.name
         assert request['test_id'] == '12345678'
+
+    def test_rid_without_env(self, mock_call, single_test_item):
+        item = single_test_item.copy()[0]
+        item.config.option.testomatio = 'report'
+
+        mock_call.duration = 1.5
+        mock_call.when = 'call'
+        mock_call.excinfo = None
+
+        testrun_env = None
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config = Mock()
+        pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.environment = testrun_env
+        pytest.testomatio.test_run_config.status_request = {}
+
+        main.pytest_runtest_makereport(item, mock_call)
+
+        assert item.nodeid in pytest.testomatio.test_run_config.status_request
+        request = pytest.testomatio.test_run_config.status_request[item.nodeid]
+
+        assert 'rid' in request.keys()
+
+        assert request['test_id'] == '12345678'
+        assert request['rid'] == f'{testrun_env}-{item.name}-12345678'
+
+    def test_rid_with_env(self, mock_call, single_test_item):
+        item = single_test_item.copy()[0]
+        item.config.option.testomatio = 'report'
+
+        mock_call.duration = 1.5
+        mock_call.when = 'call'
+        mock_call.excinfo = None
+
+        testrun_env = "env1, browser:True"
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config = Mock()
+        pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.environment = testrun_env
+        pytest.testomatio.test_run_config.status_request = {}
+
+        main.pytest_runtest_makereport(item, mock_call)
+
+        assert item.nodeid in pytest.testomatio.test_run_config.status_request
+        request = pytest.testomatio.test_run_config.status_request[item.nodeid]
+
+        assert 'rid' in request.keys()
+
+        assert request['test_id'] == '12345678'
+        assert request['rid'] == f'{testrun_env}-{item.name}-12345678'
 
 
 @pytest.mark.smoke
