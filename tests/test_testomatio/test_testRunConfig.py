@@ -16,6 +16,7 @@ class TestTestRunConfig:
 
                 config = TestRunConfig()
 
+                assert config.access_event is None
                 assert config.test_run_id is None
                 assert config.title == "test run at 2024-01-15 10:30:45"
                 assert config.environment is None
@@ -24,47 +25,54 @@ class TestTestRunConfig:
                 assert config.group_title is None
                 assert config.parallel is True
                 assert config.shared_run is False
+                assert config.shared_run_timeout is None
                 assert config.status_request == {}
+                assert config.meta is None
 
     def test_init_with_env_variables(self):
         """Test init with env vars"""
         env_vars = {
             'TESTOMATIO_RUN_ID': 'run_12345',
             'TESTOMATIO_TITLE': 'Custom Test Run',
-            'TESTOMATIO_ENV': 'linux,chrome,1920x1080',
+            'TESTOMATIO_ENV': 'linux,browser:chrome,1920x1080',
             'TESTOMATIO_LABEL': 'smoke,regression',
             'TESTOMATIO_RUNGROUP_TITLE': 'Release 2.0',
+            'TESTOMATIO_PUBLISH': '1',
             'TESTOMATIO_EXCLUDE_SKIPPED': '1'
         }
 
         with patch.dict(os.environ, env_vars, clear=True):
             config = TestRunConfig()
 
+            assert config.access_event == 'publish'
             assert config.test_run_id == 'run_12345'
             assert config.title == 'Custom Test Run'
-            assert config.environment == 'linux,chrome,1920x1080'
+            assert config.environment == 'linux,browser:chrome,1920x1080'
             assert config.exclude_skipped is True
             assert config.label == 'smoke,regression'
             assert config.group_title == 'Release 2.0'
             assert config.parallel is True
             assert config.shared_run is False
+            assert config.meta == {'linux': None, 'browser': 'chrome', '1920x1080': None}
 
     @pytest.mark.parametrize('value', ['True', 'true', '1'])
     def test_init_shared_run_true_variations(self, value):
         """Test different true values for TESTOMATIO_SHARED_RUN"""
-        with patch.dict(os.environ, {'TESTOMATIO_SHARED_RUN': value}, clear=True):
+        with patch.dict(os.environ, {'TESTOMATIO_SHARED_RUN': value, 'TESTOMATIO_SHARED_RUN_TIMEOUT': '10'}, clear=True):
             config = TestRunConfig()
 
             assert config.shared_run is True
+            assert config.shared_run_timeout == '10'
             assert config.parallel is False
 
     @pytest.mark.parametrize('value', ['False', 'false', '0', 'anything'])
     def test_init_shared_run_false_variations(self, value):
         """Test different false values TESTOMATIO_SHARED_RUN"""
-        with patch.dict(os.environ, {'TESTOMATIO_SHARED_RUN': value}, clear=True):
+        with patch.dict(os.environ, {'TESTOMATIO_SHARED_RUN': value, 'TESTOMATIO_SHARED_RUN_TIMEOUT': '1a'}, clear=True):
             config = TestRunConfig()
 
             assert config.shared_run is False
+            assert config.shared_run_timeout is None
             assert config.parallel is True
 
     @pytest.mark.parametrize('value', ['True', 'true', '1'])
@@ -91,7 +99,9 @@ class TestTestRunConfig:
             'TESTOMATIO_ENV': 'env1,env2',
             'TESTOMATIO_LABEL': 'label1,label2',
             'TESTOMATIO_RUNGROUP_TITLE': 'Group 1',
-            'TESTOMATIO_SHARED_RUN': 'true'
+            'TESTOMATIO_SHARED_RUN': 'true',
+            'TESTOMATIO_SHARED_RUN_TIMEOUT': "12",
+            'TESTOMATIO_PUBLISH': 'true'
         }
 
         with patch.dict(os.environ, env_vars, clear=True):
@@ -101,12 +111,14 @@ class TestTestRunConfig:
 
             expected = {
                 'id': 'run_123',
+                'access_event': 'publish',
                 'title': 'Test Run',
                 'group_title': 'Group 1',
                 'env': 'env1,env2',
                 'label': 'label1,label2',
                 'parallel': False,
                 'shared_run': True,
+                'shared_run_timeout': '12',
                 'ci_build_url': None
             }
 
@@ -258,3 +270,13 @@ class TestTestRunConfig:
             config = TestRunConfig()
 
             assert config.build_url is None
+
+    def test_update_meta(self):
+        """Test update_meta"""
+        with patch.dict(os.environ, {}, clear=True):
+            config = TestRunConfig()
+            assert config.meta is None
+
+            config.environment = 'env1, env2:True'
+            result = config.update_meta()
+            assert result == {' env2': 'True', 'env1': None}

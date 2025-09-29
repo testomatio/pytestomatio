@@ -1,7 +1,7 @@
 import os
 import datetime as dt
 import tempfile
-from pytestomatio.utils.helper import safe_string_list
+from pytestomatio.utils.helper import safe_string_list, parse_env_value
 from typing import Optional
 
 TESTOMATIO_TEST_RUN_LOCK_FILE = ".testomatio_test_run_id_lock"
@@ -12,6 +12,8 @@ class TestRunConfig:
         title = os.environ.get('TESTOMATIO_TITLE') if os.environ.get('TESTOMATIO_TITLE') else 'test run at ' + dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         shared_run = os.environ.get('TESTOMATIO_SHARED_RUN') in ['True', 'true', '1']
         exclude_skipped = os.environ.get('TESTOMATIO_EXCLUDE_SKIPPED', False) in ['True', 'true', '1']
+        shared_run_timeout = os.environ.get('TESTOMATIO_SHARED_RUN_TIMEOUT', '')
+        self.access_event = 'publish' if os.environ.get("TESTOMATIO_PUBLISH") else None
         self.test_run_id = run_id
         self.title = title
         self.environment = safe_string_list(os.environ.get('TESTOMATIO_ENV'))
@@ -22,24 +24,37 @@ class TestRunConfig:
         self.parallel = False if shared_run else True
         # This allows using test run title to group tests under a single test run. This is needed when running tests in different processes or servers.
         self.shared_run = shared_run
+        self.shared_run_timeout = shared_run_timeout if shared_run_timeout.isdigit() else None
+        self.proceed = os.getenv('TESTOMATIO_PROCEED', False)
         self.status_request = {}
         self.build_url = self.resolve_build_url()
+        self.meta = self.update_meta()
 
     def to_dict(self) -> dict:
         result = dict()
         if self.test_run_id:
             result['id'] = self.test_run_id
+        result['access_event'] = self.access_event
         result['title'] = self.title
         result['group_title'] = self.group_title
         result['env'] = self.environment
         result['label'] = self.label
         result['parallel'] = self.parallel
         result['shared_run'] = self.shared_run
+        result['shared_run_timeout'] = self.shared_run_timeout
         result['ci_build_url'] = self.build_url
         return result
 
+    def update_meta(self):
+        if self.environment:
+            strings = self.environment.split(',')
+            meta = {key: value for key, value in [parse_env_value(item, ':') for item in strings]}
+            return meta
+        return None
+
     def set_env(self, env: str) -> None:
         self.environment = safe_string_list(env)
+        self.meta = self.update_meta()
 
     def save_run_id(self, run_id: str) -> None:
         self.test_run_id = run_id

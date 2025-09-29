@@ -120,8 +120,11 @@ class Connector:
         response = self.session.get(f'{self.base_url}/api/test_data?api_key={self.api_key}')
         return response.json()
 
-    def create_test_run(self, title: str, group_title, env: str, label: str, shared_run: bool, parallel, ci_build_url: str) -> dict | None:
+
+    def create_test_run(self, access_event: str, title: str, group_title, env: str, label: str, shared_run: bool, shared_run_timeout: str,
+                        parallel, ci_build_url: str) -> dict | None:
         request = {
+            "access_event": access_event,
             "api_key": self.api_key,
             "title": title,
             "group_title": group_title,
@@ -129,7 +132,8 @@ class Connector:
             "label": label,
             "parallel": parallel,
             "ci_build_url": ci_build_url,
-            "shared_run": shared_run
+            "shared_run": shared_run,
+            "shared_run_timeout": shared_run_timeout,
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
         try:
@@ -148,9 +152,11 @@ class Connector:
             log.info(f'Test run created {response.json()["uid"]}')
             return response.json()
 
-    def update_test_run(self, id: str, title: str, group_title,
-                        env: str, label: str, shared_run: bool, parallel, ci_build_url: str) -> dict | None:
+
+    def update_test_run(self, id: str, access_event: str, title: str, group_title,
+                        env: str, label: str, shared_run: bool, shared_run_timeout: str, parallel, ci_build_url: str) -> dict | None:
         request = {
+            "access_event": access_event,
             "api_key": self.api_key,
             "title": title,
             "group_title": group_title,
@@ -158,7 +164,8 @@ class Connector:
             "label": label,
             "parallel": parallel,
             "ci_build_url": ci_build_url,
-            "shared_run": shared_run
+            "shared_run": shared_run,
+            "shared_run_timeout": shared_run_timeout
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
 
@@ -179,6 +186,7 @@ class Connector:
             return response.json()
 
     def update_test_status(self, run_id: str,
+                           rid: str,
                            status: str,
                            title: str,
                            suite_title: str,
@@ -190,7 +198,8 @@ class Connector:
                            artifacts: list[str],
                            steps: str,
                            code: str,
-                           example: dict) -> None:
+                           example: dict,
+                           meta: dict) -> None:
 
         request = {
             "status": status,  # Enum: "passed" "failed" "skipped"
@@ -204,7 +213,9 @@ class Connector:
             "example": example,
             "artifacts": artifacts,
             "steps": steps,
-            "code": code
+            "code": code,
+            "rid": rid,
+            "meta": meta
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
         try:
