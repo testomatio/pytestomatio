@@ -81,7 +81,7 @@ class TestTestRunConfig:
             'TESTOMATIO_LABEL': 'label1,label2',
             'TESTOMATIO_RUNGROUP_TITLE': 'Group 1',
             'TESTOMATIO_SHARED_RUN': 'true',
-            'TESTOMATIO_SHARED_RUN_TIMEOUT': "12"
+            'TESTOMATIO_SHARED_RUN_TIMEOUT': "12",
             'TESTOMATIO_PUBLISH': 'true'
         }
 
