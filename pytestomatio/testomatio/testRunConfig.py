@@ -11,6 +11,7 @@ class TestRunConfig:
         run_id = os.environ.get('TESTOMATIO_RUN_ID') or os.environ.get('TESTOMATIO_RUN')
         title = os.environ.get('TESTOMATIO_TITLE') if os.environ.get('TESTOMATIO_TITLE') else 'test run at ' + dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         shared_run = os.environ.get('TESTOMATIO_SHARED_RUN') in ['True', 'true', '1']
+        self.access_event = 'publish' if os.environ.get("TESTOMATIO_PUBLISH") else None
         self.test_run_id = run_id
         self.title = title
         self.environment = safe_string_list(os.environ.get('TESTOMATIO_ENV'))
@@ -29,6 +30,7 @@ class TestRunConfig:
         result = dict()
         if self.test_run_id:
             result['id'] = self.test_run_id
+        result['access_event'] = self.access_event
         result['title'] = self.title
         result['group_title'] = self.group_title
         result['env'] = self.environment

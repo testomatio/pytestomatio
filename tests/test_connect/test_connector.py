@@ -140,6 +140,7 @@ class TestConnector:
 
         result = connector.create_test_run(
             title="Test Run",
+            access_event="publish",
             group_title="Group 1",
             env="linux,chrome",
             label="smoke",
@@ -152,6 +153,7 @@ class TestConnector:
             f'{connector.base_url}/api/reporter',
             json={
                 "api_key": "test_api_key_123",
+                "access_event": "publish",
                 "title": "Test Run",
                 "group_title": "Group 1",
                 "env": "linux,chrome",
@@ -174,6 +176,7 @@ class TestConnector:
 
         connector.create_test_run(
             title="Test Run",
+            access_event=None,
             group_title=None,
             env=None,
             label="smoke",
@@ -197,7 +200,7 @@ class TestConnector:
         """Test HTTP error handled wher create test run"""
         mock_post.side_effect = HTTPError("HTTP Error")
 
-        result = connector.create_test_run("Test", None, None, None, False, True, None)
+        result = connector.create_test_run("Test", None, None, None, None, False, True, None)
 
         assert result is None
 
@@ -211,6 +214,7 @@ class TestConnector:
 
         result = connector.update_test_run(
             id="run_123",
+            access_event='publish',
             title="Updated Run",
             group_title="Group",
             env="windows",
@@ -223,6 +227,7 @@ class TestConnector:
         mock_put.assert_called_once_with(
             f'{connector.base_url}/api/reporter/run_123',
             json={
+                "access_event": "publish",
                 "api_key": "test_api_key_123",
                 "title": "Updated Run",
                 "group_title": "Group",

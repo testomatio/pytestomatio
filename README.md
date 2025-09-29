@@ -193,6 +193,7 @@ You can use environment variable to control certain features of testomat.io
 | TESTOMATIO_RUNGROUP_TITLE | Create a group (folder) for a test run. If group already exists, attach test run to it                                     | TESTOMATIO_RUNGROUP_TITLE="Release 2.0" pytest --testomatio report |
 | TESTOMATIO_ENV            | Assign environment to a test run, env variant of **testRunEnv** option. Has a lower precedence than **testRunEnv** option. | TESTOMATIO_ENV="linux,chrome,1920x1080" pytest --testomatio report |
 | TESTOMATIO_LABEL          | Assign labels to a test run. Labels must exist in project and their scope must be enabled for runs                         | TESTOMATIO_LABEL="smoke,regression" pytest --testomatio report     |
+| TESTOMATIO_PUBLISH        | Publish run after reporting and provide a public URL                                                                       | TESTOMATIO_PUBLISH=true pytest --testomatio report                 |
 | TESTOMATIO_PROCEED        | Do not finalize the run                                                                                                    | TESTOMATIO_PROCEED=1 pytest --testomatio report                    |
 
 
