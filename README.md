@@ -109,6 +109,22 @@ Run pytest with debug parameter to get test data collected in metadata.json file
 pytest --testomatio debug
 ```
 
+#### Launch
+Create empty run and obtain its RUN_ID from testomat.io.
+
+```bash
+pytest --testomatio launch
+```
+
+#### Finish
+Finish running or scheduled run on testomat.io. 
+**TESTOMATIO_RUN_ID** environment variable is required.
+
+```bash
+TESTOMATIO_RUN_ID=***run_id*** pytest --testomatio finish
+```
+
+
 ### Additional options
 #### Submitting Test Run Environment
 To configure test environment, you can use additional option **testRunEnv**. The configured environment will be added to the test report. Use it with **report** command:
@@ -170,13 +186,15 @@ You can use environment variable to control certain features of testomat.io
 
 
 #### Test Run configuration
-| Env variable             | What it does                                                                                                               | Examples                                                          |
-|--------------------------|----------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|
-| TESTOMATIO_TITLE         | Name of a test run to create on testomat.io                                                                                | TESTOMATIO_TITLE="Nightly Smoke Tests" pytest --testomatio report |
-| TESTOMATIO_RUN_ID        | Id of existing test run to use for sending test results to                                                                 | TESTOMATIO_RUN_ID=98dfas0 pytest --testomatio report              |
+| Env variable              | What it does                                                                                                               | Examples                                                           |
+|---------------------------|----------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
+| TESTOMATIO_TITLE          | Name of a test run to create on testomat.io                                                                                | TESTOMATIO_TITLE="Nightly Smoke Tests" pytest --testomatio report  |
+| TESTOMATIO_RUN_ID         | Id of existing test run to use for sending test results to                                                                 | TESTOMATIO_RUN_ID=98dfas0 pytest --testomatio report               |
 | TESTOMATIO_RUNGROUP_TITLE | Create a group (folder) for a test run. If group already exists, attach test run to it                                     | TESTOMATIO_RUNGROUP_TITLE="Release 2.0" pytest --testomatio report |
-| TESTOMATIO_ENV           | Assign environment to a test run, env variant of **testRunEnv** option. Has a lower precedence than **testRunEnv** option. | TESTOMATIO_ENV="linux,chrome,1920x1080" pytest --testomatio report |
-| TESTOMATIO_LABEL         | Assign labels to a test run. Labels must exist in project and their scope must be enabled for runs                         | TESTOMATIO_LABEL="smoke,regression" pytest --testomatio report    |
+| TESTOMATIO_ENV            | Assign environment to a test run, env variant of **testRunEnv** option. Has a lower precedence than **testRunEnv** option. | TESTOMATIO_ENV="linux,chrome,1920x1080" pytest --testomatio report |
+| TESTOMATIO_LABEL          | Assign labels to a test run. Labels must exist in project and their scope must be enabled for runs                         | TESTOMATIO_LABEL="smoke,regression" pytest --testomatio report     |
+| TESTOMATIO_PROCEED        | Do not finalize the run                                                                                                    | TESTOMATIO_PROCEED=1 pytest --testomatio report                    |
+
 
 #### S3 Bucket configuration
 | Env variable         | Description                           |
