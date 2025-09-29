@@ -1,3 +1,22 @@
+## 2.10.2 (2025-09-29)
+### Feat
+- Cross-platform testing support
+- Attaching metadata from test run environment to test
+- **launch** and **finish** commands to manually control test run
+- Option to not finalize test run on report
+- Option to publish test run
+- Option to configure timeout for shared run
+- Option to exclude skipped tests from report
+- Option to update test code on report
+
+### Refactor
+- Update performance in pytest_unconfigure hook, removed unnecessary API calls
+
+## 2.10.1 (2025-09-15)
+### Feat
+- Support Python 3.13
+- Import test description from docstring
+
 ## 2.10.0 (2024-12-30)
 
 ### Fix
