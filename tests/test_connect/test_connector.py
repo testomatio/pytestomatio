@@ -306,7 +306,9 @@ class TestConnector:
             steps="Step 1\nStep 2",
             code=None,
             example={"param": "value"},
-            overwrite=None
+            overwrite=None,
+            rid=None,
+            meta=None
         )
 
         assert mock_post.call_count == 1
