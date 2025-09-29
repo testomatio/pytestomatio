@@ -140,6 +140,57 @@ class TestPytestConfigure:
         mock_connector_instance.create_test_run.assert_called_once_with(title='Test Run')
         mock_testomatio_instance.test_run_config.save_run_id.assert_called_once_with('run_12345')
 
+    @patch('pytestomatio.main.pytest.exit')
+    @patch('pytestomatio.main.validations.validate_option')
+    @patch('pytestomatio.main.Testomatio')
+    @patch('pytestomatio.main.Connector')
+    @patch.dict(os.environ, {'TESTOMATIO': testomatio_api_key})
+    def test_configure_launch_option_creates_new_run_and_exit(self, mock_connector, mock_testomatio, mock_validate,
+                                                              mock_exit, mock_config):
+        mock_validate.return_value = 'launch'
+        mock_config.getoption.side_effect = lambda x: 'launch' if x == 'testomatio' else None
+
+        assert not hasattr(mock_config, 'workerinput')
+
+        mock_testomatio_instance = Mock()
+        mock_testomatio.return_value = mock_testomatio_instance
+        mock_testomatio_instance.test_run_config.test_run_id = None
+        mock_testomatio_instance.test_run_config.to_dict.return_value = {'title': 'Test Run'}
+
+        mock_connector_instance = Mock()
+        mock_connector.return_value = mock_connector_instance
+        mock_connector_instance.create_test_run.return_value = {'uid': 'run_12345'}
+
+        main.pytest_configure(mock_config)
+
+        mock_connector_instance.create_test_run.assert_called_once_with(title='Test Run')
+        mock_testomatio_instance.test_run_config.save_run_id.assert_called_once_with('run_12345')
+        mock_exit.assert_called_once_with('Empty run successfully created. Run ID: run_12345')
+
+    @patch('pytestomatio.main.pytest.exit')
+    @patch('pytestomatio.main.validations.validate_option')
+    @patch('pytestomatio.main.Testomatio')
+    @patch('pytestomatio.main.Connector')
+    @patch.dict(os.environ, {'TESTOMATIO': testomatio_api_key})
+    def test_configure_finish_option_finished_run_and_exit(self, mock_connector, mock_testomatio, mock_validate,
+                                                              mock_exit, mock_config):
+        mock_validate.return_value = 'finish'
+        mock_config.getoption.side_effect = lambda x: 'finish' if x == 'testomatio' else None
+
+        assert not hasattr(mock_config, 'workerinput')
+
+        mock_testomatio_instance = Mock()
+        mock_testomatio.return_value = mock_testomatio_instance
+        mock_testomatio_instance.test_run_config.test_run_id = '123'
+
+        mock_connector_instance = Mock()
+        mock_connector.return_value = mock_connector_instance
+
+        main.pytest_configure(mock_config)
+
+        mock_connector_instance.finish_test_run.assert_called_once_with('123', True)
+        mock_exit.assert_called_once_with('Finish command executed. Exiting without test execution...')
+
 
 class TestPytestCollectionModifyItems:
     """Tests for pytest_collection_modifyitems hook"""
@@ -394,16 +445,164 @@ class TestPytestRuntestMakereport:
         request = pytest.testomatio.test_run_config.status_request[item.nodeid]
 
         expected_keys = [
+            'status', 'title', 'run_time', 'suite_title', 'suite_id', "rid",
+            'test_id', 'message', 'stack', 'example', 'artifacts', 'steps', 'code'
+        ]
+        for key in expected_keys:
+            assert key in request
+
+        assert request['status'] == 'passed'
+        assert request['title'] == 'Addition'
+        assert request['run_time'] == 1.5
+        assert request['suite_title'] == item.path.name
+        assert request['test_id'] == '12345678'
+
+    def test_processing_skipped_test(self, mock_call, single_test_item):
+        """Test skipped test reported"""
+        item = single_test_item.copy()[0]
+        item.config.option.testomatio = 'report'
+
+        mock_call.duration = 1.5
+        mock_call.when = 'call'
+        exc_info = Mock()
+        exc_info.typename = 'Skipped'
+        mock_call.excinfo = exc_info
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config = Mock()
+        pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.exclude_skipped = False
+        pytest.testomatio.test_run_config.status_request = {}
+
+        main.pytest_runtest_makereport(item, mock_call)
+
+        assert item.nodeid in pytest.testomatio.test_run_config.status_request
+        request = pytest.testomatio.test_run_config.status_request[item.nodeid]
+
+        expected_keys = [
             'status', 'title', 'run_time', 'suite_title', 'suite_id',
             'test_id', 'message', 'stack', 'example', 'artifacts', 'steps', 'code'
         ]
         for key in expected_keys:
             assert key in request
 
+        assert request['status'] == 'skipped'
         assert request['title'] == 'Addition'
         assert request['run_time'] == 1.5
         assert request['suite_title'] == item.path.name
         assert request['test_id'] == '12345678'
+
+        mock_call.when = 'teardown'
+        main.pytest_runtest_makereport(item, mock_call)
+
+        assert item.nodeid in pytest.testomatio.test_run_config.status_request
+        request = pytest.testomatio.test_run_config.status_request[item.nodeid]
+
+        expected_keys = [
+            'status', 'title', 'run_time', 'suite_title', 'suite_id',
+            'test_id', 'message', 'stack', 'example', 'artifacts', 'steps', 'code'
+        ]
+        for key in expected_keys:
+            assert key in request
+
+        assert request['status'] == 'skipped'
+        assert request['title'] == 'Addition'
+        assert request['run_time'] == 1.5
+        assert request['suite_title'] == item.path.name
+        assert request['test_id'] == '12345678'
+
+    def test_exclude_skipped_test_if_option_enabled(self, mock_call, single_test_item):
+        """Test skipped test excluded from report if TESTOMATIO_EXCLUDE_SKIPPED option is enabled"""
+        item = single_test_item.copy()[0]
+        item.config.option.testomatio = 'report'
+
+        mock_call.duration = 1.5
+        mock_call.when = 'call'
+        exc_info = Mock()
+        exc_info.typename = 'Skipped'
+        mock_call.excinfo = exc_info
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config = Mock()
+        pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.exclude_skipped = True
+        pytest.testomatio.test_run_config.status_request = {}
+
+        main.pytest_runtest_makereport(item, mock_call)
+
+        assert item.nodeid in pytest.testomatio.test_run_config.status_request
+        request = pytest.testomatio.test_run_config.status_request[item.nodeid]
+
+        expected_keys = [
+            'status', 'title', 'run_time', 'suite_title', 'suite_id',
+            'test_id', 'message', 'stack', 'example', 'artifacts', 'steps', 'code'
+        ]
+        for key in expected_keys:
+            assert key in request
+
+        assert request['status'] == 'skipped'
+        assert request['title'] == 'Addition'
+        assert request['run_time'] == 1.5
+        assert request['suite_title'] == item.path.name
+        assert request['test_id'] == '12345678'
+
+        mock_call.when = 'teardown'
+        main.pytest_runtest_makereport(item, mock_call)
+
+        assert item.nodeid not in pytest.testomatio.test_run_config.status_request
+        assert pytest.testomatio.test_run_config.status_request == {}
+
+    def test_rid_without_env(self, mock_call, single_test_item):
+        item = single_test_item.copy()[0]
+        item.config.option.testomatio = 'report'
+
+        mock_call.duration = 1.5
+        mock_call.when = 'call'
+        mock_call.excinfo = None
+
+        testrun_env = None
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config = Mock()
+        pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.environment = testrun_env
+        pytest.testomatio.test_run_config.status_request = {}
+
+        main.pytest_runtest_makereport(item, mock_call)
+
+        assert item.nodeid in pytest.testomatio.test_run_config.status_request
+        request = pytest.testomatio.test_run_config.status_request[item.nodeid]
+
+        assert 'rid' in request.keys()
+
+        assert request['test_id'] == '12345678'
+        assert request['rid'] == f'{testrun_env}-{item.name}-12345678'
+
+    def test_rid_with_env(self, mock_call, single_test_item):
+        item = single_test_item.copy()[0]
+        item.config.option.testomatio = 'report'
+
+        mock_call.duration = 1.5
+        mock_call.when = 'call'
+        mock_call.excinfo = None
+
+        testrun_env = "env1, browser:True"
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config = Mock()
+        pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.environment = testrun_env
+        pytest.testomatio.test_run_config.status_request = {}
+
+        main.pytest_runtest_makereport(item, mock_call)
+
+        assert item.nodeid in pytest.testomatio.test_run_config.status_request
+        request = pytest.testomatio.test_run_config.status_request[item.nodeid]
+
+        assert 'rid' in request.keys()
+
+        assert request['test_id'] == '12345678'
+        assert request['rid'] == f'{testrun_env}-{item.name}-12345678'
 
     def test_code_field_when_update_code_option_disabled(self, mock_call, single_test_item):
         """Test code and overwrite fields in request not updated if update_code option disabled"""
@@ -566,13 +765,15 @@ class TestPytestUnconfigure:
 
     @patch('pytestomatio.main.time.sleep')
     def test_unconfigure_main_process_cleanup(self, mock_sleep):
-        """Test cleanup in main process"""
+        """Test cleanup in main process for report command"""
         mock_config = Mock(spec=['addinivalue_line', 'getini', 'getoption', 'pluginmanager'])
+        mock_config.getoption.return_value = 'report'
         assert not hasattr(mock_config, 'workerinput')
 
         pytest.testomatio = Mock()
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.test_run_id = 'test_run_123'
+        pytest.testomatio.test_run_config.proceed = None
         pytest.testomatio.connector = Mock()
 
         main.pytest_unconfigure(mock_config)
@@ -582,13 +783,15 @@ class TestPytestUnconfigure:
         assert pytest.testomatio.test_run_config.clear_run_id.call_count == 1
 
     def test_unconfigure_xdist_worker_cleanup(self):
-        """Test cleanup in xdist worker process"""
+        """Test cleanup in xdist worker process for report command"""
         mock_config = Mock()
         mock_config.workerinput = Mock()
+        mock_config.getoption.return_value = 'report'
 
         pytest.testomatio = Mock()
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.test_run_id = 'worker_run_456'
+        pytest.testomatio.test_run_config.proceed = None
         pytest.testomatio.connector = Mock()
 
         main.pytest_unconfigure(mock_config)
@@ -596,6 +799,40 @@ class TestPytestUnconfigure:
         pytest.testomatio.connector.finish_test_run.assert_called_once_with('worker_run_456', False)
         pytest.testomatio.test_run_config.clear_run_id.assert_not_called()
 
+    def test_unconfigure_other_commands(self):
+        """Test cleanup for other commands"""
+        mock_config = Mock()
+        command_list = ['debug', 'sync', 'finish', 'launch', 'unknown command']
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config = Mock()
+        pytest.testomatio.test_run_config.test_run_id = 'worker_run_456'
+        pytest.testomatio.connector = Mock()
+        call_count = 0
+        for command in command_list:
+            mock_config.getoption.return_value = command
+            main.pytest_unconfigure(mock_config)
+            call_count += 1
+
+            pytest.testomatio.connector.finish_test_run.assert_not_called()
+            assert pytest.testomatio.test_run_config.clear_run_id.call_count == call_count
+
+    def test_unconfigure_main_process_for_proceed_run(self):
+        """Test cleanup in main process when proceed env set"""
+        mock_config = Mock(spec=['addinivalue_line', 'getini', 'getoption', 'pluginmanager'])
+        mock_config.getoption.return_value = 'report'
+        assert not hasattr(mock_config, 'workerinput')
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config = Mock()
+        pytest.testomatio.test_run_config.test_run_id = 'test_run_123'
+        pytest.testomatio.test_run_config.proceed = True
+        pytest.testomatio.connector = Mock()
+
+        main.pytest_unconfigure(mock_config)
+
+        pytest.testomatio.connector.assert_not_called()
+        assert pytest.testomatio.test_run_config.clear_run_id.call_count == 1
 
 @pytest.mark.smoke
 class TestPytestRuntestLogfinish:
