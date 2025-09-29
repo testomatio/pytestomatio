@@ -11,6 +11,7 @@ class TestRunConfig:
         run_id = os.environ.get('TESTOMATIO_RUN_ID') or os.environ.get('TESTOMATIO_RUN')
         title = os.environ.get('TESTOMATIO_TITLE') if os.environ.get('TESTOMATIO_TITLE') else 'test run at ' + dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         shared_run = os.environ.get('TESTOMATIO_SHARED_RUN') in ['True', 'true', '1']
+        shared_run_timeout = os.environ.get('TESTOMATIO_SHARED_RUN_TIMEOUT', '')
         self.access_event = 'publish' if os.environ.get("TESTOMATIO_PUBLISH") else None
         self.test_run_id = run_id
         self.title = title
@@ -21,6 +22,7 @@ class TestRunConfig:
         self.parallel = False if shared_run else True
         # This allows using test run title to group tests under a single test run. This is needed when running tests in different processes or servers.
         self.shared_run = shared_run
+        self.shared_run_timeout = shared_run_timeout if shared_run_timeout.isdigit() else None
         self.proceed = os.getenv('TESTOMATIO_PROCEED', False)
         self.status_request = {}
         self.build_url = self.resolve_build_url()
@@ -37,6 +39,7 @@ class TestRunConfig:
         result['label'] = self.label
         result['parallel'] = self.parallel
         result['shared_run'] = self.shared_run
+        result['shared_run_timeout'] = self.shared_run_timeout
         result['ci_build_url'] = self.build_url
         return result
 

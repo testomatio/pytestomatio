@@ -145,6 +145,7 @@ class TestConnector:
             env="linux,chrome",
             label="smoke",
             shared_run=False,
+            shared_run_timeout="2",
             parallel=True,
             ci_build_url="https://ci.example.com/build/123"
         )
@@ -159,6 +160,7 @@ class TestConnector:
                 "env": "linux,chrome",
                 "label": "smoke",
                 "shared_run": False,
+                "shared_run_timeout": "2",
                 "parallel": True,
                 "ci_build_url": "https://ci.example.com/build/123"
             }
@@ -181,6 +183,7 @@ class TestConnector:
             env=None,
             label="smoke",
             shared_run=False,
+            shared_run_timeout=None,
             parallel=True,
             ci_build_url=None
         )
@@ -200,8 +203,7 @@ class TestConnector:
         """Test HTTP error handled wher create test run"""
         mock_post.side_effect = HTTPError("HTTP Error")
 
-        result = connector.create_test_run("Test", None, None, None, None, False, True, None)
-
+        result = connector.create_test_run("Test", None, None, None, None, False, True, None, None)
         assert result is None
 
     @patch('requests.Session.put')
@@ -220,6 +222,7 @@ class TestConnector:
             env="windows",
             label="regression",
             shared_run=True,
+            shared_run_timeout='2',
             parallel=False,
             ci_build_url="https://ci.example.com"
         )
@@ -234,6 +237,7 @@ class TestConnector:
                 "env": "windows",
                 "label": "regression",
                 "shared_run": True,
+                "shared_run_timeout": '2',
                 "parallel": False,
                 "ci_build_url": "https://ci.example.com"
             }
