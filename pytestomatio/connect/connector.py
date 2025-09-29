@@ -179,6 +179,7 @@ class Connector:
             return response.json()
 
     def update_test_status(self, run_id: str,
+                           rid: str,
                            status: str,
                            title: str,
                            suite_title: str,
@@ -190,7 +191,8 @@ class Connector:
                            artifacts: list[str],
                            steps: str,
                            code: str,
-                           example: dict) -> None:
+                           example: dict,
+                           meta: dict) -> None:
 
         request = {
             "status": status,  # Enum: "passed" "failed" "skipped"
@@ -204,7 +206,9 @@ class Connector:
             "example": example,
             "artifacts": artifacts,
             "steps": steps,
-            "code": code
+            "code": code,
+            "rid": rid,
+            "meta": meta
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
         try:
