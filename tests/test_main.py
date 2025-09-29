@@ -417,10 +417,106 @@ class TestPytestRuntestMakereport:
         for key in expected_keys:
             assert key in request
 
+        assert request['status'] == 'passed'
         assert request['title'] == 'Addition'
         assert request['run_time'] == 1.5
         assert request['suite_title'] == item.path.name
         assert request['test_id'] == '12345678'
+
+    def test_processing_skipped_test(self, mock_call, single_test_item):
+        """Test skipped test reported"""
+        item = single_test_item.copy()[0]
+        item.config.option.testomatio = 'report'
+
+        mock_call.duration = 1.5
+        mock_call.when = 'call'
+        exc_info = Mock()
+        exc_info.typename = 'Skipped'
+        mock_call.excinfo = exc_info
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config = Mock()
+        pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.exclude_skipped = False
+        pytest.testomatio.test_run_config.status_request = {}
+
+        main.pytest_runtest_makereport(item, mock_call)
+
+        assert item.nodeid in pytest.testomatio.test_run_config.status_request
+        request = pytest.testomatio.test_run_config.status_request[item.nodeid]
+
+        expected_keys = [
+            'status', 'title', 'run_time', 'suite_title', 'suite_id',
+            'test_id', 'message', 'stack', 'example', 'artifacts', 'steps', 'code'
+        ]
+        for key in expected_keys:
+            assert key in request
+
+        assert request['status'] == 'skipped'
+        assert request['title'] == 'Addition'
+        assert request['run_time'] == 1.5
+        assert request['suite_title'] == item.path.name
+        assert request['test_id'] == '12345678'
+
+        mock_call.when = 'teardown'
+        main.pytest_runtest_makereport(item, mock_call)
+
+        assert item.nodeid in pytest.testomatio.test_run_config.status_request
+        request = pytest.testomatio.test_run_config.status_request[item.nodeid]
+
+        expected_keys = [
+            'status', 'title', 'run_time', 'suite_title', 'suite_id',
+            'test_id', 'message', 'stack', 'example', 'artifacts', 'steps', 'code'
+        ]
+        for key in expected_keys:
+            assert key in request
+
+        assert request['status'] == 'skipped'
+        assert request['title'] == 'Addition'
+        assert request['run_time'] == 1.5
+        assert request['suite_title'] == item.path.name
+        assert request['test_id'] == '12345678'
+
+    def test_exclude_skipped_test_if_option_enabled(self, mock_call, single_test_item):
+        """Test skipped test excluded from report if TESTOMATIO_EXCLUDE_SKIPPED option is enabled"""
+        item = single_test_item.copy()[0]
+        item.config.option.testomatio = 'report'
+
+        mock_call.duration = 1.5
+        mock_call.when = 'call'
+        exc_info = Mock()
+        exc_info.typename = 'Skipped'
+        mock_call.excinfo = exc_info
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config = Mock()
+        pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.exclude_skipped = True
+        pytest.testomatio.test_run_config.status_request = {}
+
+        main.pytest_runtest_makereport(item, mock_call)
+
+        assert item.nodeid in pytest.testomatio.test_run_config.status_request
+        request = pytest.testomatio.test_run_config.status_request[item.nodeid]
+
+        expected_keys = [
+            'status', 'title', 'run_time', 'suite_title', 'suite_id',
+            'test_id', 'message', 'stack', 'example', 'artifacts', 'steps', 'code'
+        ]
+        for key in expected_keys:
+            assert key in request
+
+        assert request['status'] == 'skipped'
+        assert request['title'] == 'Addition'
+        assert request['run_time'] == 1.5
+        assert request['suite_title'] == item.path.name
+        assert request['test_id'] == '12345678'
+
+        mock_call.when = 'teardown'
+        main.pytest_runtest_makereport(item, mock_call)
+
+        assert item.nodeid not in pytest.testomatio.test_run_config.status_request
+        assert pytest.testomatio.test_run_config.status_request == {}
 
     def test_rid_without_env(self, mock_call, single_test_item):
         item = single_test_item.copy()[0]
