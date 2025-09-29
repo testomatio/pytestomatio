@@ -109,6 +109,22 @@ Run pytest with debug parameter to get test data collected in metadata.json file
 pytest --testomatio debug
 ```
 
+#### Launch
+Create empty run and obtain its RUN_ID from testomat.io.
+
+```bash
+pytest --testomatio launch
+```
+
+#### Finish
+Finish running or scheduled run on testomat.io. 
+**TESTOMATIO_RUN_ID** environment variable is required.
+
+```bash
+TESTOMATIO_RUN_ID=***run_id*** pytest --testomatio finish
+```
+
+
 ### Additional options
 #### Submitting Test Run Environment
 To configure test environment, you can use additional option **testRunEnv**. The configured environment will be added to the test report. Use it with **report** command:
@@ -177,6 +193,8 @@ You can use environment variable to control certain features of testomat.io
 | TESTOMATIO_RUNGROUP_TITLE     | Create a group (folder) for a test run. If group already exists, attach test run to it                                                                                           | TESTOMATIO_RUNGROUP_TITLE="Release 2.0" pytest --testomatio report                                          |
 | TESTOMATIO_ENV                | Assign environment to a test run, env variant of **testRunEnv** option. Has a lower precedence than **testRunEnv** option.                                                       | TESTOMATIO_ENV="linux,chrome,1920x1080" pytest --testomatio report                                          |
 | TESTOMATIO_LABEL              | Assign labels to a test run. Labels must exist in project and their scope must be enabled for runs                                                                               | TESTOMATIO_LABEL="smoke,regression" pytest --testomatio report                                              |
+| TESTOMATIO_PUBLISH            | Publish run after reporting and provide a public URL                                                                                                                             | TESTOMATIO_PUBLISH=true pytest --testomatio report                                                          |
+| TESTOMATIO_PROCEED            | Do not finalize the run                                                                                                                                                          | TESTOMATIO_PROCEED=1 pytest --testomatio report                                                             |
 | TESTOMATIO_SHARED_RUN         | Report parallel execution to the same run matching it by title. If the run was created more than 20 minutes ago, a new run will be created instead.                              | TESTOMATIO_TITLE="Run1" TESTOMATIO_SHARED_RUN=1 pytest --testomatio report                                  |
 | TESTOMATIO_SHARED_RUN_TIMEOUT | Changes timeout of shared run. After timeout, shared run won`t accept other runs with same name, and new runs will be created. Timeout is set in minutes, default is 20 minutes. | TESTOMATIO_TITLE="Run1" TESTOMATIO_SHARED_RUN=1 TESTOMATIO_SHARED_RUN_TIMEOUT=10 pytest --testomatio report |
 
@@ -267,6 +285,20 @@ def pytest_runtest_makereport(item, call):
     artifact_url = pytest.testomatio.upload_file(screenshot_path, filename)
     pytest.testomatio.add_artifacts([artifact_url])
 ```
+
+### Cross-Platform Testing
+The plugin supports reporting the same test multiple times in a single run. This is especially useful for Cross-Platform
+testing, when you run the same test on different environments. 
+To use this feature you need to specify test run environment through 
+**TESTOMATIO_ENV** environment variable or by using **--testRunEnv** option.
+Example:
+```bash
+TESTOMATIO=***api_key*** TESTOMATIO_RUN_ID=***run_id*** pytest --testomatio report --testRunEnv "os:ubuntu, integration"
+TESTOMATIO=***api_key*** TESTOMATIO_RUN_ID=***run_id*** pytest --testomatio report --testRunEnv "os:windowns, integration"
+```
+Executing these commands will include the tests in the same run, but as separate instances. Each test will contain metadata with information about the test run environment.
+
+**Note**: Only key:value envs will be passed into tests metadata
 
 ## Contributing
 Use python 3.12

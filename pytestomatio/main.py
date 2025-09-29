@@ -53,7 +53,13 @@ def pytest_configure(config: Config):
     if run_env:
         pytest.testomatio.test_run_config.set_env(run_env)
 
-    if config.getoption(testomatio) and config.getoption(testomatio).lower() == 'report':
+    if option == 'finish':
+        run: TestRunConfig = pytest.testomatio.test_run_config
+        pytest.testomatio.connector.finish_test_run(run.test_run_id, True)
+        run.clear_run_id()
+        pytest.exit('Finish command executed. Exiting without test execution...')
+
+    if option and option in {'report', 'launch'}:
         run: TestRunConfig = pytest.testomatio.test_run_config
 
         # for xdist - main process
@@ -64,8 +70,16 @@ def pytest_configure(config: Config):
                 if run_details:
                     run_id = run_details.get('uid')
                     run.save_run_id(run_id)
+                    message = f"\n[TESTOMATIO] Test Run successfully created.\nSee run aggregation at: {run_details.get('url')} \n"
+                    if run.access_event:
+                        message += f"Public url: {run_details.get('public_url')}\n"
+                    print(message)
                 else:
                     log.error("Failed to create testrun on Testomat.io")
+                    pytest.exit("Aborting test run")
+
+                if option == 'launch':
+                    pytest.exit(f'Empty run successfully created. Run ID: {run_id}')
 
     # Mark our pytest_collection_modifyitems hook to run last,
     # so that it sees the effect of all built-in and other filters first.
@@ -132,7 +146,8 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                 file.write(data)
                 pytest.exit('Debug file created. Exiting...')
         case _:
-            raise Exception('Unknown pytestomatio parameter. Use one of: add, remove, sync, debug')
+            raise Exception('Unknown pytestomatio parameter. Use one of: report, remove, sync, debug')
+
 
 def pytest_runtest_makereport(item: Item, call: CallInfo):
     pytest.testomatio_config_option = item.config.getoption(testomatio)
@@ -146,6 +161,7 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         test_id = None
     else:
         test_id = test_item.id if not test_item.id.startswith("@T") else test_item.id[2:]
+    rid = f'{pytest.testomatio.test_run_config.environment}-{item.name}-{test_id}'
 
     request = {
         'status': None,
@@ -160,6 +176,8 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         'artifacts': test_item.artifacts,
         'steps': None,
         'code': None,
+        'rid': rid,
+        'meta': pytest.testomatio.test_run_config.meta
     }
 
     # TODO: refactor it and use TestItem setter to upate those attributes
@@ -204,10 +222,16 @@ def pytest_runtest_logfinish(nodeid, location):
 
 
 def pytest_unconfigure(config: Config):
-    if not hasattr(pytest, 'testomatio'):
+    if not hasattr(pytest, 'testomatio') or config.getoption(testomatio) is None:
         return
 
     run: TestRunConfig = pytest.testomatio.test_run_config
+    if config.getoption(testomatio) != 'report':
+        run.clear_run_id()
+        return
+    elif run.proceed:
+        run.clear_run_id()
+        return
     # for xdist - main process
     if not hasattr(config, 'workerinput'):
         time.sleep(1)
