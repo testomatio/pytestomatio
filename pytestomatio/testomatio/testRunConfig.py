@@ -11,6 +11,7 @@ class TestRunConfig:
         run_id = os.environ.get('TESTOMATIO_RUN_ID') or os.environ.get('TESTOMATIO_RUN')
         title = os.environ.get('TESTOMATIO_TITLE') if os.environ.get('TESTOMATIO_TITLE') else 'test run at ' + dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         shared_run = os.environ.get('TESTOMATIO_SHARED_RUN') in ['True', 'true', '1']
+        update_code = os.environ.get('TESTOMATIO_UPDATE_CODE', False) in ['True', 'true', '1']
         exclude_skipped = os.environ.get('TESTOMATIO_EXCLUDE_SKIPPED', False) in ['True', 'true', '1']
         shared_run_timeout = os.environ.get('TESTOMATIO_SHARED_RUN_TIMEOUT', '')
         self.access_event = 'publish' if os.environ.get("TESTOMATIO_PUBLISH") else None
@@ -27,6 +28,7 @@ class TestRunConfig:
         self.shared_run_timeout = shared_run_timeout if shared_run_timeout.isdigit() else None
         self.proceed = os.getenv('TESTOMATIO_PROCEED', False)
         self.status_request = {}
+        self.update_code = update_code
         self.build_url = self.resolve_build_url()
         self.meta = self.update_meta()
 

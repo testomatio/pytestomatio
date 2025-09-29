@@ -27,6 +27,7 @@ class TestTestRunConfig:
                 assert config.shared_run is False
                 assert config.shared_run_timeout is None
                 assert config.status_request == {}
+                assert config.update_code is False
                 assert config.meta is None
 
     def test_init_with_env_variables(self):
@@ -37,6 +38,7 @@ class TestTestRunConfig:
             'TESTOMATIO_ENV': 'linux,browser:chrome,1920x1080',
             'TESTOMATIO_LABEL': 'smoke,regression',
             'TESTOMATIO_RUNGROUP_TITLE': 'Release 2.0',
+            'TESTOMATIO_UPDATE_CODE': '1',
             'TESTOMATIO_PUBLISH': '1',
             'TESTOMATIO_EXCLUDE_SKIPPED': '1'
         }
@@ -53,6 +55,7 @@ class TestTestRunConfig:
             assert config.group_title == 'Release 2.0'
             assert config.parallel is True
             assert config.shared_run is False
+            assert config.update_code is True
             assert config.meta == {'linux': None, 'browser': 'chrome', '1920x1080': None}
 
     @pytest.mark.parametrize('value', ['True', 'true', '1'])
@@ -74,6 +77,22 @@ class TestTestRunConfig:
             assert config.shared_run is False
             assert config.shared_run_timeout is None
             assert config.parallel is True
+
+    @pytest.mark.parametrize('value', ['True', 'true', '1'])
+    def test_init_update_code_true_variations(self, value):
+        """Test different true values for TESTOMATIO_UPDATE_CODE"""
+        with patch.dict(os.environ, {'TESTOMATIO_UPDATE_CODE': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.update_code is True
+
+    @pytest.mark.parametrize('value', ['False', 'false', '0', 'anything'])
+    def test_init_update_code_false_variations(self, value):
+        """Test different false values TESTOMATIO_UPDATE_CODE"""
+        with patch.dict(os.environ, {'TESTOMATIO_UPDATE_CODE': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.update_code is False
 
     @pytest.mark.parametrize('value', ['True', 'true', '1'])
     def test_init_exclude_skipped_true_variations(self, value):

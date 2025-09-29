@@ -245,6 +245,40 @@ class TestPytestCollectionModifyItems:
             assert mock_add_enrich.call_count == 1
             mock_exit.assert_called_once_with('Sync completed without test execution')
 
+    @patch('pytestomatio.main.pytest.exit')
+    def test_bdd_tests_excluded_from_sync(self, mock_exit, mock_session, mock_config, multiple_test_items):
+        """Test sync mode"""
+        mock_config.getoption.side_effect = lambda x: {
+            'testomatio': 'sync',
+            'no_empty': False,
+            'no_detach': False,
+            'keep_structure': False,
+            'create': False,
+            'directory': None
+        }.get(x)
+        items = multiple_test_items.copy()
+
+        scenario_mock = Mock()
+        feature_mock = Mock()
+        feature_mock.name = 'mock feature'
+        scenario_mock.feature = feature_mock
+        items[0].function.__scenario__ = scenario_mock
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.connector = Mock()
+        pytest.testomatio.connector.get_tests.return_value = []
+
+        with patch('pytestomatio.main.add_and_enrich_tests') as mock_add_enrich:
+            main.pytest_collection_modifyitems(mock_session, mock_config, items)
+
+            assert pytest.testomatio.connector.load_tests.call_count == 1
+            passed_meta = pytest.testomatio.connector.load_tests.call_args[0][0]
+            assert len(passed_meta) != len(items)
+            assert passed_meta[0].title == items[1].name
+
+            assert mock_add_enrich.call_count == 1
+            mock_exit.assert_called_once_with('Sync completed without test execution')
+
     @patch('pytestomatio.main.update_tests')
     @patch('pytestomatio.main.pytest.exit')
     def test_remove_mode(self, mock_exit, mock_update_tests, mock_session, mock_config, single_test_item,
@@ -569,6 +603,144 @@ class TestPytestRuntestMakereport:
 
         assert request['test_id'] == '12345678'
         assert request['rid'] == f'{testrun_env}-{item.name}-12345678'
+
+    def test_code_field_when_update_code_option_disabled(self, mock_call, single_test_item):
+        """Test code and overwrite fields in request not updated if update_code option disabled"""
+        item = single_test_item.copy()[0]
+        item.config.option.testomatio = 'report'
+
+        mock_call.duration = 1.5
+        mock_call.when = 'call'
+        mock_call.excinfo = None
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config = Mock()
+        pytest.testomatio.test_run_config.update_code = False
+        pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.status_request = {}
+
+        main.pytest_runtest_makereport(item, mock_call)
+
+        assert item.nodeid in pytest.testomatio.test_run_config.status_request
+        request = pytest.testomatio.test_run_config.status_request[item.nodeid]
+
+        expected_keys = [
+            'status', 'title', 'run_time', 'suite_title', 'suite_id',
+            'test_id', 'message', 'stack', 'example', 'artifacts', 'steps', 'code', 'overwrite'
+        ]
+        for key in expected_keys:
+            assert key in request
+
+        assert request['title'] == 'Addition'
+        assert request['run_time'] == 1.5
+        assert request['suite_title'] == item.path.name
+        assert request['test_id'] == '12345678'
+        assert request['code'] is None
+        assert request['overwrite'] is None
+
+    def test_code_field_when_update_code_option_enabled(self, mock_call, single_test_item):
+        """Test code and overwrite fields in request updated if update_code option enabled"""
+        item = single_test_item.copy()[0]
+        item.config.option.testomatio = 'report'
+
+        mock_call.duration = 1.5
+        mock_call.when = 'call'
+        mock_call.excinfo = None
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config = Mock()
+        pytest.testomatio.test_run_config.update_code = True
+        pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.status_request = {}
+
+        main.pytest_runtest_makereport(item, mock_call)
+
+        assert item.nodeid in pytest.testomatio.test_run_config.status_request
+        request = pytest.testomatio.test_run_config.status_request[item.nodeid]
+
+        expected_keys = [
+            'status', 'title', 'run_time', 'suite_title', 'suite_id',
+            'test_id', 'message', 'stack', 'example', 'artifacts', 'steps', 'code', 'overwrite'
+        ]
+        for key in expected_keys:
+            assert key in request
+
+        assert request['title'] == 'Addition'
+        assert request['run_time'] == 1.5
+        assert request['suite_title'] == item.path.name
+        assert request['test_id'] == '12345678'
+        assert request['code'] is not None
+        assert request['overwrite'] is True
+
+    def test_code_field_for_bdd_when_update_code_option_disabled(self, mock_call, single_test_item):
+        """Test code and overwrite fields in request not updated for bdd test if update_code option disabled"""
+        item = single_test_item.copy()[0]
+        item.function.__scenario__ = True
+        item.config.option.testomatio = 'report'
+
+        mock_call.duration = 1.5
+        mock_call.when = 'call'
+        mock_call.excinfo = None
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config = Mock()
+        pytest.testomatio.test_run_config.update_code = False
+        pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.status_request = {}
+
+        main.pytest_runtest_makereport(item, mock_call)
+
+        assert item.nodeid in pytest.testomatio.test_run_config.status_request
+        request = pytest.testomatio.test_run_config.status_request[item.nodeid]
+
+        expected_keys = [
+            'status', 'title', 'run_time', 'suite_title', 'suite_id',
+            'test_id', 'message', 'stack', 'example', 'artifacts', 'steps', 'code', 'overwrite'
+        ]
+        for key in expected_keys:
+            assert key in request
+
+        assert request['title'] == 'Addition'
+        assert request['run_time'] == 1.5
+        assert request['suite_title'] == item.path.name
+        assert request['test_id'] == '12345678'
+        assert request['code'] is None
+        assert request['overwrite'] is None
+
+    def test_code_field_for_bdd_when_update_code_option_enabled(self, mock_call, single_test_item):
+        """Test code and overwrite fields in request not updated for bdd test if update_code option enabled"""
+        item = single_test_item.copy()[0]
+        item.function.__scenario__ = True
+        item.config.option.testomatio = 'report'
+
+        mock_call.duration = 1.5
+        mock_call.when = 'call'
+        mock_call.excinfo = None
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config = Mock()
+        pytest.testomatio.test_run_config.update_code = True
+        pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.status_request = {}
+
+        main.pytest_runtest_makereport(item, mock_call)
+
+        assert item.nodeid in pytest.testomatio.test_run_config.status_request
+        request = pytest.testomatio.test_run_config.status_request[item.nodeid]
+
+        expected_keys = [
+            'status', 'title', 'run_time', 'suite_title', 'suite_id',
+            'test_id', 'message', 'stack', 'example', 'artifacts', 'steps', 'code', 'overwrite'
+        ]
+        for key in expected_keys:
+            assert key in request
+
+        assert request['title'] == 'Addition'
+        assert request['run_time'] == 1.5
+        assert request['suite_title'] == item.path.name
+        assert request['test_id'] == '12345678'
+        assert request['code'] is None
+        assert request['overwrite'] is None
 
 
 @pytest.mark.smoke

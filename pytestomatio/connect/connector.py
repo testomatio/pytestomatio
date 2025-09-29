@@ -120,7 +120,6 @@ class Connector:
         response = self.session.get(f'{self.base_url}/api/test_data?api_key={self.api_key}')
         return response.json()
 
-
     def create_test_run(self, access_event: str, title: str, group_title, env: str, label: str, shared_run: bool, shared_run_timeout: str,
                         parallel, ci_build_url: str) -> dict | None:
         request = {
@@ -151,7 +150,6 @@ class Connector:
         if response.status_code == 200:
             log.info(f'Test run created {response.json()["uid"]}')
             return response.json()
-
 
     def update_test_run(self, id: str, access_event: str, title: str, group_title,
                         env: str, label: str, shared_run: bool, shared_run_timeout: str, parallel, ci_build_url: str) -> dict | None:
@@ -199,6 +197,7 @@ class Connector:
                            steps: str,
                            code: str,
                            example: dict,
+                           overwrite: bool | None,
                            meta: dict) -> None:
 
         request = {
@@ -214,6 +213,7 @@ class Connector:
             "artifacts": artifacts,
             "steps": steps,
             "code": code,
+            "overwrite": overwrite,
             "rid": rid,
             "meta": meta
         }
