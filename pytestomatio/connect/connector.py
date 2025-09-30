@@ -1,21 +1,31 @@
+import os
+
 import requests
 from requests.exceptions import HTTPError, ConnectionError
 import logging
 from os.path import join, normpath
 from os import getenv
+
+from pytestomatio.connect.exception import MaxRetriesException
 from pytestomatio.utils.helper import safe_string_list
 from pytestomatio.testing.testItem import TestItem
 import time
 
 log = logging.getLogger('pytestomatio')
+MAX_RETRIES_DEFAULT = 5
+RETRY_INTERVAL_DEFAULT = 5
 
 
 class Connector:
     def __init__(self, base_url: str = '', api_key: str = None):
+        max_retries = os.environ.get('TESTOMATIO_MAX_REQUEST_FAILURES', '')
+        retry_interval = os.environ.get('TESTOMATIO_REQUEST_INTERVAL', '')
         self.base_url = base_url
         self._session = requests.Session()
         self.jwt: str = ''
         self.api_key = api_key
+        self.max_retries = int(max_retries) if max_retries.isdigit() else MAX_RETRIES_DEFAULT
+        self.retry_interval = int(retry_interval) if retry_interval.isdigit() else RETRY_INTERVAL_DEFAULT
 
     @property
     def session(self):
@@ -65,6 +75,47 @@ class Connector:
         
         log.error("Internet connection check timed out after %d seconds.", timeout)
         return False
+
+    def _should_retry(self, response: requests.Response) -> bool:
+        """Checks if request should be retried.
+        Skipped status codes explanation:
+         400 - Bad request(probably wrong API key)
+         404 - Resource not found. No point to retry request.
+         429 - Limit exceeded
+         500 - Internal server error
+        """
+        if response.status_code in (400, 404, 429, 500):
+            return False
+        return response.status_code >= 401
+
+    def _send_request_with_retry(self, method: str, url: str, **kwargs):
+        """Send HTTP request with retry logic"""
+        for attempt in range(self.max_retries):
+            log.debug(f'Trying to send request to {self.base_url}. Attempt {attempt+1}/{self.max_retries}')
+            try:
+                request_func = getattr(self.session, method)
+                response = request_func(url, **kwargs)
+
+                if self._should_retry(response):
+                    if attempt < self.max_retries:
+                        log.error(f'Request attempt failed. Response code: {response.status_code}. '
+                                  f'Retrying in {self.retry_interval} seconds')
+                        time.sleep(self.retry_interval)
+                        continue
+
+                return response
+            except ConnectionError as ce:
+                log.error(f'Failed to connect to {self.base_url}: {ce}')
+                raise
+            except HTTPError as he:
+                log.error(f'HTTP error occurred while connecting to {self.base_url}: {he}')
+                raise
+            except Exception as e:
+                log.error(f'An unexpected exception occurred. Please report an issue: {e}')
+                raise
+
+        log.error(f'Retries attempts exceeded.')
+        raise MaxRetriesException()
 
     def load_tests(
             self,
