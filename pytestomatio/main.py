@@ -120,6 +120,8 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                 directory=config.getoption('directory')
             )
             testomatio_tests = pytest.testomatio.connector.get_tests(meta)
+            if not testomatio_tests:
+                pytest.exit('Failed to update tests ids')
             add_and_enrich_tests(meta, test_files, test_names, testomatio_tests, decorator_name)
             pytest.exit('Sync completed without test execution')
         case 'remove':
@@ -136,8 +138,8 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
             run_details = pytest.testomatio.connector.update_test_run(**run.to_dict())
 
             if run_details is None:
-                log.error('Test run failed to create. Reporting skipped')
-                return
+                log.error('Test run not found. Reporting skipped')
+                pytest.exit('Reporting skipped')
 
             s3_details = read_env_s3_keys(run_details)
 

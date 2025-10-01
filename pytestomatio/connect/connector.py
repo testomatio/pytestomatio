@@ -163,9 +163,18 @@ class Connector:
             log.error(f'Failed to load tests to {self.base_url}. Status code: {response.status_code}')
 
     def get_tests(self, test_metadata: list[TestItem]) -> dict:
-        # with safe_request('Failed to get test ids from testomat.io'):
-        response = self.session.get(f'{self.base_url}/api/test_data?api_key={self.api_key}')
-        return response.json()
+        log.info('Trying to receive test ids from testomat.io')
+        url = f'{self.base_url}/api/test_data?api_key={self.api_key}'
+        try:
+            response = self._send_request_with_retry('get', url)
+            if response.status_code < 400:
+                log.info('Test ids received')
+                return response.json()
+            else:
+                log.error('Failed to get test ids from testomat.io')
+        except Exception as e:
+            log.error('Failed to get test ids from testomat.io')
+
 
     def create_test_run(self, access_event: str, title: str, group_title, env: str, label: str, shared_run: bool, shared_run_timeout: str,
                         parallel, ci_build_url: str) -> dict | None:
