@@ -233,7 +233,7 @@ class TestPytestCollectionModifyItems:
 
         pytest.testomatio = Mock()
         pytest.testomatio.connector = Mock()
-        pytest.testomatio.connector.get_tests.return_value = []
+        pytest.testomatio.connector.get_tests.return_value = [{}, {}]
 
         with patch('pytestomatio.main.add_and_enrich_tests') as mock_add_enrich:
             main.pytest_collection_modifyitems(mock_session, mock_config, items)
@@ -266,7 +266,7 @@ class TestPytestCollectionModifyItems:
 
         pytest.testomatio = Mock()
         pytest.testomatio.connector = Mock()
-        pytest.testomatio.connector.get_tests.return_value = []
+        pytest.testomatio.connector.get_tests.return_value = [{}, {}]
 
         with patch('pytestomatio.main.add_and_enrich_tests') as mock_add_enrich:
             main.pytest_collection_modifyitems(mock_session, mock_config, items)
