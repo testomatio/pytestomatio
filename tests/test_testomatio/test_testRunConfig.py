@@ -2,7 +2,7 @@ import pytest
 import os
 from unittest.mock import patch, mock_open
 
-from pytestomatio.testomatio.testRunConfig import TestRunConfig, TESTOMATIO_TEST_RUN_LOCK_FILE
+from pytestomatio.testomatio.testRunConfig import TestRunConfig, TESTOMATIO_TEST_RUN_LOCK_FILE, DEFAULT_BATCH_SIZE
 
 
 class TestTestRunConfig:
@@ -21,6 +21,8 @@ class TestTestRunConfig:
                 assert config.title == "test run at 2024-01-15 10:30:45"
                 assert config.environment is None
                 assert config.exclude_skipped is False
+                assert config.disable_batch is False
+                assert config.batch_size == DEFAULT_BATCH_SIZE
                 assert config.label is None
                 assert config.group_title is None
                 assert config.parallel is True
@@ -40,7 +42,9 @@ class TestTestRunConfig:
             'TESTOMATIO_RUNGROUP_TITLE': 'Release 2.0',
             'TESTOMATIO_UPDATE_CODE': '1',
             'TESTOMATIO_PUBLISH': '1',
-            'TESTOMATIO_EXCLUDE_SKIPPED': '1'
+            'TESTOMATIO_EXCLUDE_SKIPPED': '1',
+            'TESTOMATIO_DISABLE_BATCH_UPLOAD': 'True',
+            'TESTOMATIO_BATCH_SIZE': '12'
         }
 
         with patch.dict(os.environ, env_vars, clear=True):
@@ -51,6 +55,8 @@ class TestTestRunConfig:
             assert config.title == 'Custom Test Run'
             assert config.environment == 'linux,browser:chrome,1920x1080'
             assert config.exclude_skipped is True
+            assert config.disable_batch is True
+            assert config.batch_size == 12
             assert config.label == 'smoke,regression'
             assert config.group_title == 'Release 2.0'
             assert config.parallel is True
@@ -109,6 +115,38 @@ class TestTestRunConfig:
             config = TestRunConfig()
 
             assert config.exclude_skipped is False
+
+    @pytest.mark.parametrize('value', ['True', 'true', '1'])
+    def test_init_disable_batch_upload_true_variations(self, value):
+        """Test different true values for TESTOMATIO_DISABLE_BATCH_UPLOAD"""
+        with patch.dict(os.environ, {'TESTOMATIO_DISABLE_BATCH_UPLOAD': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.disable_batch is True
+
+    @pytest.mark.parametrize('value', ['False', 'false', '0', 'anything'])
+    def test_init_disable_batch_upload_false_variations(self, value):
+        """Test different false values TESTOMATIO_DISABLE_BATCH_UPLOAD"""
+        with patch.dict(os.environ, {'TESTOMATIO_DISABLE_BATCH_UPLOAD': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.disable_batch is False
+
+    @pytest.mark.parametrize('value', ['1', '10', '11'])
+    def test_init_batch_size_true_variations(self, value):
+        """Test different true values for TESTOMATIO_BATCH_SIZE"""
+        with patch.dict(os.environ, {'TESTOMATIO_BATCH_SIZE': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.batch_size == int(value)
+
+    @pytest.mark.parametrize('value', ['False', 'false', '101', 'anything'])
+    def test_init_batch_size_false_variations(self, value):
+        """Test different false values TESTOMATIO_BATCH_SIZE"""
+        with patch.dict(os.environ, {'TESTOMATIO_BATCH_SIZE': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.batch_size == DEFAULT_BATCH_SIZE
 
     def test_to_dict_full_data(self):
         """Test to_dict with full data"""
