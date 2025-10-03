@@ -233,6 +233,38 @@ class Connector:
         if response.status_code == 200:
             log.info('Test status updated')
 
+    def batch_tests_upload(self, run_id: str,
+                           batch_size: int,
+                           tests: list) -> None:
+        # TODO: add retry logic
+        if not tests:
+            log.info(f'No tests to report. Report skipped')
+            return
+
+        try:
+            log.info(f'Starting batch test report into test run. Run id: {run_id}, number of tests: {len(tests)}, '
+                     f'batch size: {batch_size}')
+            for i in range(0, len(tests), batch_size):
+                batch = tests[i:i+batch_size]
+                batch_index = i // batch_size + 1
+                request = {
+                    'tests': batch,
+                    'batch_index': batch_index
+                }
+                response = self.session.post(f'{self.base_url}/api/reporter/{run_id}/testrun?api_key={self.api_key}',
+                                             json=request)
+                if response.status_code == 200:
+                    log.info(f'Tests status updated. Batch index: {batch_index}')
+        except ConnectionError as ce:
+            log.error(f'Failed to connect to {self.base_url}: {ce}')
+            return
+        except HTTPError as he:
+            log.error(f'HTTP error occurred while connecting to {self.base_url}: {he}')
+            return
+        except Exception as e:
+            log.error(f'An unexpected exception occurred. Please report an issue: {e}')
+            return
+
     # TODO: I guess this class should be just an API client and used within testRun (testRunConfig)
     def finish_test_run(self, run_id: str, is_final=False) -> None:
         status_event = 'finish_parallel' if is_final else 'finish'

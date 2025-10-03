@@ -228,12 +228,44 @@ def pytest_runtest_logfinish(nodeid, location):
         return
     elif not pytest.testomatio.test_run_config.test_run_id:
         return
+    if not pytest.testomatio.test_run_config.disable_batch:
+        return
 
     for nodeid, request in pytest.testomatio.test_run_config.status_request.items():
         if request['status']:
             pytest.testomatio.connector.update_test_status(run_id=pytest.testomatio.test_run_config.test_run_id,
                                                            **request)
     pytest.testomatio.test_run_config.status_request = {}
+
+
+def pytest_testnodedown(node, error):
+    if not hasattr(node, 'workeroutput') or not hasattr(pytest, 'testomatio') or \
+            node.config.getoption(testomatio) is None or node.config.getoption(testomatio) != 'report':
+        return
+    if pytest.testomatio.test_run_config.disable_batch:
+        return
+
+    log.info(f"Collecting test results from worker '{node.workerinfo.get('id')}'")
+    worker_results = node.workeroutput.get('testrun_results', {})
+    pytest.testomatio.test_run_config.status_request.update(worker_results)
+    log.info(f"{len(worker_results)} test results added to the master test run")
+
+
+def pytest_sessionfinish(session, exitstatus):
+    if not hasattr(pytest, 'testomatio') or session.config.getoption(testomatio) is None \
+            or session.config.getoption(testomatio) != 'report':
+        return
+
+    run: TestRunConfig = pytest.testomatio.test_run_config
+    if not run.disable_batch:
+
+        # xdist worker process - write test results to worker output. They will be reported from master process
+        if hasattr(session.config, 'workerinput'):
+            session.config.workeroutput['testrun_results'] = run.status_request
+            return
+
+        pytest.testomatio.connector.batch_tests_upload(run.test_run_id, run.batch_size,
+                                                       list(run.status_request.values()))
 
 
 def pytest_unconfigure(config: Config):
