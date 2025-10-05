@@ -238,6 +238,7 @@ def pytest_runtest_logfinish(nodeid, location):
     pytest.testomatio.test_run_config.status_request = {}
 
 
+@pytest.hookimpl(optionalhook=True)
 def pytest_testnodedown(node, error):
     if not hasattr(node, 'workeroutput') or not hasattr(pytest, 'testomatio') or \
             node.config.getoption(testomatio) is None or node.config.getoption(testomatio) != 'report':
