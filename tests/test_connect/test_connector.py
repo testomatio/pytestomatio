@@ -286,6 +286,24 @@ class TestConnector:
         assert 'message' not in payload
 
     @patch('requests.Session.post')
+    def test_batch_upload_success(self, mock_post, connector):
+        """Test successful batch upload"""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_post.return_value = mock_response
+
+        tests = [{} for i in range(0, 100)]
+        batch_size = 50
+        run_id = 'AS23Fd'
+
+        connector.batch_tests_upload(run_id, batch_size, tests)
+
+        assert mock_post.call_count == len(tests)/batch_size
+        call_args = mock_post.call_args
+
+        assert f'{connector.base_url}/api/reporter/{run_id}/testrun' in call_args[0][0]
+
+    @patch('requests.Session.post')
     def test_update_test_status_filters_none_values(self, mock_post, connector):
         """Test update test status filters keys with none value"""
         mock_response = Mock()
