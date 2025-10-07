@@ -9,6 +9,7 @@ from pytestomatio.decor.decorator_updater import update_tests
 
 from pytestomatio.utils.helper import add_and_enrich_tests, get_test_mapping, collect_tests, read_env_s3_keys
 from pytestomatio.utils.parser_setup import parser_options
+from pytestomatio.utils.logging import get_test_logs, clear_test_logs
 from pytestomatio.utils import validations
 
 from pytestomatio.testomatio.testRunConfig import TestRunConfig
@@ -26,6 +27,15 @@ TESTOMATIO_URL = 'https://app.testomat.io'
 
 def pytest_addoption(parser: Parser) -> None:
     parser_options(parser, testomatio)
+
+
+def pytest_runtest_setup(item):
+    pytest._current_item = item
+
+
+def pytest_runtest_teardown(item, nextitem):
+    pytest._current_item = None
+    clear_test_logs(item.nodeid)
 
 
 def pytest_collection(session):
@@ -192,16 +202,21 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
 
     # TODO: refactor it and use TestItem setter to upate those attributes
     if call.when in ['setup', 'call']:
+        logs = get_test_logs(item.nodeid, True)
+
         if call.excinfo is not None:
             if call.excinfo.typename == 'Skipped':
                 request['status'] = 'skipped'
                 request['message'] = str(call.excinfo.value)
             else:
+                stack = '\n'.join((str(tb) for tb in call.excinfo.traceback))
                 request['message'] = str(call.excinfo.value)
-                request['stack'] = '\n'.join((str(tb) for tb in call.excinfo.traceback))
+                request['stack'] = logs + '\n' + stack
                 request['status'] = 'failed'
         else:
             request['status'] = 'passed' if call.when == 'call' else request['status']
+            if pytest.testomatio.test_run_config.stack_passed and call.when == 'call':
+                request['stack'] = logs if logs else None
 
         if hasattr(item, 'callspec'):
             request['example'] = test_item.safe_params(item.callspec.params)
