@@ -437,6 +437,7 @@ class TestPytestRuntestMakereport:
         pytest.testomatio = Mock()
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.create_tests = None
         pytest.testomatio.test_run_config.status_request = {}
 
         main.pytest_runtest_makereport(item, mock_call)
@@ -472,6 +473,7 @@ class TestPytestRuntestMakereport:
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
         pytest.testomatio.test_run_config.exclude_skipped = False
+        pytest.testomatio.test_run_config.create_tests = None
         pytest.testomatio.test_run_config.status_request = {}
 
         main.pytest_runtest_makereport(item, mock_call)
@@ -526,6 +528,7 @@ class TestPytestRuntestMakereport:
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
         pytest.testomatio.test_run_config.exclude_skipped = True
+        pytest.testomatio.test_run_config.create_tests = None
         pytest.testomatio.test_run_config.status_request = {}
 
         main.pytest_runtest_makereport(item, mock_call)
@@ -566,6 +569,7 @@ class TestPytestRuntestMakereport:
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
         pytest.testomatio.test_run_config.environment = testrun_env
+        pytest.testomatio.test_run_config.create_tests = None
         pytest.testomatio.test_run_config.status_request = {}
 
         main.pytest_runtest_makereport(item, mock_call)
@@ -592,6 +596,7 @@ class TestPytestRuntestMakereport:
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
         pytest.testomatio.test_run_config.environment = testrun_env
+        pytest.testomatio.test_run_config.create_tests = None
         pytest.testomatio.test_run_config.status_request = {}
 
         main.pytest_runtest_makereport(item, mock_call)
@@ -616,6 +621,7 @@ class TestPytestRuntestMakereport:
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
         pytest.testomatio.test_run_config.create_tests = True
+        pytest.testomatio.test_run_config.workdir = None
         pytest.testomatio.test_run_config.status_request = {}
 
         main.pytest_runtest_makereport(item, mock_call)
@@ -627,6 +633,7 @@ class TestPytestRuntestMakereport:
 
         assert request['test_id'] == '12345678'
         assert request['create'] is True
+        assert request['file'] is None
 
     def test_create_test_when_option_disabled(self, mock_call, single_test_item):
         item = single_test_item.copy()[0]
@@ -652,6 +659,33 @@ class TestPytestRuntestMakereport:
         assert request['test_id'] == '12345678'
         assert request['create'] is None
 
+    def test_add_workdir_for_test_when_option_enabled(self, mock_call, single_test_item):
+        item = single_test_item.copy()[0]
+        item.config.option.testomatio = 'report'
+
+        mock_call.duration = 1.5
+        mock_call.when = 'call'
+        mock_call.excinfo = None
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config = Mock()
+        pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.create_tests = True
+        pytest.testomatio.test_run_config.workdir = 'new_dir'
+        pytest.testomatio.test_run_config.status_request = {}
+
+        main.pytest_runtest_makereport(item, mock_call)
+
+        assert item.nodeid in pytest.testomatio.test_run_config.status_request
+        request = pytest.testomatio.test_run_config.status_request[item.nodeid]
+
+        assert 'create' in request.keys()
+
+        assert request['test_id'] == '12345678'
+        assert request['create'] is True
+        assert request['file']
+        assert request['file'] == pytest.testomatio.test_run_config.workdir + '/' + item.path.name
+
     def test_code_field_when_update_code_option_disabled(self, mock_call, single_test_item):
         """Test code and overwrite fields in request not updated if update_code option disabled"""
         item = single_test_item.copy()[0]
@@ -664,6 +698,7 @@ class TestPytestRuntestMakereport:
         pytest.testomatio = Mock()
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.update_code = False
+        pytest.testomatio.test_run_config.create_tests = None
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
         pytest.testomatio.test_run_config.status_request = {}
 
@@ -698,6 +733,7 @@ class TestPytestRuntestMakereport:
         pytest.testomatio = Mock()
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.update_code = True
+        pytest.testomatio.test_run_config.create_tests = None
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
         pytest.testomatio.test_run_config.status_request = {}
 
@@ -733,6 +769,7 @@ class TestPytestRuntestMakereport:
         pytest.testomatio = Mock()
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.update_code = False
+        pytest.testomatio.test_run_config.create_tests = None
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
         pytest.testomatio.test_run_config.status_request = {}
 
@@ -768,6 +805,7 @@ class TestPytestRuntestMakereport:
         pytest.testomatio = Mock()
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.update_code = True
+        pytest.testomatio.test_run_config.create_tests = None
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
         pytest.testomatio.test_run_config.status_request = {}
 

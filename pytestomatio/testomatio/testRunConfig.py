@@ -31,6 +31,7 @@ class TestRunConfig:
         self.proceed = os.getenv('TESTOMATIO_PROCEED', False)
         self.status_request = {}
         self.update_code = update_code
+        self.workdir = os.getenv('TESTOMATIO_WORKDIR', None)
         self.build_url = self.resolve_build_url()
         self.meta = self.update_meta()
 

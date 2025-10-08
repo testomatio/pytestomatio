@@ -269,7 +269,8 @@ class TestConnector:
             code="def test_login(): pass",
             example={"param": "value"},
             overwrite=True,
-            meta={}
+            meta={},
+            file='file',
         )
 
         assert mock_post.call_count == 1
@@ -279,6 +280,7 @@ class TestConnector:
 
         payload = call_args[1]['json']
         assert payload['create']
+        assert payload['file']
         assert payload['status'] == 'passed'
         assert payload['title'] == 'Test Login'
         assert payload['run_time'] == 1.5
@@ -311,7 +313,8 @@ class TestConnector:
             example={"param": "value"},
             overwrite=None,
             rid=None,
-            meta=None
+            meta=None,
+            file=None,
         )
 
         assert mock_post.call_count == 1
@@ -326,6 +329,7 @@ class TestConnector:
         assert payload['artifacts'] == ["screenshot.png"]
         assert 'message' not in payload
         assert 'create' not in payload
+        assert 'file' not in payload
         assert 'code' not in payload
         assert 'overwrite' not in payload
 

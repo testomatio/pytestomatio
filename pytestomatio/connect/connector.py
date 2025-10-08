@@ -198,6 +198,7 @@ class Connector:
                            steps: str,
                            code: str,
                            example: dict,
+                           file: str | None,
                            overwrite: bool | None,
                            meta: dict) -> None:
 
@@ -205,6 +206,7 @@ class Connector:
             "status": status,  # Enum: "passed" "failed" "skipped"
             "title": title,
             "create": create,
+            "file": file,
             "suite_title": suite_title,
             "suite_id": suite_id,
             "test_id": test_id,
