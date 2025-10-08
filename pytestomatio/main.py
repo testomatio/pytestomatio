@@ -171,6 +171,7 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
     request = {
         'status': None,
         'title': test_item.exec_title,
+        'create': pytest.testomatio.test_run_config.create_tests,
         'run_time': call.duration,
         'suite_title': test_item.suite_title,
         'suite_id': None,

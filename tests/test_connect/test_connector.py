@@ -257,6 +257,7 @@ class TestConnector:
             rid="rid123",
             status="passed",
             title="Test Login",
+            create=True,
             suite_title="Auth Suite",
             suite_id="suite_456",
             test_id="test_789",
@@ -277,6 +278,7 @@ class TestConnector:
         assert f'{connector.base_url}/api/reporter/run_123/testrun' in call_args[0][0]
 
         payload = call_args[1]['json']
+        assert payload['create']
         assert payload['status'] == 'passed'
         assert payload['title'] == 'Test Login'
         assert payload['run_time'] == 1.5
@@ -296,6 +298,7 @@ class TestConnector:
             run_id="run_123",
             status="passed",
             title="Test Login",
+            create=None,
             suite_title="Auth Suite",
             suite_id="suite_456",
             test_id="test_789",
@@ -322,6 +325,7 @@ class TestConnector:
         assert payload['run_time'] == 1.5
         assert payload['artifacts'] == ["screenshot.png"]
         assert 'message' not in payload
+        assert 'create' not in payload
         assert 'code' not in payload
         assert 'overwrite' not in payload
 

@@ -187,6 +187,7 @@ class Connector:
                            rid: str,
                            status: str,
                            title: str,
+                           create: bool | None,
                            suite_title: str,
                            suite_id: str,
                            test_id: str,
@@ -203,6 +204,7 @@ class Connector:
         request = {
             "status": status,  # Enum: "passed" "failed" "skipped"
             "title": title,
+            "create": create,
             "suite_title": suite_title,
             "suite_id": suite_id,
             "test_id": test_id,
