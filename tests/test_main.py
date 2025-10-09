@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 import os
 
@@ -39,6 +41,35 @@ class TestPytestCollection:
         assert hasattr(mock_session, store_attribute_name)
         assert mock_session._pytestomatio_original_collected_items == []
 
+
+@pytest.mark.smoke
+class TestPytestIgnoreCollect:
+    """Tests for pytest_ignore_collect hook"""
+
+    @pytest.fixture
+    def mock_config(self):
+        config = Mock()
+        config.getoption.return_value = 'report'
+        config.rootpath = 'temp/'
+        return config
+
+    def test_ignores_by_extension(self, mock_config):
+        pattern = '**/*.py'
+        paths = [('directory/test_file.py', True), ('directory/file.py', True), ('new_dir/file.js', None)]
+        with patch.dict(os.environ, {'TESTOMATIO_EXCLUDE_FILES_FROM_REPORT_GLOB_PATTERN': pattern}, clear=True):
+            for path, expected_result in paths:
+                collect_path = Path(mock_config.rootpath + path)
+                result = main.pytest_ignore_collect(collect_path, collect_path, mock_config)
+                assert result is expected_result
+
+    def test_ignores_by_name(self, mock_config):
+        pattern = '**/test_*.py'
+        paths = [('directory/test_file.py', True), ('directory/file.py', None), ('directory/file.js', None)]
+        with patch.dict(os.environ, {'TESTOMATIO_EXCLUDE_FILES_FROM_REPORT_GLOB_PATTERN': pattern}, clear=True):
+            for path, expected_result in paths:
+                collect_path = Path(mock_config.rootpath + path)
+                result = main.pytest_ignore_collect(collect_path, collect_path, mock_config)
+                assert result is expected_result
 
 @pytest.mark.smoke
 class TestPytestConfigure:
