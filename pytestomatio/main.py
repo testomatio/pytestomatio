@@ -87,6 +87,22 @@ def pytest_configure(config: Config):
     # This ensures we only apply our OR logic after other filters have done their job.
     config.pluginmanager.register(TestomatioFilterPlugin(), "testomatio_filter_plugin")
 
+
+def pytest_ignore_collect(collection_path, path, config):
+    if config.getoption(testomatio) is None or config.getoption(testomatio) != 'report':
+        return
+
+    exclude_patterns = os.environ.get('TESTOMATIO_EXCLUDE_FILES_FROM_REPORT_GLOB_PATTERN', None)
+    if not exclude_patterns:
+        return
+
+    exclude_patterns = exclude_patterns.split(';')
+    relative_path = collection_path.relative_to(config.rootpath)
+    for pattern in exclude_patterns:
+        if pattern and relative_path.match(pattern):
+            return True
+
+
 @pytest.hookimpl(tryfirst=True)
 def pytest_collection_modifyitems(session: Session, config: Config, items: list[Item]) -> None:
     if config.getoption(testomatio) is None:
