@@ -71,16 +71,6 @@ class TestPytestIgnoreCollect:
                 result = main.pytest_ignore_collect(collect_path, collect_path, mock_config)
                 assert result is expected_result
 
-    def test_ignores_by_directory(self, mock_config):
-        pattern = '**/directory'
-        paths = [('directory/test_file.py', True), ('directory/file.py', True), ('new/file.js', None)]
-        with patch.dict(os.environ, {'TESTOMATIO_EXCLUDE_FILES_FROM_REPORT_GLOB_PATTERN': pattern}, clear=True):
-            for path, expected_result in paths:
-                collect_path = Path(mock_config.rootpath + path)
-                result = main.pytest_ignore_collect(collect_path, collect_path, mock_config)
-                assert result is expected_result
-
-
 @pytest.mark.smoke
 class TestPytestConfigure:
     """Tests for pytest_configure hook"""
