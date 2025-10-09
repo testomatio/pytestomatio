@@ -10,6 +10,7 @@ class TestRunConfig:
     def __init__(self):
         run_id = os.environ.get('TESTOMATIO_RUN_ID') or os.environ.get('TESTOMATIO_RUN')
         title = os.environ.get('TESTOMATIO_TITLE') if os.environ.get('TESTOMATIO_TITLE') else 'test run at ' + dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        create_tests = os.environ.get('TESTOMATIO_CREATE', False) in ['True', 'true', '1']
         shared_run = os.environ.get('TESTOMATIO_SHARED_RUN') in ['True', 'true', '1']
         update_code = os.environ.get('TESTOMATIO_UPDATE_CODE', False) in ['True', 'true', '1']
         exclude_skipped = os.environ.get('TESTOMATIO_EXCLUDE_SKIPPED', False) in ['True', 'true', '1']
@@ -19,6 +20,7 @@ class TestRunConfig:
         self.title = title
         self.environment = safe_string_list(os.environ.get('TESTOMATIO_ENV'))
         self.exclude_skipped = exclude_skipped
+        self.create_tests = create_tests if create_tests else None
         self.label = safe_string_list(os.environ.get('TESTOMATIO_LABEL'))
         self.group_title = os.environ.get('TESTOMATIO_RUNGROUP_TITLE')
         # This allows to report tests to the test run by it's id. https://docs.testomat.io/getting-started/running-automated-tests/#reporting-parallel-tests
@@ -29,6 +31,7 @@ class TestRunConfig:
         self.proceed = os.getenv('TESTOMATIO_PROCEED', False)
         self.status_request = {}
         self.update_code = update_code
+        self.workdir = os.getenv('TESTOMATIO_WORKDIR', None)
         self.build_url = self.resolve_build_url()
         self.meta = self.update_meta()
 

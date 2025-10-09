@@ -19,6 +19,7 @@ class TestTestRunConfig:
                 assert config.access_event is None
                 assert config.test_run_id is None
                 assert config.title == "test run at 2024-01-15 10:30:45"
+                assert config.create_tests is None
                 assert config.environment is None
                 assert config.exclude_skipped is False
                 assert config.label is None
@@ -40,7 +41,8 @@ class TestTestRunConfig:
             'TESTOMATIO_RUNGROUP_TITLE': 'Release 2.0',
             'TESTOMATIO_UPDATE_CODE': '1',
             'TESTOMATIO_PUBLISH': '1',
-            'TESTOMATIO_EXCLUDE_SKIPPED': '1'
+            'TESTOMATIO_EXCLUDE_SKIPPED': '1',
+            'TESTOMATIO_CREATE': 'True'
         }
 
         with patch.dict(os.environ, env_vars, clear=True):
@@ -49,6 +51,7 @@ class TestTestRunConfig:
             assert config.access_event == 'publish'
             assert config.test_run_id == 'run_12345'
             assert config.title == 'Custom Test Run'
+            assert config.create_tests is True
             assert config.environment == 'linux,browser:chrome,1920x1080'
             assert config.exclude_skipped is True
             assert config.label == 'smoke,regression'
@@ -93,6 +96,22 @@ class TestTestRunConfig:
             config = TestRunConfig()
 
             assert config.update_code is False
+
+    @pytest.mark.parametrize('value', ['True', 'true', '1'])
+    def test_init_create_test_true_variations(self, value):
+        """Test different true values for TESTOMATIO_CREATE"""
+        with patch.dict(os.environ, {'TESTOMATIO_CREATE': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.create_tests is True
+
+    @pytest.mark.parametrize('value', ['False', 'false', '0', 'anything'])
+    def test_init_create_test_false_variations(self, value):
+        """Test different false values TESTOMATIO_CREATE"""
+        with patch.dict(os.environ, {'TESTOMATIO_CREATE': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.create_tests is None
 
     @pytest.mark.parametrize('value', ['True', 'true', '1'])
     def test_init_exclude_skipped_true_variations(self, value):

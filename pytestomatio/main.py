@@ -1,5 +1,6 @@
 import os, pytest, logging, json, time
 import warnings
+from os.path import join, normpath
 
 from pytest import Parser, Session, Config, Item, CallInfo
 from pytestomatio.connect.connector import Connector
@@ -171,7 +172,9 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
     request = {
         'status': None,
         'title': test_item.exec_title,
+        'create': None,
         'run_time': call.duration,
+        'file': None,
         'suite_title': test_item.suite_title,
         'suite_id': None,
         'test_id': test_id,
@@ -189,6 +192,12 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
     if pytest.testomatio.test_run_config.update_code and test_item.type != 'bdd':
         request['code'] = test_item.source_code
         request['overwrite'] = True
+
+    if pytest.testomatio.test_run_config.create_tests:
+        request['create'] = True
+        workdir = pytest.testomatio.test_run_config.workdir
+        if workdir:
+            request['file'] = normpath(join(workdir, test_item.file_name))
 
     # TODO: refactor it and use TestItem setter to upate those attributes
     if call.when in ['setup', 'call']:
