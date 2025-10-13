@@ -46,19 +46,76 @@ class TestTestomatioFilterPlugin:
         item.iter_markers.return_value = iter([])
         return item
 
-    def test_no_test_id_option(self, plugin, mock_session, mock_config):
-        """Test when no test_id option"""
+    def test_no_testomatio_filter_option(self, plugin, mock_session, mock_config):
+        """Test when no testomatio-filter option"""
+        mock_config.getoption = Mock(return_value='report')
         items = [Mock(), Mock()]
         original_items = items.copy()
 
         plugin.pytest_collection_modifyitems(mock_session, mock_config, items)
 
         assert items == original_items
-        mock_config.getoption.assert_called_once_with("test_id")
+        mock_config.getoption.assert_called_with("testomatio_filter")
+
+    @patch('pytestomatio.testomatio.filter_plugin.TestomatioFilterPlugin.get_matched_test_ids')
+    def test_filter_incorrect_format(self, get_ids_mock, plugin, mock_session, mock_config, caplog):
+        option_values = {
+            'testomatio': 'report',
+            'testomatio_filter': 'test_id'
+        }
+        mock_config.getoption.side_effect = lambda x: option_values.get(x)
+        matched_item = self.create_mock_item_with_marker("test1", "@T12345678")
+        unmatched_item = self.create_mock_item_with_marker("test2", "@T87654321")
+
+        mock_session._pytestomatio_original_collected_items = [matched_item, unmatched_item]
+
+        items = []
+        plugin.pytest_collection_modifyitems(mock_session, mock_config, items)
+        assert 'Incorrect filter format. Filter must be in type=value format.' in caplog.text
+        assert get_ids_mock.call_count == 0
+
+    @patch('pytestomatio.testomatio.filter_plugin.TestomatioFilterPlugin.get_matched_test_ids')
+    def test_filter_one_of_values_empty(self, get_ids_mock, plugin, mock_session, mock_config, caplog):
+        option_values = {
+            'testomatio': 'report',
+            'testomatio_filter': 'test_id='
+        }
+        mock_config.getoption.side_effect = lambda x: option_values.get(x)
+        matched_item = self.create_mock_item_with_marker("test1", "@T12345678")
+        unmatched_item = self.create_mock_item_with_marker("test2", "@T87654321")
+
+        mock_session._pytestomatio_original_collected_items = [matched_item, unmatched_item]
+
+        items = []
+        plugin.pytest_collection_modifyitems(mock_session, mock_config, items)
+        assert 'Failed to retrieve filter data.' in caplog.text
+        assert get_ids_mock.call_count == 0
+
+    @patch('pytestomatio.testomatio.filter_plugin.TestomatioFilterPlugin.get_matched_test_ids')
+    def test_filter_not_allowed(self, get_ids_mock, plugin, mock_session, mock_config, caplog):
+        f_type = 'random'
+        option_values = {
+            'testomatio': 'report',
+            'testomatio_filter': f'{f_type}=T12345678'
+        }
+        mock_config.getoption.side_effect = lambda x: option_values.get(x)
+        matched_item = self.create_mock_item_with_marker("test1", "@T12345678")
+        unmatched_item = self.create_mock_item_with_marker("test2", "@T87654321")
+
+        mock_session._pytestomatio_original_collected_items = [matched_item, unmatched_item]
+
+        items = []
+        plugin.pytest_collection_modifyitems(mock_session, mock_config, items)
+        assert f"Filter '{f_type}' not allowed." in caplog.text
+        assert get_ids_mock.call_count == 0
 
     def test_single_test_id_match(self, plugin, mock_session, mock_config):
         """Test with one matched test_id"""
-        mock_config.getoption.return_value = "@T12345678"
+        option_values = {
+            'testomatio': 'report',
+            'testomatio_filter': 'test_id=@T12345678'
+        }
+        mock_config.getoption.side_effect = lambda x: option_values.get(x)
 
         matched_item = self.create_mock_item_with_marker("test1", "@T12345678")
         unmatched_item = self.create_mock_item_with_marker("test2", "@T87654321")
@@ -72,7 +129,11 @@ class TestTestomatioFilterPlugin:
 
     def test_multiple_test_ids_with_pipe_separator(self, plugin, mock_session, mock_config):
         """Test with multiple test_id"""
-        mock_config.getoption.return_value = "@T12345678|@T87654321"
+        option_values = {
+            'testomatio': 'report',
+            'testomatio_filter': 'test_id=@T12345678|@T87654321'
+        }
+        mock_config.getoption.side_effect = lambda x: option_values.get(x)
 
         item1 = self.create_mock_item_with_marker("test1", "@T12345678")
         item2 = self.create_mock_item_with_marker("test2", "@T87654321")
@@ -91,7 +152,11 @@ class TestTestomatioFilterPlugin:
 
     def test_test_id_without_at_t_prefix(self, plugin, mock_session, mock_config):
         """Test test_id without @T prefix"""
-        mock_config.getoption.return_value = "12345678"  # без @T
+        option_values = {
+            'testomatio': 'report',
+            'testomatio_filter': 'test_id=12345678'
+        }
+        mock_config.getoption.side_effect = lambda x: option_values.get(x)
 
         item = self.create_mock_item_with_marker("test1", "@T12345678")
         mock_session._pytestomatio_original_collected_items = [item]
@@ -104,7 +169,11 @@ class TestTestomatioFilterPlugin:
 
     def test_no_matching_items(self, plugin, mock_session, mock_config):
         """Test when no matching items"""
-        mock_config.getoption.return_value = "@T12345678"
+        option_values = {
+            'testomatio': 'report',
+            'testomatio_filter': 'test_id=@T12345678'
+        }
+        mock_config.getoption.side_effect = lambda x: option_values.get(x)
 
         item1 = self.create_mock_item_with_marker("test1", "@T99999999")
         item2 = self.create_mock_item_without_marker("test2")
@@ -119,8 +188,12 @@ class TestTestomatioFilterPlugin:
 
     def test_with_keyword_filter_active(self, plugin, mock_session, mock_config):
         """Test with active -k filter"""
-        mock_config.getoption.return_value = "@T12345678"
-        mock_config.option.keyword = "test_login"  # -k фільтр активний
+        option_values = {
+            'testomatio': 'report',
+            'testomatio_filter': 'test_id=@T12345678'
+        }
+        mock_config.getoption.side_effect = lambda x: option_values.get(x)
+        mock_config.option.keyword = "test_login"  # -k filter is active
 
         keyword_item = Mock()
         keyword_item.nodeid = "test_login"
@@ -139,7 +212,11 @@ class TestTestomatioFilterPlugin:
 
     def test_with_markexpr_filter_active(self, plugin, mock_session, mock_config):
         """Test with -m filter"""
-        mock_config.getoption.return_value = "@T12345678"
+        option_values = {
+            'testomatio': 'report',
+            'testomatio_filter': 'test_id=@T12345678'
+        }
+        mock_config.getoption.side_effect = lambda x: option_values.get(x)
         mock_config.option.markexpr = "smoke"
         mock_config.option.keyword = ""
 
@@ -159,7 +236,11 @@ class TestTestomatioFilterPlugin:
 
     def test_with_not_keyword_filter(self, plugin, mock_session, mock_config):
         """Test with "not" in keyword filter (exclusion logic)"""
-        mock_config.getoption.return_value = "@T12345678"
+        option_values = {
+            'testomatio': 'report',
+            'testomatio_filter': 'test_id=@T12345678'
+        }
+        mock_config.getoption.side_effect = lambda x: option_values.get(x)
         mock_config.option.keyword = "not slow"
 
         passed_item = Mock()

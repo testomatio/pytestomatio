@@ -163,13 +163,55 @@ You can use **directory** option to specify directory to use for test file struc
 pytest --testomatio sync --directory imported_tests
 ```
 Note: **keep-structure** option takes precedence over **directory** option. If both are used **keep-structure** will be used.
-#### Filter tests by id
-You can filter tests by testomat.io id, using **test-id** option. You pass single or multiple ids to this option. Use this option with **report** command:
- ```bash
-pytest --testomatio report --test-id "Tc0880217|Tfd1c595c"
-```
-Note: Test id should be started from letter "T"
+#### Filter tests
+You can filter tests that will be reported, using **testomatio-filter** option. Filter format: *filter_type=value*. Use this option with **report** command.
 
+**Note**: Only one filter can be applied at a time 
+
+**Filter types**:
+ - **test_id**. Filter test by Testomat.io id. You can pass single or multiple ids for this filter using *|* as separator. Ex: "test_id=@T3h2r432|T2e34e342|b234fr254"
+ - **plan**. Filter by plan id.
+ - **jira**. Filter by jira issue id.
+ - **tag**. Filter by tag name.
+ - **label**. Filter by label name or label-id.
+
+**Examples**:
+
+**Filter by test id**
+```bash
+pytest --testomatio report --testomatio-filter="test_id=Tc0880217|Tfd1c595c"
+```
+**Filter by tag**
+
+If your test have '@smoke' tag on testomat.io, then value for this filter == smoke
+```bash
+pytest --testomatio report --testomatio-filter="tag=smoke"
+```
+
+**Filter by label**
+
+```bash
+# by label name
+pytest --testomatio report --testomatio-filter="label=important"
+
+# by label id
+pytest --testomatio report --testomatio-filter="label=important-f435-e"
+
+# based on Severity type
+pytest --testomatio report --testomatio-filter="label=severity-f124r-3:⚠️ Critical"
+```
+
+**Filter by plan**
+
+```bash
+pytest --testomatio report --testomatio-filter="plan=ca34gf3t"
+```
+
+**Filter by Jira Issue**
+
+```bash
+pytest --testomatio report --testomatio-filter="jira=TES1"
+```
 
 ### Configuration with environment variables
 You can use environment variable to control certain features of testomat.io
