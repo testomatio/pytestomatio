@@ -15,6 +15,8 @@ from pytestomatio.testomatio.testRunConfig import TestRunConfig
 from pytestomatio.testomatio.testomatio import Testomatio
 from pytestomatio.testomatio.filter_plugin import TestomatioFilterPlugin
 
+from pytestomatio.services.meta_storage import meta_storage
+
 log = logging.getLogger(__name__)
 log.setLevel('INFO')
 
@@ -33,6 +35,17 @@ def pytest_collection(session):
     # This hook is called after initial test collection, before other filters.
     # We'll store the items in a session attribute for later use.
     session._pytestomatio_original_collected_items = []
+
+
+def pytest_runtest_setup(item):
+    pytest._current_item = item
+
+
+def pytest_runtest_teardown(item, nextitem):
+    pytest._current_item = None
+
+    # todo: unite all storages clearing
+    meta_storage.clear(item.nodeid)
 
 
 def pytest_configure(config: Config):
@@ -168,6 +181,13 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         test_id = test_item.id if not test_item.id.startswith("@T") else test_item.id[2:]
     rid = f'{pytest.testomatio.test_run_config.environment}-{item.name}-{test_id}'
 
+    meta = None
+    if call.when == 'call':
+        meta = meta_storage.get(item.nodeid)
+        test_run_meta = pytest.testomatio.test_run_config.meta
+        if test_run_meta:
+            meta.update(test_run_meta)
+
     request = {
         'status': None,
         'title': test_item.exec_title,
@@ -183,7 +203,7 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         'code': None,
         'overwrite': None,
         'rid': rid,
-        'meta': pytest.testomatio.test_run_config.meta
+        'meta': meta
     }
 
     if pytest.testomatio.test_run_config.update_code and test_item.type != 'bdd':

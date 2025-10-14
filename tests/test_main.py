@@ -437,6 +437,7 @@ class TestPytestRuntestMakereport:
         pytest.testomatio = Mock()
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.meta = None
         pytest.testomatio.test_run_config.status_request = {}
 
         main.pytest_runtest_makereport(item, mock_call)
@@ -471,6 +472,7 @@ class TestPytestRuntestMakereport:
         pytest.testomatio = Mock()
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.meta = None
         pytest.testomatio.test_run_config.exclude_skipped = False
         pytest.testomatio.test_run_config.status_request = {}
 
@@ -525,6 +527,7 @@ class TestPytestRuntestMakereport:
         pytest.testomatio = Mock()
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.meta = None
         pytest.testomatio.test_run_config.exclude_skipped = True
         pytest.testomatio.test_run_config.status_request = {}
 
@@ -565,6 +568,7 @@ class TestPytestRuntestMakereport:
         pytest.testomatio = Mock()
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.meta = None
         pytest.testomatio.test_run_config.environment = testrun_env
         pytest.testomatio.test_run_config.status_request = {}
 
@@ -592,6 +596,7 @@ class TestPytestRuntestMakereport:
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
         pytest.testomatio.test_run_config.environment = testrun_env
+        pytest.testomatio.test_run_config.meta = None
         pytest.testomatio.test_run_config.status_request = {}
 
         main.pytest_runtest_makereport(item, mock_call)
@@ -617,6 +622,7 @@ class TestPytestRuntestMakereport:
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.update_code = False
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.meta = None
         pytest.testomatio.test_run_config.status_request = {}
 
         main.pytest_runtest_makereport(item, mock_call)
@@ -650,6 +656,7 @@ class TestPytestRuntestMakereport:
         pytest.testomatio = Mock()
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.update_code = True
+        pytest.testomatio.test_run_config.meta = None
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
         pytest.testomatio.test_run_config.status_request = {}
 
@@ -685,6 +692,7 @@ class TestPytestRuntestMakereport:
         pytest.testomatio = Mock()
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.update_code = False
+        pytest.testomatio.test_run_config.meta = None
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
         pytest.testomatio.test_run_config.status_request = {}
 
@@ -720,6 +728,7 @@ class TestPytestRuntestMakereport:
         pytest.testomatio = Mock()
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.update_code = True
+        pytest.testomatio.test_run_config.meta = None
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
         pytest.testomatio.test_run_config.status_request = {}
 
@@ -741,6 +750,64 @@ class TestPytestRuntestMakereport:
         assert request['test_id'] == '12345678'
         assert request['code'] is None
         assert request['overwrite'] is None
+
+    @patch('pytestomatio.main.meta_storage')
+    def test_metadata_attached_to_test_collected(self, meta_storage, mock_call, single_test_item):
+        """Test attached metadata extracted correctly"""
+        item = single_test_item.copy()[0]
+        item.config.option.testomatio = 'report'
+
+        mock_call.duration = 1.5
+        mock_call.when = 'call'
+        mock_call.excinfo = None
+
+        testrun_env = None
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config = Mock()
+        pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.meta = None
+        pytest.testomatio.test_run_config.environment = testrun_env
+        pytest.testomatio.test_run_config.status_request = {}
+
+        metadata = {'meta': 1}
+        meta_storage.get.return_value = metadata
+        main.pytest_runtest_makereport(item, mock_call)
+
+        assert item.nodeid in pytest.testomatio.test_run_config.status_request
+        request = pytest.testomatio.test_run_config.status_request[item.nodeid]
+
+        assert 'meta' in request.keys()
+        assert request['meta'] == metadata
+
+    @patch('pytestomatio.main.meta_storage')
+    def test_metadata_attached_to_test_collected_with_test_run_env(self, meta_storage, mock_call, single_test_item):
+        """Test metadata contains attached test metadata + test run metadata"""
+        item = single_test_item.copy()[0]
+        item.config.option.testomatio = 'report'
+
+        mock_call.duration = 1.5
+        mock_call.when = 'call'
+        mock_call.excinfo = None
+
+        testrun_env = {'browser': 'chrome'}
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config = Mock()
+        pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.meta = None
+        pytest.testomatio.test_run_config.meta = testrun_env
+        pytest.testomatio.test_run_config.status_request = {}
+
+        metadata = {'meta': 1}
+        meta_storage.get.return_value = metadata
+        main.pytest_runtest_makereport(item, mock_call)
+
+        assert item.nodeid in pytest.testomatio.test_run_config.status_request
+        request = pytest.testomatio.test_run_config.status_request[item.nodeid]
+
+        assert 'meta' in request.keys()
+        assert request['meta'] == dict(metadata, **testrun_env)
 
 
 @pytest.mark.smoke
