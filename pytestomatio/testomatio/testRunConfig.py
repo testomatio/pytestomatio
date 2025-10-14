@@ -2,9 +2,11 @@ import os
 import datetime as dt
 import tempfile
 from pytestomatio.utils.helper import safe_string_list, parse_env_value
+from dotenv import load_dotenv
 from typing import Optional
 
 TESTOMATIO_TEST_RUN_LOCK_FILE = ".testomatio_test_run_id_lock"
+load_dotenv()
 
 class TestRunConfig:
     def __init__(self):
