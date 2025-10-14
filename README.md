@@ -172,7 +172,7 @@ Note: Test id should be started from letter "T"
 
 
 ### Configuration with environment variables
-You can use environment variable to control certain features of testomat.io
+You can use environment variable to control certain features of testomat.io. Environment variables can be either passed inline, or from .env file.
 
 #### Basic configuration
 | Env variable             | What it does                                                                                                                                                                                                          | Examples                                                                        |
