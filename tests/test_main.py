@@ -809,6 +809,58 @@ class TestPytestRuntestMakereport:
         assert 'meta' in request.keys()
         assert request['meta'] == dict(metadata, **testrun_env)
 
+    @patch('pytestomatio.main.link_storage')
+    def test_links_attached_to_test(self, link_storage, mock_call, single_test_item):
+        """Test links attached to test"""
+        item = single_test_item.copy()[0]
+        item.config.option.testomatio = 'report'
+
+        mock_call.duration = 1.5
+        mock_call.when = 'call'
+        mock_call.excinfo = None
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config = Mock()
+        pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.meta = None
+        pytest.testomatio.test_run_config.status_request = {}
+
+        links = [{'label': 'test'}, {'label': 'severity:high'}, {'jira': 'TES-1'}, {'test': 'a232Fe432'}]
+        link_storage.get.return_value = links
+        main.pytest_runtest_makereport(item, mock_call)
+
+        assert item.nodeid in pytest.testomatio.test_run_config.status_request
+        request = pytest.testomatio.test_run_config.status_request[item.nodeid]
+
+        assert 'links' in request.keys()
+        assert request['links'] == links
+
+    @patch('pytestomatio.main.link_storage')
+    def test_links_not_attached_to_test(self, link_storage, mock_call, single_test_item):
+        """Test links not attached to test"""
+        item = single_test_item.copy()[0]
+        item.config.option.testomatio = 'report'
+
+        mock_call.duration = 1.5
+        mock_call.when = 'call'
+        mock_call.excinfo = None
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config = Mock()
+        pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.meta = None
+        pytest.testomatio.test_run_config.status_request = {}
+
+        links = []
+        link_storage.get.return_value = links
+        main.pytest_runtest_makereport(item, mock_call)
+
+        assert item.nodeid in pytest.testomatio.test_run_config.status_request
+        request = pytest.testomatio.test_run_config.status_request[item.nodeid]
+
+        assert 'links' in request.keys()
+        assert request['links'] is None
+
 
 @pytest.mark.smoke
 class TestPytestUnconfigure:

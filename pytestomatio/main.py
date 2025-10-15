@@ -16,6 +16,7 @@ from pytestomatio.testomatio.testomatio import Testomatio
 from pytestomatio.testomatio.filter_plugin import TestomatioFilterPlugin
 
 from pytestomatio.services.meta_storage import meta_storage
+from pytestomatio.services.link_storage import link_storage
 
 log = logging.getLogger(__name__)
 log.setLevel('INFO')
@@ -46,6 +47,7 @@ def pytest_runtest_teardown(item, nextitem):
 
     # todo: unite all storages clearing
     meta_storage.clear(item.nodeid)
+    link_storage.clear(item.nodeid)
 
 
 def pytest_configure(config: Config):
@@ -181,12 +183,15 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         test_id = test_item.id if not test_item.id.startswith("@T") else test_item.id[2:]
     rid = f'{pytest.testomatio.test_run_config.environment}-{item.name}-{test_id}'
 
-    meta = None
+    meta, links = None, None
     if call.when == 'call':
         meta = meta_storage.get(item.nodeid)
         test_run_meta = pytest.testomatio.test_run_config.meta
         if test_run_meta:
             meta.update(test_run_meta)
+
+        stored_links = link_storage.get(item.nodeid)
+        links = stored_links if stored_links else None
 
     request = {
         'status': None,
@@ -203,7 +208,8 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         'code': None,
         'overwrite': None,
         'rid': rid,
-        'meta': meta
+        'meta': meta,
+        'links': links
     }
 
     if pytest.testomatio.test_run_config.update_code and test_item.type != 'bdd':
