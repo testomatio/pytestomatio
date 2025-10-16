@@ -1,15 +1,7 @@
+from pytestomatio.services.base_storage import BaseStorage
 
 
-class MetaStorage:
-    _instance = None
-
-    def __new__(cls, *args, **kwargs):
-        if not cls._instance:
-            cls._instance = super().__new__(cls)
-        return cls._instance
-
-    def __init__(self):
-        self.storage = {}
+class MetaStorage(BaseStorage):
 
     def put(self, test_id, data: dict):
         existing_data = self.get(test_id)
@@ -23,6 +15,7 @@ class MetaStorage:
 
     def clear(self, test_id):
         self.storage.pop(test_id, None)
+
 
 meta_storage = MetaStorage()
 
