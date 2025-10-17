@@ -3,14 +3,15 @@ from typing import List, Tuple, Union
 
 
 class DecoratorUpdater(cst.CSTTransformer):
-    def __init__(self, mapped_tests: List[Tuple[str, int]], all_tests: List[str], decorator_name: str):
+    def __init__(self, mapped_tests: List[Tuple[str, int]], all_tests: List[str], decorator_name: str, file_path: str):
         self.mapped_tests = mapped_tests
         self.all_tests = all_tests
         self.decorator_name = decorator_name
+        self.filename = file_path.split('/')[-1]
 
     def _get_id_by_title(self, title: str):
         for pair in self.mapped_tests:
-            if pair[0] == title:
+            if pair[0] == title and pair[2] == self.filename:
                 return pair[1]
 
     def _remove_decorator(self, node: cst.FunctionDef) -> cst.FunctionDef:
@@ -72,12 +73,12 @@ def update_tests(file: str,
         source_code = f.read()
 
     tree = cst.parse_module(source_code)
-    transform = DecoratorUpdater(mapped_tests, all_tests, decorator_name)
+    transform = DecoratorUpdater(mapped_tests, all_tests, decorator_name, file)
     if remove:
         transform = DecoratorRemover(decorator_name)
         tree = tree.visit(transform)
     else:
-        transform = DecoratorUpdater(mapped_tests, all_tests, decorator_name)
+        transform = DecoratorUpdater(mapped_tests, all_tests, decorator_name, file)
         tree = tree.visit(transform)
     updated_source_code = tree.code
 

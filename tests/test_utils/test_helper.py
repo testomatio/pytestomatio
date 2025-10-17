@@ -178,10 +178,11 @@ class TestGetTestMapping:
         mock_test_item = Mock(spec=TestItem)
         mock_test_item.title = "Test Addition"
         mock_test_item.id = "@T12345678"
+        mock_test_item.file_name = "file1"
 
         result = get_test_mapping([mock_test_item])
 
-        assert result == [("Test Addition", "@T12345678")]
+        assert result == [("Test Addition", "@T12345678", "file1")]
         assert len(result) == 1
         assert isinstance(result[0], tuple)
 
@@ -190,23 +191,24 @@ class TestGetTestMapping:
         mock_items = []
 
         test_data = [
-            ("Test Login", "@T11111111"),
-            ("Test Logout", "@T22222222"),
-            ("Test Registration", "@T33333333")
+            ("Test Login", "@T11111111", "file1"),
+            ("Test Logout", "@T22222222", "file1"),
+            ("Test Registration", "@T33333333", "file2")
         ]
 
-        for title, test_id in test_data:
+        for title, test_id, filename in test_data:
             mock_item = Mock(spec=TestItem)
             mock_item.title = title
             mock_item.id = test_id
+            mock_item.file_name = filename
             mock_items.append(mock_item)
 
         result = get_test_mapping(mock_items)
 
         expected = [
-            ("Test Login", "@T11111111"),
-            ("Test Logout", "@T22222222"),
-            ("Test Registration", "@T33333333")
+            ("Test Login", "@T11111111", "file1"),
+            ("Test Logout", "@T22222222", "file1"),
+            ("Test Registration", "@T33333333", "file2")
         ]
 
         assert result == expected
@@ -218,10 +220,11 @@ class TestGetTestMapping:
         mock_test_item = Mock(spec=TestItem)
         mock_test_item.title = "Test Without ID"
         mock_test_item.id = None
+        mock_test_item.file_name = "file1"
 
         result = get_test_mapping([mock_test_item])
 
-        assert result == [("Test Without ID", None)]
+        assert result == [("Test Without ID", None, "file1")]
 
 
 class TestParseTestList:
