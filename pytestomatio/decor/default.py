@@ -1,13 +1,14 @@
 import libcst as cst
+from pathlib import Path
 from typing import List, Tuple, Union
 
 
 class DecoratorUpdater(cst.CSTTransformer):
-    def __init__(self, mapped_tests: List[Tuple[str, int]], all_tests: List[str], decorator_name: str, file_path: str):
+    def __init__(self, mapped_tests: List[Tuple[str, int, str]], all_tests: List[str], decorator_name: str, file_path: str):
         self.mapped_tests = mapped_tests
         self.all_tests = all_tests
         self.decorator_name = decorator_name
-        self.filename = file_path.split('/')[-1]
+        self.filename = Path(file_path).name
 
     def _get_id_by_title(self, title: str):
         for pair in self.mapped_tests:
@@ -65,7 +66,7 @@ class DecoratorRemover(cst.CSTTransformer):
 
 
 def update_tests(file: str,
-                 mapped_tests: List[Tuple[str, int]],
+                 mapped_tests: List[Tuple[str, int, str]],
                  all_tests: List[str],
                  decorator_name: str,
                  remove=False):

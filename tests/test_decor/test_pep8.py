@@ -1,6 +1,7 @@
 import pytest
 import tempfile
 import os
+from pathlib import Path
 import ast
 
 from pytestomatio.decor.pep8 import DecoratorUpdater, update_tests
@@ -152,7 +153,7 @@ def test_subtraction():
 
     def test_update_tests_adds_decorators_and_import(self, temp_test_file):
         """Test update_tests add decorators and import"""
-        filename = temp_test_file.split('/')[-1]
+        filename = Path(temp_test_file).name
         mapped_tests = [("test_addition", "@T123", filename), ("test_subtraction", "@T456", filename)]
         all_tests = ["test_addition", "test_subtraction"]
 
@@ -207,7 +208,7 @@ def test_bad_formatting( ):
         with open(temp_test_file, 'w') as f:
             f.write(badly_formatted)
 
-        filename = temp_test_file.split('/')[-1]
+        filename = Path(temp_test_file).name
         mapped_tests = [("test_bad_formatting", "@T123", filename)]
         all_tests = ["test_bad_formatting"]
 
@@ -235,7 +236,7 @@ def test_with_decorators():
         with open(temp_test_file, 'w') as f:
             f.write(content_with_other_decorators)
 
-        filename = temp_test_file.split('/')[-1]
+        filename = Path(temp_test_file).name
         mapped_tests = [("test_with_decorators", "@T789", filename)]
         all_tests = ["test_with_decorators"]
 

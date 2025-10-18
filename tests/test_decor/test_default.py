@@ -1,6 +1,7 @@
 import pytest
 import tempfile
 import os
+from pathlib import Path
 import libcst as cst
 
 from pytestomatio.decor.default import DecoratorUpdater, DecoratorRemover, update_tests
@@ -147,7 +148,7 @@ def test_two():
 
     def test_update_tests_adds_decorators(self, temp_test_file):
         """Test update_tests adds decorators"""
-        filename = temp_test_file.split('/')[-1]
+        filename = Path(temp_test_file).name
         mapped_tests = [("test_one", "@T123", filename), ("test_two", "@T456", filename)]
         all_tests = ["test_one", "test_two"]
 

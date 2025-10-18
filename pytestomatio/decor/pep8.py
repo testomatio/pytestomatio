@@ -1,15 +1,17 @@
 import ast
+from pathlib import Path
 import autopep8
 
 pytest_mark = 'pytest', 'mark'
 
 
 class DecoratorUpdater(ast.NodeTransformer):
-    def __init__(self, mapped_tests: list[tuple[str, int]], all_tests: list[str], decorator_name: str, file_path: str):
+    def __init__(self, mapped_tests: list[tuple[str, int, str]], all_tests: list[str],
+                 decorator_name: str, file_path: str):
         self.mapped_tests = mapped_tests
         self.all_tests = all_tests
         self.decorator_name = decorator_name
-        self.filename = file_path.split('/')[-1]
+        self.filename = Path(file_path).name
 
     def _get_id_by_title(self, title: str):
         for pair in self.mapped_tests:
@@ -58,7 +60,7 @@ class DecoratorUpdater(ast.NodeTransformer):
 
 
 def update_tests(file: str,
-                 mapped_tests: list[tuple[str, int]],
+                 mapped_tests: list[tuple[str, int, str]],
                  all_tests: list[str],
                  decorator_name: str,
                  remove=False):
