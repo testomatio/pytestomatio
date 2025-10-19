@@ -15,6 +15,7 @@ from pytestomatio.testomatio.testRunConfig import TestRunConfig
 from pytestomatio.testomatio.testomatio import Testomatio
 from pytestomatio.testomatio.filter_plugin import TestomatioFilterPlugin
 
+from pytestomatio.services.artifact_storage import artifact_storage
 from pytestomatio.services.meta_storage import meta_storage
 from pytestomatio.services.link_storage import link_storage
 
@@ -159,7 +160,7 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
             if all(s3_details):
                 pytest.testomatio.s3_connector = S3Connector(*s3_details)
                 pytest.testomatio.s3_connector.login()
-                
+
         case 'debug':
             with open(metadata_file, 'w') as file:
                 data = json.dumps([i.to_dict() for i in meta], indent=4)
@@ -193,6 +194,17 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         stored_links = link_storage.get(item.nodeid)
         links = stored_links if stored_links else None
 
+    artifacts = None
+    # Artifacts handling. We handle them in the teardown phase to be able to process artifacts added in
+    # the teardown phase of fixtures
+    if call.when == 'teardown':
+        artifacts = test_item.artifacts
+        attached_artifacts = artifact_storage.get(item.nodeid)
+        if attached_artifacts:
+            urls = pytest.testomatio.s3_connector.upload_files([(path, None) for path in attached_artifacts])
+            artifacts.extend(urls)
+            artifact_storage.clear(item.nodeid)
+
     request = {
         'status': None,
         'title': test_item.exec_title,
@@ -203,7 +215,7 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         'message': None,
         'stack': None,
         'example': None,
-        'artifacts': test_item.artifacts,
+        'artifacts': artifacts,
         'steps': None,
         'code': None,
         'overwrite': None,

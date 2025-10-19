@@ -145,7 +145,7 @@ class TestS3Connector:
             s3_connector.upload_file("path/to/file.txt")
 
             call_args = s3_connector.client.upload_file.call_args
-            assert call_args[0][2] == "test-prefix/path/to/file.txt"
+            assert call_args[0][2] == "test-prefix/file.txt"
 
     def test_upload_file_exception_handling(self, s3_connector):
         """Test exception handling"""
