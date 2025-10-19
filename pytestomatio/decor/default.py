@@ -1,4 +1,5 @@
 import libcst as cst
+from pathlib import Path
 from typing import List, Tuple, Union
 
 
@@ -7,7 +8,7 @@ class DecoratorUpdater(cst.CSTTransformer):
         self.mapped_tests = mapped_tests
         self.all_tests = all_tests
         self.decorator_name = decorator_name
-        self.filename = file_path.split('/')[-1]
+        self.filename = Path(file_path).name
 
     def _get_id_by_title(self, title: str):
         for pair in self.mapped_tests:
