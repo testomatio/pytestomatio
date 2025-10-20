@@ -14,7 +14,9 @@ class TestRunConfig:
         update_code = os.environ.get('TESTOMATIO_UPDATE_CODE', False) in ['True', 'true', '1']
         exclude_skipped = os.environ.get('TESTOMATIO_EXCLUDE_SKIPPED', False) in ['True', 'true', '1']
         shared_run_timeout = os.environ.get('TESTOMATIO_SHARED_RUN_TIMEOUT', '')
+        disable_artifacts_upload = os.environ.get('TESTOMATIO_DISABLE_ARTIFACTS')
         self.access_event = 'publish' if os.environ.get("TESTOMATIO_PUBLISH") else None
+        self.disable_artifacts = disable_artifacts_upload in ['True', 'true', '1']
         self.test_run_id = run_id
         self.title = title
         self.environment = safe_string_list(os.environ.get('TESTOMATIO_ENV'))

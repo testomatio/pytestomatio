@@ -197,7 +197,7 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
     artifacts = None
     # Artifacts handling. We handle them in the teardown phase to be able to process artifacts added in
     # the teardown phase of fixtures
-    if call.when == 'teardown':
+    if call.when == 'teardown' and not pytest.testomatio.test_run_config.disable_artifacts:
         artifacts = test_item.artifacts
         attached_artifacts = artifact_storage.get(item.nodeid)
         if attached_artifacts:
