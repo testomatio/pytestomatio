@@ -4,7 +4,7 @@ from typing import List, Tuple, Union
 
 
 class DecoratorUpdater(cst.CSTTransformer):
-    def __init__(self, mapped_tests: List[Tuple[str, int]], all_tests: List[str], decorator_name: str, file_path: str):
+    def __init__(self, mapped_tests: List[Tuple[str, int, str]], all_tests: List[str], decorator_name: str, file_path: str):
         self.mapped_tests = mapped_tests
         self.all_tests = all_tests
         self.decorator_name = decorator_name
@@ -66,7 +66,7 @@ class DecoratorRemover(cst.CSTTransformer):
 
 
 def update_tests(file: str,
-                 mapped_tests: List[Tuple[str, int]],
+                 mapped_tests: List[Tuple[str, int, str]],
                  all_tests: List[str],
                  decorator_name: str,
                  remove=False):
