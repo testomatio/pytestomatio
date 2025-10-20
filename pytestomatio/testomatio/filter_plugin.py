@@ -67,9 +67,14 @@ class TestomatioFilterPlugin:
         if testomatio_option is None or testomatio_option != 'report':
             return
 
-        filter_opts = config.getoption('testomatio_filter')
+        filter_opts = config.getoption('testomatio_filter') or config.getoption('test_id')
         if not filter_opts:
             return
+
+        # compatibility with deprecated filter option
+        if config.getoption('test_id') and not config.getoption('testomatio_filter'):
+            filter_opts = f'test_id={filter_opts}'
+            log.warning('--test-id filter option is deprecated. Use --testomatio-filter instead')
 
         log.info('Testomatio Filter enabled')
         # By now all other filters (like -m, -k, name-based) have been applied

@@ -167,6 +167,43 @@ class TestTestomatioFilterPlugin:
 
         assert items == [item]
 
+    def test_deprecated_test_id_option_supported(self, plugin, mock_session, mock_config):
+        """Test deprecated filter option --test-id supported"""
+        option_values = {
+            'testomatio': 'report',
+            'test_id': '@T12345678'
+        }
+        mock_config.getoption.side_effect = lambda x: option_values.get(x)
+
+        matched_item = self.create_mock_item_with_marker("test1", "@T12345678")
+        unmatched_item = self.create_mock_item_with_marker("test2", "@T87654321")
+
+        mock_session._pytestomatio_original_collected_items = [matched_item, unmatched_item]
+
+        items = []
+        plugin.pytest_collection_modifyitems(mock_session, mock_config, items)
+
+        assert items == [matched_item]
+
+    def test_deprecated_test_id_option_priority(self, plugin, mock_session, mock_config):
+        """Test deprecated filter option --test-id have lower priority than --testomatio-filter if they both set"""
+        option_values = {
+            'testomatio': 'report',
+            'testomatio_filter': 'test_id=@T87654321',
+            'test_id': '@T12345678'
+        }
+        mock_config.getoption.side_effect = lambda x: option_values.get(x)
+
+        unmatched_item = self.create_mock_item_with_marker("test1", "@T12345678")
+        matched_item = self.create_mock_item_with_marker("test2", "@T87654321")
+
+        mock_session._pytestomatio_original_collected_items = [matched_item, unmatched_item]
+
+        items = []
+        plugin.pytest_collection_modifyitems(mock_session, mock_config, items)
+
+        assert items == [matched_item]
+
     def test_no_matching_items(self, plugin, mock_session, mock_config):
         """Test when no matching items"""
         option_values = {
