@@ -861,6 +861,98 @@ class TestPytestRuntestMakereport:
         assert 'links' in request.keys()
         assert request['links'] is None
 
+    @patch('pytestomatio.main.artifact_storage')
+    def test_artifacts_attached_to_test(self, artifact_storage, mock_call, single_test_item):
+        """Test artifacts attached to test"""
+        item = single_test_item.copy()[0]
+        item.config.option.testomatio = 'report'
+
+        mock_call.duration = 1.5
+        mock_call.when = 'teardown'
+        mock_call.excinfo = None
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config = Mock()
+        pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.meta = None
+        pytest.testomatio.test_run_config.disable_artifacts = False
+        pytest.testomatio.test_run_config.status_request = {}
+        pytest.testomatio.s3_connector = Mock()
+
+        urls = ['url1', 'url2']
+        pytest.testomatio.s3_connector.upload_files.return_value = urls
+
+        artifacts = ['path/1', 'path/2']
+        artifact_storage.get.return_value = artifacts
+        main.pytest_runtest_makereport(item, mock_call)
+
+        assert item.nodeid in pytest.testomatio.test_run_config.status_request
+        request = pytest.testomatio.test_run_config.status_request[item.nodeid]
+
+        assert [(path, None) for path in artifacts] == pytest.testomatio.s3_connector.upload_files.call_args[0][0]
+        assert 'artifacts' in request.keys()
+        assert request['artifacts'] == urls
+
+    @patch('pytestomatio.main.artifact_storage')
+    def test_artifacts_not_attached_to_test_if_upload_disabled(self, artifact_storage, mock_call, single_test_item):
+        """Test artifacts not attached to test if artifacts uploading is disabled"""
+        item = single_test_item.copy()[0]
+        item.config.option.testomatio = 'report'
+
+        mock_call.duration = 1.5
+        mock_call.when = 'teardown'
+        mock_call.excinfo = None
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config = Mock()
+        pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.meta = None
+        pytest.testomatio.test_run_config.disable_artifacts = True
+        pytest.testomatio.test_run_config.status_request = {}
+        pytest.testomatio.s3_connector = Mock()
+
+        urls = ['url1', 'url2']
+        pytest.testomatio.s3_connector.upload_files.return_value = urls
+
+        artifacts = ['path/1', 'path/2']
+        artifact_storage.get.return_value = artifacts
+        main.pytest_runtest_makereport(item, mock_call)
+
+        assert item.nodeid in pytest.testomatio.test_run_config.status_request
+        request = pytest.testomatio.test_run_config.status_request[item.nodeid]
+
+        pytest.testomatio.s3_connector.upload_files.assert_not_called
+        assert 'artifacts' in request.keys()
+        assert not request['artifacts']
+
+    @patch('pytestomatio.main.artifact_storage')
+    def test_artifacts_not_attached_to_test_if_s3_connector_not_exists(self, artifact_storage, mock_call, single_test_item):
+        """Test artifacts not attached to test if artifacts uploading is disabled"""
+        item = single_test_item.copy()[0]
+        item.config.option.testomatio = 'report'
+
+        mock_call.duration = 1.5
+        mock_call.when = 'teardown'
+        mock_call.excinfo = None
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config = Mock()
+        pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.meta = None
+        pytest.testomatio.test_run_config.disable_artifacts = True
+        pytest.testomatio.test_run_config.status_request = {}
+        pytest.testomatio.s3_connector = None
+
+        artifacts = ['path/1', 'path/2']
+        artifact_storage.get.return_value = artifacts
+        main.pytest_runtest_makereport(item, mock_call)
+
+        assert item.nodeid in pytest.testomatio.test_run_config.status_request
+        request = pytest.testomatio.test_run_config.status_request[item.nodeid]
+
+        assert 'artifacts' in request.keys()
+        assert not request['artifacts']
+
 
 @pytest.mark.smoke
 class TestPytestUnconfigure:
