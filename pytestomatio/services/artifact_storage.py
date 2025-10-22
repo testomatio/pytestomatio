@@ -3,7 +3,7 @@ from pytestomatio.services.base_storage import BaseStorage
 
 class ArtifactStorage(BaseStorage):
 
-    def put(self, test_id, data: dict):
+    def put(self, test_id, data: str):
         existing_data = self.get(test_id)
         if existing_data:
             existing_data.append(data)
