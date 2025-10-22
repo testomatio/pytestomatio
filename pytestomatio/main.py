@@ -200,7 +200,7 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
     if call.when == 'teardown' and not pytest.testomatio.test_run_config.disable_artifacts:
         artifacts = test_item.artifacts
         attached_artifacts = artifact_storage.get(item.nodeid)
-        if attached_artifacts:
+        if attached_artifacts and pytest.testomatio.s3_connector:
             urls = pytest.testomatio.s3_connector.upload_files([(path, None) for path in attached_artifacts])
             artifacts.extend(urls)
             artifact_storage.clear(item.nodeid)
