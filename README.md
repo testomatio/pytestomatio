@@ -24,6 +24,8 @@ A powerful pytest plugin that integrates your tests with testomat.io platform fo
   - [Additional options](#additional-options)
   - [Configuration](#configuration-with-environment-variables)
   - [Test artifacts](#submitting-test-artifacts)
+  - [User functions](#user-functions)
+  - [Cross-Platform Testing](#cross-platform-testing)
 - [Contributing](#contributing)
 
 ## Installation
@@ -186,19 +188,20 @@ You can use environment variable to control certain features of testomat.io
 
 
 #### Test Run configuration
-| Env variable             | What it does                                                                                                               | Examples                                                           |
-|--------------------------|----------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
-| TESTOMATIO_TITLE         | Name of a test run to create on testomat.io                                                                                | TESTOMATIO_TITLE="Nightly Smoke Tests" pytest --testomatio report  |
-| TESTOMATIO_RUN_ID        | Id of existing test run to use for sending test results to                                                                 | TESTOMATIO_RUN_ID=98dfas0 pytest --testomatio report               |
-| TESTOMATIO_RUNGROUP_TITLE | Create a group (folder) for a test run. If group already exists, attach test run to it                                     | TESTOMATIO_RUNGROUP_TITLE="Release 2.0" pytest --testomatio report |
-| TESTOMATIO_ENV           | Assign environment to a test run, env variant of **testRunEnv** option. Has a lower precedence than **testRunEnv** option. | TESTOMATIO_ENV="linux,chrome,1920x1080" pytest --testomatio report |
-| TESTOMATIO_LABEL         | Assign labels to a test run. Labels must exist in project and their scope must be enabled for runs                         | TESTOMATIO_LABEL="smoke,regression" pytest --testomatio report     |
-| TESTOMATIO_UPDATE_CODE         | Send code of your test to Testomat.io on each run. If not enabled(default) assumes the code is pushed using **sync** command | TESTOMATIO_UPDATE_CODE=True pytest --testomatio report             |
-| TESTOMATIO_EXCLUDE_SKIPPED         | Exclude skipped tests from the report                                                                                      | TESTOMATIO_EXCLUDE_SKIPPED=1 pytest --testomatio report            |
+| Env variable                  | What it does                                                                                                                                                                     | Examples                                                                                                    |
+|-------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|
+| TESTOMATIO_TITLE              | Name of a test run to create on testomat.io                                                                                                                                      | TESTOMATIO_TITLE="Nightly Smoke Tests" pytest --testomatio report                                           |
+| TESTOMATIO_RUN_ID             | Id of existing test run to use for sending test results to                                                                                                                       | TESTOMATIO_RUN_ID=98dfas0 pytest --testomatio report                                                        |
+| TESTOMATIO_RUNGROUP_TITLE     | Create a group (folder) for a test run. If group already exists, attach test run to it                                                                                           | TESTOMATIO_RUNGROUP_TITLE="Release 2.0" pytest --testomatio report                                          |
+| TESTOMATIO_ENV                | Assign environment to a test run, env variant of **testRunEnv** option. Has a lower precedence than **testRunEnv** option.                                                       | TESTOMATIO_ENV="linux,chrome,1920x1080" pytest --testomatio report                                          |
+| TESTOMATIO_LABEL              | Assign labels to a test run. Labels must exist in project and their scope must be enabled for runs                                                                               | TESTOMATIO_LABEL="smoke,regression" pytest --testomatio report                                              |
+| TESTOMATIO_UPDATE_CODE        | Send code of your test to Testomat.io on each run. If not enabled(default) assumes the code is pushed using **sync** command                                                     | TESTOMATIO_UPDATE_CODE=True pytest --testomatio report                                                      |
+| TESTOMATIO_EXCLUDE_SKIPPED    | Exclude skipped tests from the report                                                                                                                                            | TESTOMATIO_EXCLUDE_SKIPPED=1 pytest --testomatio report                                                     |
 | TESTOMATIO_PUBLISH            | Publish run after reporting and provide a public URL                                                                                                                             | TESTOMATIO_PUBLISH=true pytest --testomatio report                                                          |
 | TESTOMATIO_PROCEED            | Do not finalize the run                                                                                                                                                          | TESTOMATIO_PROCEED=1 pytest --testomatio report                                                             |
 | TESTOMATIO_SHARED_RUN         | Report parallel execution to the same run matching it by title. If the run was created more than 20 minutes ago, a new run will be created instead.                              | TESTOMATIO_TITLE="Run1" TESTOMATIO_SHARED_RUN=1 pytest --testomatio report                                  |
 | TESTOMATIO_SHARED_RUN_TIMEOUT | Changes timeout of shared run. After timeout, shared run won`t accept other runs with same name, and new runs will be created. Timeout is set in minutes, default is 20 minutes. | TESTOMATIO_TITLE="Run1" TESTOMATIO_SHARED_RUN=1 TESTOMATIO_SHARED_RUN_TIMEOUT=10 pytest --testomatio report |
+| TESTOMATIO_DISABLE_ARTIFACTS  | Disables artifacts uploading during testrun.                                                                                                                                     | TESTOMATIO_DISABLE_ARTIFACTS=1 pytest --testomatio report                                                   |
 
 
 #### S3 Bucket configuration
@@ -281,12 +284,87 @@ def handle_artifacts(page: Page, request):
 ⚠️ Please take into account s3_connector available only after **pytest_collection_modifyitems()** hook is executed.
 
 2) If you prefer to use pytest hooks - add `pytest_runtest_makereport` hook in your `conftest.py` file.
+3) Automatically upload artifacts using [add_artifact](#add-artifact) function
 
 ```python
 def pytest_runtest_makereport(item, call):
     artifact_url = pytest.testomatio.upload_file(screenshot_path, filename)
     pytest.testomatio.add_artifacts([artifact_url])
 ```
+
+### User functions
+This functions gives you more flexibility in reporting and make your reports more powerful
+
+**Available functions**
+- [add_artifact](#add-artifact)
+- [add_meta](#add-meta)
+- [add_label](#add-label)
+- [link_jira](#link-jira)
+- [link_test](#link-test)
+
+#### Add Artifact
+Adds file to the test report. File will be uploaded during test run. 
+
+**Note:** S3 must be configured
+
+```python
+from pytestomatio.functions import add_artifact
+
+def test_my_test():
+    path_to_file = 'path/to/file/image.png'
+    add_artifact(path_to_file)
+    assert True
+```
+#### Add Meta
+Adds meta information to test. Meta information is a key:value pair(s), which is used to add additional information to the test report. E.g. browser, environment, etc.
+
+**Note:** Test run metadata have higher priority than test metadata. 
+Therefore, if the test metadata and the test run metadata have the same keys, then the values from the test run metadata will be set for these keys
+
+```python
+from pytestomatio.functions import add_meta
+
+def test_my_test():
+    add_meta({'browser': 'chrome', 'server': 'staging'})
+    assert True
+```
+
+#### Add Label
+Adds a label to the reported test. Unlike *meta* label will be persisted to the test case itself, not just to reported run. If the label
+does not exist in Testomat.io, it will be automatically created and linked to the test during the test run.
+You can pass also a label value, if the label was created as a custom field
+
+```python
+from pytestomatio.functions import add_label
+
+def test_my_test():
+    add_label('Browser')
+    add_label('Area', 'Auth')
+    assert True
+```
+
+#### Link Jira
+Links JIRA issue IDs to the test report. This creates a connection between your test execution and JIRA issues.
+
+```python
+from pytestomatio.functions import link_jira
+
+def test_my_test():
+    link_jira('PROJ-456', 'PROJ-564')
+    assert True
+```
+
+#### Link Test
+Links test IDs to the current test in the report. This allows you to associate multiple test cases with the current test execution.
+
+```python
+from pytestomatio.functions import link_test
+
+def test_my_test():
+    link_test('@T5147babc', '47d31979')
+    assert True
+```
+
 
 ### Cross-Platform Testing
 The plugin supports reporting the same test multiple times in a single run. This is especially useful for Cross-Platform

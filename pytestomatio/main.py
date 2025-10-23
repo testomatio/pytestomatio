@@ -15,6 +15,10 @@ from pytestomatio.testomatio.testRunConfig import TestRunConfig
 from pytestomatio.testomatio.testomatio import Testomatio
 from pytestomatio.testomatio.filter_plugin import TestomatioFilterPlugin
 
+from pytestomatio.services.artifact_storage import artifact_storage
+from pytestomatio.services.meta_storage import meta_storage
+from pytestomatio.services.link_storage import link_storage
+
 log = logging.getLogger(__name__)
 log.setLevel('INFO')
 
@@ -33,6 +37,18 @@ def pytest_collection(session):
     # This hook is called after initial test collection, before other filters.
     # We'll store the items in a session attribute for later use.
     session._pytestomatio_original_collected_items = []
+
+
+def pytest_runtest_setup(item):
+    pytest._current_item = item
+
+
+def pytest_runtest_teardown(item, nextitem):
+    pytest._current_item = None
+
+    # todo: unite all storages clearing
+    meta_storage.clear(item.nodeid)
+    link_storage.clear(item.nodeid)
 
 
 def pytest_configure(config: Config):
@@ -144,7 +160,7 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
             if all(s3_details):
                 pytest.testomatio.s3_connector = S3Connector(*s3_details)
                 pytest.testomatio.s3_connector.login()
-                
+
         case 'debug':
             with open(metadata_file, 'w') as file:
                 data = json.dumps([i.to_dict() for i in meta], indent=4)
@@ -168,6 +184,27 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         test_id = test_item.id if not test_item.id.startswith("@T") else test_item.id[2:]
     rid = f'{pytest.testomatio.test_run_config.environment}-{item.name}-{test_id}'
 
+    meta, links = None, None
+    if call.when == 'call':
+        meta = meta_storage.get(item.nodeid)
+        test_run_meta = pytest.testomatio.test_run_config.meta
+        if test_run_meta:
+            meta.update(test_run_meta)
+
+        stored_links = link_storage.get(item.nodeid)
+        links = stored_links if stored_links else None
+
+    artifacts = None
+    # Artifacts handling. We handle them in the teardown phase to be able to process artifacts added in
+    # the teardown phase of fixtures
+    if call.when == 'teardown' and not pytest.testomatio.test_run_config.disable_artifacts:
+        artifacts = test_item.artifacts
+        attached_artifacts = artifact_storage.get(item.nodeid)
+        if attached_artifacts and pytest.testomatio.s3_connector:
+            urls = pytest.testomatio.s3_connector.upload_files([(path, None) for path in attached_artifacts])
+            artifacts.extend(urls)
+            artifact_storage.clear(item.nodeid)
+
     request = {
         'status': None,
         'title': test_item.exec_title,
@@ -178,12 +215,13 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         'message': None,
         'stack': None,
         'example': None,
-        'artifacts': test_item.artifacts,
+        'artifacts': artifacts,
         'steps': None,
         'code': None,
         'overwrite': None,
         'rid': rid,
-        'meta': pytest.testomatio.test_run_config.meta
+        'meta': meta,
+        'links': links
     }
 
     if pytest.testomatio.test_run_config.update_code and test_item.type != 'bdd':

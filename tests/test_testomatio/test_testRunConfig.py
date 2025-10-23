@@ -19,6 +19,7 @@ class TestTestRunConfig:
                 assert config.access_event is None
                 assert config.test_run_id is None
                 assert config.title == "test run at 2024-01-15 10:30:45"
+                assert config.disable_artifacts is False
                 assert config.environment is None
                 assert config.exclude_skipped is False
                 assert config.label is None
@@ -40,13 +41,15 @@ class TestTestRunConfig:
             'TESTOMATIO_RUNGROUP_TITLE': 'Release 2.0',
             'TESTOMATIO_UPDATE_CODE': '1',
             'TESTOMATIO_PUBLISH': '1',
-            'TESTOMATIO_EXCLUDE_SKIPPED': '1'
+            'TESTOMATIO_EXCLUDE_SKIPPED': '1',
+            'TESTOMATIO_DISABLE_ARTIFACTS': 'True'
         }
 
         with patch.dict(os.environ, env_vars, clear=True):
             config = TestRunConfig()
 
             assert config.access_event == 'publish'
+            assert config.disable_artifacts is True
             assert config.test_run_id == 'run_12345'
             assert config.title == 'Custom Test Run'
             assert config.environment == 'linux,browser:chrome,1920x1080'
@@ -77,6 +80,22 @@ class TestTestRunConfig:
             assert config.shared_run is False
             assert config.shared_run_timeout is None
             assert config.parallel is True
+
+    @pytest.mark.parametrize('value', ['True', 'true', '1'])
+    def test_init_disable_artifacts_true_variations(self, value):
+        """Test different true values for TESTOMATIO_DISABLE_ARTIFACTS"""
+        with patch.dict(os.environ, {'TESTOMATIO_DISABLE_ARTIFACTS': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.disable_artifacts is True
+
+    @pytest.mark.parametrize('value', ['False', 'false', '0', 'anything'])
+    def test_init_disable_artifacts_false_variations(self, value):
+        """Test different false values TESTOMATIO_DISABLE_ARTIFACTS"""
+        with patch.dict(os.environ, {'TESTOMATIO_DISABLE_ARTIFACTS': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.disable_artifacts is False
 
     @pytest.mark.parametrize('value', ['True', 'true', '1'])
     def test_init_update_code_true_variations(self, value):

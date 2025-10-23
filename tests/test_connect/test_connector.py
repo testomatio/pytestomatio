@@ -268,7 +268,8 @@ class TestConnector:
             code="def test_login(): pass",
             example={"param": "value"},
             overwrite=True,
-            meta={}
+            meta={},
+            links=[{'label': 'test'}]
         )
 
         assert mock_post.call_count == 1
@@ -283,6 +284,7 @@ class TestConnector:
         assert payload['artifacts'] == ["screenshot.png"]
         assert payload['code'] == "def test_login(): pass"
         assert payload['overwrite'] is True
+        assert payload['links'] == [{'label': 'test'}]
         assert 'message' not in payload
 
     @patch('requests.Session.post')
@@ -308,7 +310,8 @@ class TestConnector:
             example={"param": "value"},
             overwrite=None,
             rid=None,
-            meta=None
+            meta=None,
+            links=None
         )
 
         assert mock_post.call_count == 1

@@ -1,3 +1,4 @@
+import os
 from typing import Optional
 import boto3
 import logging
@@ -64,7 +65,7 @@ class S3Connector:
             log.warning('s3 session is not created, creating new one')
             return
         if not key:
-            key = file_path
+            key = os.path.basename(file_path)
         key = f"{self.bucker_prefix}/{key}"
         if not bucket_name:
             bucket_name = self.bucket_name
