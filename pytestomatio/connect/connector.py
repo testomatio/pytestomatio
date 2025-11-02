@@ -120,6 +120,23 @@ class Connector:
         response = self.session.get(f'{self.base_url}/api/test_data?api_key={self.api_key}')
         return response.json()
 
+    def get_filtered_tests(self, filter_type, filter_value):
+        """
+        Returns list of filtered tests from Testomat.io
+        """
+        # TODO: add retry logic
+        url = f'{self.base_url}/api/test_grep?api_key={self.api_key}&type={filter_type}&id={filter_value}'
+        try:
+            response = self.session.get(url)
+            if response.status_code < 400:
+                log.info(f'Received tests filtered by {filter_type}={filter_value} from {self.base_url}')
+                return response.json()
+            else:
+                log.error(f'Failed to receive tests from {self.base_url}. Status code: {response.status_code}')
+        except Exception as e:
+            log.error(f'An unexpected exception occurred. Please report an issue: {e}')
+            return
+
     def create_test_run(self, access_event: str, title: str, group_title, env: str, label: str, shared_run: bool, shared_run_timeout: str,
                         parallel, ci_build_url: str) -> dict | None:
         request = {

@@ -157,14 +157,31 @@ class TestParserOptions:
             help=expected_help
         )
 
-    def test_parser_options_adds_test_id_option(self, mock_parser):
-        """Test --test-id option is added"""
+    def test_parser_options_adds_testomatio_filter_option(self, mock_parser):
+        """Test --testomatio-filter option is added"""
         mock_group = mock_parser.getgroup.return_value
 
         parser_options(mock_parser)
 
         expected_help = """
-                        help="Filter tests by Test IDs (e.g., single test id 'T00C73028' or multiply 'T00C73028|T00C73029')
+                        help="Filter tests by Test IDs (e.g., single test id 'T00C73028' or multiply 'T00C73028|T00C73029'), Labels, Tags, Plan or Jira issue ids
+                        """
+
+        mock_group.addoption.assert_any_call(
+            '--testomatio-filter',
+            default=None,
+            dest="testomatio_filter",
+            help=expected_help
+        )
+
+    def test_parser_options_adds_test_id_option(self, mock_parser):
+        """Test deprecate --test-id option is added"""
+        mock_group = mock_parser.getgroup.return_value
+
+        parser_options(mock_parser)
+
+        expected_help = """
+                        help="DEPRECATED. Filter tests by Test IDs (e.g., single test id 'T00C73028' or multiply 'T00C73028|T00C73029')
                         """
 
         mock_group.addoption.assert_any_call(
@@ -189,7 +206,7 @@ class TestParserOptions:
 
         parser_options(mock_parser)
 
-        assert mock_group.addoption.call_count == 8
+        assert mock_group.addoption.call_count == 9
         assert mock_parser.addini.call_count == 1
 
 
