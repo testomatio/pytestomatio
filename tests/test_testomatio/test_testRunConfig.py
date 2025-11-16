@@ -3,6 +3,7 @@ import os
 from unittest.mock import patch, mock_open
 
 from pytestomatio.testomatio.testRunConfig import TestRunConfig, TESTOMATIO_TEST_RUN_LOCK_FILE
+from pytestomatio.utils.constants import RUN_KINDS
 
 
 class TestTestRunConfig:
@@ -20,6 +21,7 @@ class TestTestRunConfig:
                 assert config.test_run_id is None
                 assert config.title == "test run at 2024-01-15 10:30:45"
                 assert config.environment is None
+                assert config.kind == 'automated'
                 assert config.exclude_skipped is False
                 assert config.label is None
                 assert config.group_title is None
@@ -57,6 +59,12 @@ class TestTestRunConfig:
             assert config.shared_run is False
             assert config.update_code is True
             assert config.meta == {'linux': None, 'browser': 'chrome', '1920x1080': None}
+
+    @pytest.mark.parametrize("run_kind", RUN_KINDS)
+    def test_init_with_kind_passed(self, run_kind):
+        config = TestRunConfig(run_kind)
+
+        assert config.kind == run_kind
 
     @pytest.mark.parametrize('value', ['True', 'true', '1'])
     def test_init_shared_run_true_variations(self, value):
@@ -110,8 +118,9 @@ class TestTestRunConfig:
 
             assert config.exclude_skipped is False
 
-    def test_to_dict_full_data(self):
-        """Test to_dict with full data"""
+    @pytest.mark.parametrize("run_kind", RUN_KINDS)
+    def test_to_dict_full_data(self, run_kind):
+        """Test to_dict with full data and different run kinds"""
         env_vars = {
             'TESTOMATIO_RUN_ID': 'run_123',
             'TESTOMATIO_TITLE': 'Test Run',
@@ -124,7 +133,7 @@ class TestTestRunConfig:
         }
 
         with patch.dict(os.environ, env_vars, clear=True):
-            config = TestRunConfig()
+            config = TestRunConfig(kind=run_kind)
 
             result = config.to_dict()
 
@@ -134,6 +143,7 @@ class TestTestRunConfig:
                 'title': 'Test Run',
                 'group_title': 'Group 1',
                 'env': 'env1,env2',
+                'kind': run_kind,
                 'label': 'label1,label2',
                 'parallel': False,
                 'shared_run': True,
@@ -152,6 +162,15 @@ class TestTestRunConfig:
 
             assert 'id' not in result
             assert result['title'] == 'No ID Run'
+
+    def test_to_dict_without_specifying_run_kind(self):
+        """Test to_dict without run kind passed"""
+        with patch.dict(os.environ, {}, clear=True):
+            config = TestRunConfig()
+
+            result = config.to_dict()
+
+            assert result['kind'] == 'automated'
 
     def test_set_env(self):
         """Test set_env"""

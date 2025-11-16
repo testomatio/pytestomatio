@@ -14,6 +14,9 @@ def parser_options(parser: Parser, testomatio='testomatio') -> None:
     group.addoption(f'--{testomatio}',
                      action='store',
                      help=help_text)
+    group.addoption(f'--kind',
+                    action='store',
+                    help="Specify kind of test run to be created")
     group.addoption(f'--testRunEnv',
                      action='store',
                      help=f'specify test run environment for testomat.io. Works only with --testomatio report')

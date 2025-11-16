@@ -121,7 +121,7 @@ class Connector:
         return response.json()
 
     def create_test_run(self, access_event: str, title: str, group_title, env: str, label: str, shared_run: bool, shared_run_timeout: str,
-                        parallel, ci_build_url: str) -> dict | None:
+                        parallel, ci_build_url: str, kind: str) -> dict | None:
         request = {
             "access_event": access_event,
             "api_key": self.api_key,
@@ -129,6 +129,7 @@ class Connector:
             "group_title": group_title,
             "env": env,
             "label": label,
+            "kind": kind,
             "parallel": parallel,
             "ci_build_url": ci_build_url,
             "shared_run": shared_run,
@@ -151,7 +152,7 @@ class Connector:
             log.info(f'Test run created {response.json()["uid"]}')
             return response.json()
 
-    def update_test_run(self, id: str, access_event: str, title: str, group_title,
+    def update_test_run(self, id: str, access_event: str, title: str, group_title, kind: str,
                         env: str, label: str, shared_run: bool, shared_run_timeout: str, parallel, ci_build_url: str) -> dict | None:
         request = {
             "access_event": access_event,
@@ -159,6 +160,7 @@ class Connector:
             "title": title,
             "group_title": group_title,
             "env": env,
+            "kind": kind,
             "label": label,
             "parallel": parallel,
             "ci_build_url": ci_build_url,
