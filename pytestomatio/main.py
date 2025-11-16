@@ -44,7 +44,10 @@ def pytest_configure(config: Config):
     if option == 'debug':
         return
 
-    pytest.testomatio = Testomatio(TestRunConfig())
+    run_kind_option = config.getoption('kind')
+    run_kind_option = run_kind_option.lower() if run_kind_option else 'automated'
+
+    pytest.testomatio = Testomatio(TestRunConfig(run_kind_option))
 
     url = os.environ.get('TESTOMATIO_URL') or config.getini('testomatio_url') or TESTOMATIO_URL
     project = os.environ.get('TESTOMATIO')
