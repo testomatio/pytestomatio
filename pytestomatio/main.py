@@ -3,6 +3,7 @@ import warnings
 
 from pytest import Parser, Session, Config, Item, CallInfo
 from pytestomatio.connect.connector import Connector
+from pytestomatio.connect.exception import ReportFailedException
 from pytestomatio.connect.s3_connector import S3Connector
 from pytestomatio.testing.testItem import TestItem
 from pytestomatio.decor.decorator_updater import update_tests
@@ -233,11 +234,14 @@ def pytest_runtest_logfinish(nodeid, location):
     if not pytest.testomatio.test_run_config.disable_batch:
         return
 
-    for nodeid, request in pytest.testomatio.test_run_config.status_request.items():
-        if request['status']:
-            pytest.testomatio.connector.update_test_status(run_id=pytest.testomatio.test_run_config.test_run_id,
-                                                           **request)
-    pytest.testomatio.test_run_config.status_request = {}
+    try:
+        for nodeid, request in pytest.testomatio.test_run_config.status_request.items():
+            if request['status']:
+                pytest.testomatio.connector.update_test_status(run_id=pytest.testomatio.test_run_config.test_run_id,
+                                                               **request)
+        pytest.testomatio.test_run_config.status_request = {}
+    except ReportFailedException:
+        pytest.exit("Aborting test run")
 
 
 @pytest.hookimpl(optionalhook=True)
@@ -258,6 +262,8 @@ def pytest_sessionfinish(session, exitstatus):
     if not hasattr(pytest, 'testomatio') or session.config.getoption(testomatio) is None \
             or session.config.getoption(testomatio) != 'report':
         return
+    elif not pytest.testomatio.test_run_config.test_run_id:
+        return
 
     run: TestRunConfig = pytest.testomatio.test_run_config
     if not run.disable_batch:
@@ -267,8 +273,11 @@ def pytest_sessionfinish(session, exitstatus):
             session.config.workeroutput['testrun_results'] = run.status_request
             return
 
-        pytest.testomatio.connector.batch_tests_upload(run.test_run_id, run.batch_size,
-                                                       list(run.status_request.values()))
+        try:
+            pytest.testomatio.connector.batch_tests_upload(run.test_run_id, run.batch_size,
+                                                           list(run.status_request.values()))
+        except ReportFailedException:
+            pytest.exit("Aborting test run")
 
 
 def pytest_unconfigure(config: Config):
