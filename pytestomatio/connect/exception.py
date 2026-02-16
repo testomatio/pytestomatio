@@ -1,0 +1,4 @@
+
+
+class MaxRetriesException(Exception):
+    pass
