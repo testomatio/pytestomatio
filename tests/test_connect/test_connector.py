@@ -5,7 +5,7 @@ from requests.exceptions import HTTPError, ConnectionError
 import os
 
 from pytestomatio.connect.connector import Connector, MAX_RETRIES_DEFAULT, RETRY_INTERVAL_DEFAULT
-from pytestomatio.connect.exception import MaxRetriesException
+from pytestomatio.connect.exception import MaxRetriesException, ReportFailedException
 from pytestomatio.testing.testItem import TestItem
 
 
@@ -145,17 +145,17 @@ class TestConnector:
         assert result is False
         assert mock_get.call_count > 1
 
-    @pytest.mark.parametrize("status_code", [400, 404, 429, 500])
-    def test_should_retry_with_skipped_status_codes(self, status_code, connector):
-        """Should not retry on skipped status codes: 400, 404, 429, 500"""
+    @pytest.mark.parametrize("status_code", [400, 403, 404, 429, 500])
+    def test_should_not_retry_with_status_codes(self, status_code, connector):
+        """Should not retry on status codes lower than 501"""
         response = Mock()
         response.status_code = status_code
 
         assert connector._should_retry(response) is False
 
-    @pytest.mark.parametrize("status_code", [401, 402, 403, 405, 501, 502, 503, 504])
+    @pytest.mark.parametrize("status_code", [501, 502, 503, 504])
     def test_should_retry_on_error_codes(self, status_code, connector):
-        """Should retry on status codes >= 401 (excluding skipped)"""
+        """Should retry on status codes >= 501"""
         response = Mock()
         response.status_code = status_code
 
@@ -449,6 +449,33 @@ class TestConnector:
         assert 'message' not in payload
 
     @patch('requests.Session.post')
+    def test_update_test_status_should_raise_report_failed_on_403_status_code(self, mock_post, connector):
+        """Test ReportFailedException raised if status code 403"""
+        mock_response = Mock()
+        mock_response.status_code = 403
+        mock_post.return_value = mock_response
+
+        with pytest.raises(ReportFailedException):
+            connector.update_test_status(
+                run_id="run_123",
+                rid="rid123",
+                status="passed",
+                title="Test Login",
+                suite_title="Auth Suite",
+                suite_id="suite_456",
+                test_id="test_789",
+                message=None,
+                stack=None,
+                run_time=1.5,
+                artifacts=["screenshot.png"],
+                steps="Step 1\nStep 2",
+                code="def test_login(): pass",
+                example={"param": "value"},
+                overwrite=True,
+                meta={}
+            )
+
+    @patch('requests.Session.post')
     def test_batch_upload_success(self, mock_post, connector):
         """Test successful batch upload"""
         mock_response = Mock()
@@ -465,6 +492,20 @@ class TestConnector:
         call_args = mock_post.call_args
 
         assert f'{connector.base_url}/api/reporter/{run_id}/testrun' in call_args[0][0]
+
+    @patch('requests.Session.post')
+    def test_batch_upload_should_raise_report_failed_on_403_status_code(self, mock_post, connector):
+        """Test successful batch should raise ReportFailedException on 403 status code"""
+        mock_response = Mock()
+        mock_response.status_code = 403
+        mock_post.return_value = mock_response
+
+        tests = [{} for i in range(0, 100)]
+        batch_size = 50
+        run_id = 'AS23Fd'
+
+        with pytest.raises(ReportFailedException):
+            connector.batch_tests_upload(run_id, batch_size, tests)
 
     @patch('requests.Session.post')
     def test_update_test_status_filters_none_values(self, mock_post, connector):
