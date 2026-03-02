@@ -54,7 +54,7 @@ class TestParserOptions:
         mock_group.addoption.assert_any_call(
             '--testRunEnv',
             action='store',
-            help='specify test run environment for testomat.io. Works only with --testomatio sync'
+            help='specify test run environment for testomat.io. Works only with --testomatio report'
         )
 
     def test_parser_options_adds_create_option(self, mock_parser):

@@ -16,7 +16,7 @@ def parser_options(parser: Parser, testomatio='testomatio') -> None:
                      help=help_text)
     group.addoption(f'--testRunEnv',
                      action='store',
-                     help=f'specify test run environment for testomat.io. Works only with --testomatio sync')
+                     help=f'specify test run environment for testomat.io. Works only with --testomatio report')
     group.addoption(f'--create',
                      action='store_true',
                      default=False,

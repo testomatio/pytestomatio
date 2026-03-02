@@ -1,21 +1,35 @@
+import os
+
 import requests
 from requests.exceptions import HTTPError, ConnectionError
 import logging
 from os.path import join, normpath
 from os import getenv
+
+from pytestomatio.connect.exception import MaxRetriesException, ReportFailedException
 from pytestomatio.utils.helper import safe_string_list
 from pytestomatio.testing.testItem import TestItem
 import time
 
 log = logging.getLogger('pytestomatio')
+MAX_RETRIES_DEFAULT = 5
+RETRY_INTERVAL_DEFAULT = 5
+
+STATUS_MESSAGES = {
+    403: "Authentication failed. Please check your Testomatio project token. It may be invalid or expired"
+}
 
 
 class Connector:
     def __init__(self, base_url: str = '', api_key: str = None):
+        max_retries = os.environ.get('TESTOMATIO_MAX_REQUEST_FAILURES', '')
+        retry_interval = os.environ.get('TESTOMATIO_REQUEST_INTERVAL', '')
         self.base_url = base_url
         self._session = requests.Session()
         self.jwt: str = ''
         self.api_key = api_key
+        self.max_retries = int(max_retries) if max_retries.isdigit() else MAX_RETRIES_DEFAULT
+        self.retry_interval = int(retry_interval) if retry_interval.isdigit() else RETRY_INTERVAL_DEFAULT
 
     @property
     def session(self):
@@ -66,6 +80,50 @@ class Connector:
         log.error("Internet connection check timed out after %d seconds.", timeout)
         return False
 
+    def _show_status_message(self, status_code: int):
+        message = STATUS_MESSAGES.get(status_code)
+        if message:
+            log.error(message)
+
+    def _is_report_failed(self, status_code: int):
+        if status_code == 403:
+            raise ReportFailedException
+
+    def _should_retry(self, response: requests.Response) -> bool:
+        """Checks if request should be retried.
+        Retry only on 501+ status codes
+        """
+        return response.status_code >= 501
+
+    def _send_request_with_retry(self, method: str, url: str, **kwargs):
+        """Send HTTP request with retry logic"""
+        for attempt in range(self.max_retries):
+            log.debug(f'Trying to send request to {self.base_url}. Attempt {attempt+1}/{self.max_retries}')
+            try:
+                request_func = getattr(self.session, method)
+                response = request_func(url, **kwargs)
+
+                if self._should_retry(response):
+                    if attempt < self.max_retries:
+                        log.error(f'Request attempt failed. Response code: {response.status_code}. '
+                                  f'Retrying in {self.retry_interval} seconds')
+                        time.sleep(self.retry_interval)
+                        continue
+
+                return response
+            except ConnectionError as ce:
+                log.error(f'Failed to connect to {self.base_url}: {ce}')
+                raise
+            except HTTPError as he:
+                log.error(f'HTTP error occurred while connecting to {self.base_url}: {he}')
+                raise
+            except Exception as e:
+                log.error(f'An unexpected exception occurred. Please report an issue: {e}')
+                raise
+
+        log.error(f'Retries attempts exceeded.')
+        raise MaxRetriesException()
+
     def load_tests(
             self,
             tests: list[TestItem],
@@ -75,6 +133,7 @@ class Connector:
             create: bool = False,
             directory: str = None
     ):
+        url = f'{self.base_url}/api/load?api_key={self.api_key}'
         request = {
             "framework": "pytest",
             "language": "python",
@@ -98,30 +157,38 @@ class Connector:
                 "labels": safe_string_list(getenv('TESTOMATIO_SYNC_LABELS')),
             })
 
+        log.info(f'Starting tests loading to {self.base_url}')
         try:
-            response = self.session.post(f'{self.base_url}/api/load?api_key={self.api_key}', json=request)
-        except ConnectionError as ce:
-            log.error(f'Failed to connect to {self.base_url}: {ce}')
-            return
-        except HTTPError as he:
-            log.error(f'HTTP error occurred while connecting to {self.base_url}: {he}')
-            return
+            response = self._send_request_with_retry('post', url, json=request)
         except Exception as e:
-            log.error(f'An unexpected exception occurred. Please report an issue: {e}')
+            log.error(f'Failed to load tests to {self.base_url}')
             return
 
         if response.status_code < 400:
             log.info(f'Tests loaded to {self.base_url}')
         else:
+            self._show_status_message(response.status_code)
             log.error(f'Failed to load tests to {self.base_url}. Status code: {response.status_code}')
 
     def get_tests(self, test_metadata: list[TestItem]) -> dict:
-        # with safe_request('Failed to get test ids from testomat.io'):
-        response = self.session.get(f'{self.base_url}/api/test_data?api_key={self.api_key}')
-        return response.json()
+        log.info('Trying to receive test ids from testomat.io')
+        url = f'{self.base_url}/api/test_data?api_key={self.api_key}'
+        try:
+            response = self._send_request_with_retry('get', url)
+            if response.status_code < 400:
+                log.info('Test ids received')
+                return response.json()
+            else:
+                self._show_status_message(response.status_code)
+                log.error('Failed to get test ids from testomat.io')
+        except Exception as e:
+            log.error('Failed to get test ids from testomat.io')
 
-    def create_test_run(self, title: str, group_title, env: str, label: str, shared_run: bool, parallel, ci_build_url: str) -> dict | None:
+
+    def create_test_run(self, access_event: str, title: str, group_title, env: str, label: str, shared_run: bool, shared_run_timeout: str,
+                        parallel, ci_build_url: str) -> dict | None:
         request = {
+            "access_event": access_event,
             "api_key": self.api_key,
             "title": title,
             "group_title": group_title,
@@ -129,28 +196,27 @@ class Connector:
             "label": label,
             "parallel": parallel,
             "ci_build_url": ci_build_url,
-            "shared_run": shared_run
+            "shared_run": shared_run,
+            "shared_run_timeout": shared_run_timeout,
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
+        url = f'{self.base_url}/api/reporter'
+        log.info('Creating test run')
         try:
-            response = self.session.post(f'{self.base_url}/api/reporter', json=filtered_request)
-        except ConnectionError as ce:
-            log.error(f'Failed to connect to {self.base_url}: {ce}')
-            return
-        except HTTPError as he:
-            log.error(f'HTTP error occurred while connecting to {self.base_url}: {he}')
-            return
+            response = self._send_request_with_retry('post', url, json=filtered_request)
         except Exception as e:
-            log.error(f'An unexpected exception occurred. Please report an issue: {e}')
+            log.error(f'Failed to create test run')
             return
 
         if response.status_code == 200:
             log.info(f'Test run created {response.json()["uid"]}')
             return response.json()
+        self._show_status_message(response.status_code)
 
-    def update_test_run(self, id: str, title: str, group_title,
-                        env: str, label: str, shared_run: bool, parallel, ci_build_url: str) -> dict | None:
+    def update_test_run(self, id: str, access_event: str, title: str, group_title,
+                        env: str, label: str, shared_run: bool, shared_run_timeout: str, parallel, ci_build_url: str) -> dict | None:
         request = {
+            "access_event": access_event,
             "api_key": self.api_key,
             "title": title,
             "group_title": group_title,
@@ -158,27 +224,27 @@ class Connector:
             "label": label,
             "parallel": parallel,
             "ci_build_url": ci_build_url,
-            "shared_run": shared_run
+            "shared_run": shared_run,
+            "shared_run_timeout": shared_run_timeout
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
-
+        url = f'{self.base_url}/api/reporter/{id}'
+        log.info(f'Updating test run. Run Id: {id}')
         try:
-            response = self.session.put(f'{self.base_url}/api/reporter/{id}', json=filtered_request)
-        except ConnectionError as ce:
-            log.error(f'Failed to connect to {self.base_url}: {ce}')
-            return
-        except HTTPError as he:
-            log.error(f'HTTP error occurred while connecting to {self.base_url}: {he}')
-            return
+            response = self._send_request_with_retry('put', url, json=filtered_request)
         except Exception as e:
-            log.error(f'An unexpected exception occurred. Please report an issue: {e}')
+            log.error(f'Failed to update test run')
             return
 
         if response.status_code == 200:
             log.info(f'Test run updated {response.json()["uid"]}')
             return response.json()
 
+        self._show_status_message(response.status_code)
+        log.error('Failed to update test_run')
+
     def update_test_status(self, run_id: str,
+                           rid: str,
                            status: str,
                            title: str,
                            suite_title: str,
@@ -190,8 +256,11 @@ class Connector:
                            artifacts: list[str],
                            steps: str,
                            code: str,
-                           example: dict) -> None:
+                           example: dict,
+                           overwrite: bool | None,
+                           meta: dict) -> None:
 
+        log.info(f'Reporting test. Id: {test_id}. Title: {title}')
         request = {
             "status": status,  # Enum: "passed" "failed" "skipped"
             "title": title,
@@ -204,38 +273,72 @@ class Connector:
             "example": example,
             "artifacts": artifacts,
             "steps": steps,
-            "code": code
+            "code": code,
+            "overwrite": overwrite,
+            "rid": rid,
+            "meta": meta
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
+        url = f'{self.base_url}/api/reporter/{run_id}/testrun?api_key={self.api_key}'
         try:
-            response = self.session.post(f'{self.base_url}/api/reporter/{run_id}/testrun?api_key={self.api_key}',
-                                         json=filtered_request)
-        except ConnectionError as ce:
-            log.error(f'Failed to connect to {self.base_url}: {ce}')
-            return
-        except HTTPError as he:
-            log.error(f'HTTP error occurred while connecting to {self.base_url}: {he}')
-            return
+            response = self._send_request_with_retry('post', url, json=filtered_request)
         except Exception as e:
-            log.error(f'An unexpected exception occurred. Please report an issue: {e}')
+            log.error(f'Failed to report test')
             return
         if response.status_code == 200:
             log.info('Test status updated')
+        else:
+            self._show_status_message(response.status_code)
+            log.error(f"Failed to report test to Testomat.io. Status_code: {response.status_code}")
+
+            self._is_report_failed(response.status_code)
+
+    def batch_tests_upload(self, run_id: str,
+                           batch_size: int,
+                           tests: list) -> None:
+        # TODO: add retry logic
+        if not tests:
+            log.info(f'No tests to report. Report skipped')
+            return
+
+        log.info(f'Starting batch test report into test run. Run id: {run_id}, number of tests: {len(tests)}, '
+                 f'batch size: {batch_size}')
+        url = f'{self.base_url}/api/reporter/{run_id}/testrun?api_key={self.api_key}'
+
+        for i in range(0, len(tests), batch_size):
+            batch = tests[i:i+batch_size]
+            batch_index = i // batch_size + 1
+            request = {
+                'tests': batch,
+                'batch_index': batch_index
+            }
+            try:
+                response = self._send_request_with_retry('post', url, json=request)
+            except Exception as e:
+                log.error(f'Failed to report test')
+                return
+            if response.status_code == 200:
+                log.info(f'Tests status updated. Batch index: {batch_index}')
+            else:
+                self._show_status_message(response.status_code)
+                log.error(f"Failed to report test to Testomat.io. Status_code: {response.status_code}")
+
+                self._is_report_failed(response.status_code)
 
     # TODO: I guess this class should be just an API client and used within testRun (testRunConfig)
     def finish_test_run(self, run_id: str, is_final=False) -> None:
+        log.info(f'Finishing test run. Run id: {run_id}')
         status_event = 'finish_parallel' if is_final else 'finish'
+        url = f'{self.base_url}/api/reporter/{run_id}?api_key={self.api_key}'
         try:
-            self.session.put(f'{self.base_url}/api/reporter/{run_id}?api_key={self.api_key}',
-                             json={"status_event": status_event})
-        except ConnectionError as ce:
-            log.error(f'Failed to connect to {self.base_url}: {ce}')
-            return
-        except HTTPError as he:
-            log.error(f'HTTP error occurred while connecting to {self.base_url}: {he}')
-            return
+            response = self._send_request_with_retry('put', url, json={"status_event": status_event})
+            if response.status_code == 200:
+                log.info(f'Run successfully finished')
+            else:
+                self._show_status_message(response.status_code)
+                log.error(f"Failed to finish testrun on Testomat.io. Status_code: {response.status_code}")
         except Exception as e:
-            log.error(f'An unexpected exception occurred. Please report an issue: {e}')
+            log.error(f'Failed to finish test run')
             return
 
     def disconnect(self):

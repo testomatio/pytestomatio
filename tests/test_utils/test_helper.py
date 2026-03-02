@@ -2,7 +2,7 @@ import os
 from unittest.mock import Mock, patch, call
 
 from pytestomatio.utils.helper import collect_tests, get_test_mapping, parse_test_list, add_and_enrich_tests, \
-    read_env_s3_keys
+    read_env_s3_keys, parse_env_value
 from pytestomatio.testing.testItem import TestItem
 from pytestomatio.testomatio.testomat_item import TestomatItem
 
@@ -530,3 +530,16 @@ class TestReadEnvS3Keys:
 
             expected = (None, None, None, None, None, None, "public-read")
             assert result == expected
+
+
+class TestParseENVValue:
+    """Tests for parse_env_value function"""
+
+    def test_parse_key_value_string(self):
+        result = parse_env_value("browser:chrome", ':')
+        assert result[0] == 'browser'
+        assert result[1] == 'chrome'
+
+    def test_parse_flat_string(self):
+        result = parse_env_value("flat", ':')
+        assert result[0] == 'flat'
