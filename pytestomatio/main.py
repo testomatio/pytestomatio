@@ -150,6 +150,10 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
             run: TestRunConfig = pytest.testomatio.test_run_config
             run.get_run_id()
 
+            if not run.test_run_id:
+                log.error('No test run ID found. Reporting skipped')
+                pytest.exit('Reporting skipped')
+
             # send update without status just to get artifact details from the server
             run_details = pytest.testomatio.connector.update_test_run(**run.to_dict())
 
@@ -308,7 +312,8 @@ def pytest_unconfigure(config: Config):
         run.clear_run_id()
         return
     elif run.proceed:
-        run.clear_run_id()
+        if not hasattr(config, 'workerinput'):  # for xdist, only master clear run id
+            run.clear_run_id()
         return
     # for xdist - main process
     if not hasattr(config, 'workerinput'):
