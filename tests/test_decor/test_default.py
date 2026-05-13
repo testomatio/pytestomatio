@@ -11,18 +11,26 @@ class TestDecoratorUpdater:
 
     def test_get_id_by_title_found(self):
         """Test get ID by title"""
-        mapped_tests = [("test_one", "@T123"), ("test_two", "@T456")]
-        updater = DecoratorUpdater(mapped_tests, [], "testomatio")
+        mapped_tests = [("test_one", "@T123", "file1"), ("test_two", "@T456", "file1")]
+        updater = DecoratorUpdater(mapped_tests, [], "testomatio", "path/file1")
 
         result = updater._get_id_by_title("test_one")
         assert result == "@T123"
 
     def test_get_id_by_title_not_found(self):
         """Test title not found"""
-        mapped_tests = [("test_one", "@T123")]
-        updater = DecoratorUpdater(mapped_tests, [], "testomatio")
+        mapped_tests = [("test_one", "@T123", "file1")]
+        updater = DecoratorUpdater(mapped_tests, [], "testomatio", "path/file1")
 
         result = updater._get_id_by_title("nonexistent")
+        assert result is None
+
+    def test_get_id_by_title_not_found_if_file_not_match(self):
+        """Test title not found"""
+        mapped_tests = [("test_one", "@T123", "file1")]
+        updater = DecoratorUpdater(mapped_tests, [], "testomatio", "path/file2")
+
+        result = updater._get_id_by_title("@T123")
         assert result is None
 
     def test_basic_decorator_addition(self):
@@ -36,7 +44,7 @@ def test_example():
         assert '@pytest.mark.testomatio("@T123")' not in tree.code
 
 
-        updater = DecoratorUpdater([("test_example", "@T123")], ["test_example"], "testomatio")
+        updater = DecoratorUpdater([("test_example", "@T123", "file1")], ["test_example"], "testomatio", "path/file1")
 
         modified_tree = tree.visit(updater)
         result_code = modified_tree.code
@@ -52,7 +60,7 @@ def test_example():
 '''
 
         tree = cst.parse_module(source_code)
-        updater = DecoratorUpdater([("test_example", "@T123")], [], "testomatio")  # порожній all_tests
+        updater = DecoratorUpdater([("test_example", "@T123", "file1")], [], "testomatio", "path/file1")  # порожній all_tests
 
         modified_tree = tree.visit(updater)
         result_code = modified_tree.code
@@ -68,7 +76,7 @@ def test_example():
 '''
 
         tree = cst.parse_module(source_code)
-        updater = DecoratorUpdater([("test_example", "@T456")], ["test_example"], "testomatio")
+        updater = DecoratorUpdater([("test_example", "@T456", "file1")], ["test_example"], "testomatio", 'path/file1')
 
         modified_tree = tree.visit(updater)
         result_code = modified_tree.code
@@ -139,7 +147,8 @@ def test_two():
 
     def test_update_tests_adds_decorators(self, temp_test_file):
         """Test update_tests adds decorators"""
-        mapped_tests = [("test_one", "@T123"), ("test_two", "@T456")]
+        filename = temp_test_file.split('/')[-1]
+        mapped_tests = [("test_one", "@T123", filename), ("test_two", "@T456", filename)]
         all_tests = ["test_one", "test_two"]
 
         update_tests(temp_test_file, mapped_tests, all_tests, "testomatio", remove=False)

@@ -6,16 +6,24 @@ from pytest import Item
 import inspect
 
 MARKER = 'testomatio'
+TEST_TYPES = [
+    (lambda f: hasattr(f, '__scenario__'), 'bdd'),
+    (lambda f: True, 'regular')
+]
+
+
 class TestItem:
     def __init__(self, item: Item):
         self.uid = uuid.uuid4()
         self.id: str = TestItem.get_test_id(item)
+        self.type = self._get_test_type(item.function)
         self.title = self._get_pytest_title(item.name)
         self.sync_title = self._get_sync_test_title(item)
         self.resync_title = self._get_resync_test_title(item)
         self.exec_title = self._get_execution_test_title(item)
         self.parameters = self._get_test_parameter_key(item)
         self.file_name = item.path.name
+        self.suite_title = self._get_suite_title(item.function)
         self.abs_path = str(item.path)
         self.file_path = item.location[0]
         self.module = item.module.__name__
@@ -30,6 +38,8 @@ class TestItem:
         result['id'] = self.id
         result['title'] = self.title
         result['fileName'] = self.file_name
+        result['type'] = self.type
+        result['suite_title'] = self.suite_title
         result['absolutePath'] = self.abs_path
         result['filePath'] = self.file_path
         result['module'] = self.module
@@ -58,6 +68,21 @@ class TestItem:
         if point > -1:
             return name[0:point]
         return name
+
+    def _get_test_type(self, test):
+        """Returns test type based on predicate check."""
+        for predicate, test_type in TEST_TYPES:
+            if predicate(test):
+                return test_type
+
+    def _get_suite_title(self, test):
+        """Returns suite title based on test type. For bdd test suite title equals Feature name,
+        for regular - filename"""
+        if self.type == 'bdd':
+            scenario = test.__scenario__
+            if scenario and hasattr(scenario, 'feature'):
+                return scenario.feature.name
+        return self.file_name
 
     # Testomatio resolves test id on BE by parsing test name to find test id
     def _get_sync_test_title(self, item: Item) -> str:

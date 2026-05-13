@@ -109,6 +109,22 @@ Run pytest with debug parameter to get test data collected in metadata.json file
 pytest --testomatio debug
 ```
 
+#### Launch
+Create empty run and obtain its RUN_ID from testomat.io.
+
+```bash
+pytest --testomatio launch
+```
+
+#### Finish
+Finish running or scheduled run on testomat.io. 
+**TESTOMATIO_RUN_ID** environment variable is required.
+
+```bash
+TESTOMATIO_RUN_ID=***run_id*** pytest --testomatio finish
+```
+
+
 ### Additional options
 #### Submitting Test Run Environment
 To configure test environment, you can use additional option **testRunEnv**. The configured environment will be added to the test report. Use it with **report** command:
@@ -155,29 +171,102 @@ pytest --testomatio report --test-id "Tc0880217|Tfd1c595c"
 Note: Test id should be started from letter "T"
 
 
+### Submitting Test Steps
+
+The plugin supports dividing tests into separate, trackable steps. When reporting to testomat.io, you can view detailed information for each step including execution status, duration, and any errors that occurred.
+
+**Important**: This plugin only supports **reporting** test steps to testomat.io during test execution. Test steps cannot be imported to testomat.io using **sync** option.
+
+Test steps can be implemented using either decorators or context managers, giving you flexibility in how you structure your tests.
+
+**Error Handling**: If a step fails, the error is captured and reported to testomat.io while the test execution continues with remaining steps.
+
+**Parameters**:
+```
+@step_function(
+    title = "Step1", # Step name displayed in testomat.io
+    category = "user" # Optional: categorize steps(user, system, framework)
+)
+with step(
+    title = "Step1", # Step name displayed in testomat.io
+    category = "user" # Optional: categorize steps(user, system, framework)
+)
+
+```
+
+**Example**:
+```python
+import pytest
+from pytestomatio.utils.steps import step, step_function
+
+class Book:
+    def __init__(self, author, text):
+        self.author = author
+        self.text = text
+        
+    def read(self):
+        return self.text
+
+# decorator 
+@step_function(title='Check author step', category='user')
+def check_author(author_name, expected_name):
+    assert author_name == expected_name
+
+def test_book_create():
+    author_name = 'David Ket'
+    # context manager
+    with step(title='Book create', category='user'):
+        book = Book(author_name, 'text')
+        assert book
+        check_author(book.author, author_name)
+
+# nested steps also supported
+def test_book_read():
+    text = 'book text'
+    author_name = 'David Ket'
+    
+    with step(title='Read book'):
+        with step(title='Book create', category='user'):
+            book = Book(author_name, 'text')
+            assert book
+            check_author(book.author, author_name)
+        assert book.read() == text
+```
+
 ### Configuration with environment variables
 You can use environment variable to control certain features of testomat.io
 
 #### Basic configuration
-| Env variable             | What it does                                                                                                                                                                                                          | Examples                                                                        |
-|--------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
-| TESTOMATIO               | Provides token for pytestomatio to access and push data to testomat.io. Required for **sync** and **report** commands                                                                                                 | TESTOMATIO=tstmt_***** pytest --testomatio sync                                 |
+| Env variable             | What it does                                                                                                                                                                                                          | Examples                                                                         |
+|--------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
+| TESTOMATIO               | Provides token for pytestomatio to access and push data to testomat.io. Required for **sync** and **report** commands                                                                                                 | TESTOMATIO=tstmt_***** pytest --testomatio sync                                  |
 | TESTOMATIO_SYNC_LABELS   | Assign labels to a test case when you synchronise test from code with testomat.io. Labels must exist in project and their scope must be enabled for tests                                                             | TESTOMATIO_SYNC_LABELS="number:1,list:one,standalone" pytest --testomatio report |
-| TESTOMATIO_CODE_STYLE    | Code parsing style for test synchronization. If you are not sure, don't set this variable. Default value is 'default'                                                                                                 | TESTOMATIO_CODE_STYLE=pep8 pytest --testomatio sync                             |
-| TESTOMATIO_CI_DOWNSTREAM | If set, pytestomatio will not set or update build url for a test run. This is useful in scenarios where build url is already set in the test run by Testomat.io for test runs that a created directly on Testomat.io. | TESTOMATIO_CI_DOWNSTREAM=true pytest --testomatio report                        |
- | TESTOMATIO_URL           | Customize testomat.io url                                                                                                                                                                                             | TESTOMATIO_URL=https://custom.com/ pytest --testomatio report                   |
- | BUILD_URL                | Overrides build url run tests                                                                                                                                                                                         | BUILD_URL=http://custom.com/ pytest --testomatio report                         |
+| TESTOMATIO_CODE_STYLE    | Code parsing style for test synchronization. If you are not sure, don't set this variable. Default value is 'default'                                                                                                 | TESTOMATIO_CODE_STYLE=pep8 pytest --testomatio sync                              |
+| TESTOMATIO_CI_DOWNSTREAM | If set, pytestomatio will not set or update build url for a test run. This is useful in scenarios where build url is already set in the test run by Testomat.io for test runs that a created directly on Testomat.io. | TESTOMATIO_CI_DOWNSTREAM=true pytest --testomatio report                         |
+ | TESTOMATIO_URL           | Customize testomat.io url                                                                                                                                                                                             | TESTOMATIO_URL=https://custom.com/ pytest --testomatio report                    |
+ | BUILD_URL                | Overrides build url run tests                                                                                                                                                                                         | BUILD_URL=http://custom.com/ pytest --testomatio report                          |
+ | TESTOMATIO_MAX_REQUEST_FAILURES                | Sets the max number of attempts to send a request to the Testomat.io API. Default is 5 attempts.                                                                                                                      | TESTOMATIO_MAX_REQUEST_FAILURES=10 pytest --testomatio report                    |
+ | TESTOMATIO_REQUEST_INTERVAL                | Sets the interval between API requests in seconds. Default is 5 sec.                                                                                                                                                  | TESTOMATIO_REQUEST_INTERVAL=2 pytest --testomatio report                         |
 
 
 #### Test Run configuration
-| Env variable              | What it does                                                                                                                      | Examples                                                           |
-|---------------------------|-----------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
-| TESTOMATIO_TITLE          | Name of a test run to create on testomat.io                                                                                       | TESTOMATIO_TITLE="Nightly Smoke Tests" pytest --testomatio report  |
-| TESTOMATIO_RUN_ID         | Id of existing test run to use for sending test results to                                                                        | TESTOMATIO_RUN_ID=98dfas0 pytest --testomatio report               |
-| TESTOMATIO_RUNGROUP_TITLE | Create a group (folder) for a test run. If group already exists, attach test run to it                                            | TESTOMATIO_RUNGROUP_TITLE="Release 2.0" pytest --testomatio report |
-| TESTOMATIO_ENV            | Assign environment to a test run, env variant of **testRunEnv** option. Has a lower precedence than **testRunEnv** option.        | TESTOMATIO_ENV="linux,chrome,1920x1080" pytest --testomatio report |
-| TESTOMATIO_LABEL          | Assign labels to a test run. Labels must exist in project and their scope must be enabled for runs                                | TESTOMATIO_LABEL="smoke,regression" pytest --testomatio report     |
+| Env variable             | What it does                                                                                                                                                                     | Examples                                                                                                    |
+|--------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|
+| TESTOMATIO_TITLE         | Name of a test run to create on testomat.io                                                                                                                                      | TESTOMATIO_TITLE="Nightly Smoke Tests" pytest --testomatio report                                           |
+| TESTOMATIO_RUN_ID        | Id of existing test run to use for sending test results to                                                                                                                       | TESTOMATIO_RUN_ID=98dfas0 pytest --testomatio report                                                        |
+| TESTOMATIO_RUNGROUP_TITLE | Create a group (folder) for a test run. If group already exists, attach test run to it                                                                                           | TESTOMATIO_RUNGROUP_TITLE="Release 2.0" pytest --testomatio report                                          |
+| TESTOMATIO_ENV           | Assign environment to a test run, env variant of **testRunEnv** option. Has a lower precedence than **testRunEnv** option.                                                       | TESTOMATIO_ENV="linux,chrome,1920x1080" pytest --testomatio report                                          |
+| TESTOMATIO_LABEL         | Assign labels to a test run. Labels must exist in project and their scope must be enabled for runs                                                                               | TESTOMATIO_LABEL="smoke,regression" pytest --testomatio report                                              |
 | TESTOMATIO_JIRA_ID        | Assigns Test Run to Jira Issue. Note: Issue must exist on Jira and Jira Integration must be configured for project on Testomat.io | TESTOMATIO_JIRA_ID=TES-1 pytest --testomatio report                |
+| TESTOMATIO_UPDATE_CODE         | Send code of your test to Testomat.io on each run. If not enabled(default) assumes the code is pushed using **sync** command                                                     | TESTOMATIO_UPDATE_CODE=True pytest --testomatio report                                                      |
+| TESTOMATIO_EXCLUDE_SKIPPED         | Exclude skipped tests from the report                                                                                                                                            | TESTOMATIO_EXCLUDE_SKIPPED=1 pytest --testomatio report                                                     |
+| TESTOMATIO_PUBLISH            | Publish run after reporting and provide a public URL                                                                                                                             | TESTOMATIO_PUBLISH=true pytest --testomatio report                                                          |
+| TESTOMATIO_PROCEED            | Do not finalize the run                                                                                                                                                          | TESTOMATIO_PROCEED=1 pytest --testomatio report                                                             |
+| TESTOMATIO_SHARED_RUN         | Report parallel execution to the same run matching it by title. If the run was created more than 20 minutes ago, a new run will be created instead.                              | TESTOMATIO_TITLE="Run1" TESTOMATIO_SHARED_RUN=1 pytest --testomatio report                                  |
+| TESTOMATIO_SHARED_RUN_TIMEOUT | Changes timeout of shared run. After timeout, shared run won`t accept other runs with same name, and new runs will be created. Timeout is set in minutes, default is 20 minutes. | TESTOMATIO_TITLE="Run1" TESTOMATIO_SHARED_RUN=1 TESTOMATIO_SHARED_RUN_TIMEOUT=10 pytest --testomatio report |
+| TESTOMATIO_DISABLE_BATCH_UPLOAD | Disables batch uploading and uploads each test result one by one.                                                                                                                | TESTOMATIO_DISABLE_BATCH_UPLOAD=True pytest --testomatio report                                             |
+| TESTOMATIO_BATCH_SIZE | Changes size of batch for batch uploading. Default is 50. Maximum is 100.                                                                                                        | TESTOMATIO_BATCH_SIZE=15 pytest --testomatio report                                                         |
+
 
 #### S3 Bucket configuration
 | Env variable         | Description                           |
@@ -265,6 +354,20 @@ def pytest_runtest_makereport(item, call):
     artifact_url = pytest.testomatio.upload_file(screenshot_path, filename)
     pytest.testomatio.add_artifacts([artifact_url])
 ```
+
+### Cross-Platform Testing
+The plugin supports reporting the same test multiple times in a single run. This is especially useful for Cross-Platform
+testing, when you run the same test on different environments. 
+To use this feature you need to specify test run environment through 
+**TESTOMATIO_ENV** environment variable or by using **--testRunEnv** option.
+Example:
+```bash
+TESTOMATIO=***api_key*** TESTOMATIO_RUN_ID=***run_id*** pytest --testomatio report --testRunEnv "os:ubuntu, integration"
+TESTOMATIO=***api_key*** TESTOMATIO_RUN_ID=***run_id*** pytest --testomatio report --testRunEnv "os:windowns, integration"
+```
+Executing these commands will include the tests in the same run, but as separate instances. Each test will contain metadata with information about the test run environment.
+
+**Note**: Only key:value envs will be passed into tests metadata
 
 ## Contributing
 Use python 3.12
