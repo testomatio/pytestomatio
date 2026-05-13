@@ -5,11 +5,14 @@ from pytestomatio.utils.helper import safe_string_list, parse_env_value
 from typing import Optional
 
 TESTOMATIO_TEST_RUN_LOCK_FILE = ".testomatio_test_run_id_lock"
+DEFAULT_BATCH_SIZE = 50
 
 class TestRunConfig:
     def __init__(self):
         run_id = os.environ.get('TESTOMATIO_RUN_ID') or os.environ.get('TESTOMATIO_RUN')
         title = os.environ.get('TESTOMATIO_TITLE') if os.environ.get('TESTOMATIO_TITLE') else 'test run at ' + dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        disable_batch_upload = os.environ.get('TESTOMATIO_DISABLE_BATCH_UPLOAD') in ['True', 'true', '1']
+        batch_size = os.environ.get('TESTOMATIO_BATCH_SIZE', '')
         shared_run = os.environ.get('TESTOMATIO_SHARED_RUN') in ['True', 'true', '1']
         update_code = os.environ.get('TESTOMATIO_UPDATE_CODE', False) in ['True', 'true', '1']
         exclude_skipped = os.environ.get('TESTOMATIO_EXCLUDE_SKIPPED', False) in ['True', 'true', '1']
@@ -17,6 +20,8 @@ class TestRunConfig:
         self.access_event = 'publish' if os.environ.get("TESTOMATIO_PUBLISH") else None
         self.test_run_id = run_id
         self.title = title
+        self.disable_batch = disable_batch_upload
+        self.batch_size = int(batch_size) if (batch_size.isdigit() and int(batch_size) <= 100) else DEFAULT_BATCH_SIZE
         self.environment = safe_string_list(os.environ.get('TESTOMATIO_ENV'))
         self.exclude_skipped = exclude_skipped
         self.label = safe_string_list(os.environ.get('TESTOMATIO_LABEL'))
