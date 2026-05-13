@@ -185,7 +185,7 @@ class Connector:
             log.error('Failed to get test ids from testomat.io')
 
 
-    def create_test_run(self, access_event: str, title: str, group_title, env: str, label: str, shared_run: bool, shared_run_timeout: str,
+    def create_test_run(self, access_event: str, title: str, group_title, jira_id: str, env: str, label: str, shared_run: bool, shared_run_timeout: str,
                         parallel, ci_build_url: str) -> dict | None:
         request = {
             "access_event": access_event,
@@ -193,6 +193,7 @@ class Connector:
             "title": title,
             "group_title": group_title,
             "env": env,
+            "jira_id": jira_id,
             "label": label,
             "parallel": parallel,
             "ci_build_url": ci_build_url,
@@ -213,7 +214,7 @@ class Connector:
             return response.json()
         self._show_status_message(response.status_code)
 
-    def update_test_run(self, id: str, access_event: str, title: str, group_title,
+    def update_test_run(self, id: str, access_event: str, title: str, group_title, jira_id: str,
                         env: str, label: str, shared_run: bool, shared_run_timeout: str, parallel, ci_build_url: str) -> dict | None:
         request = {
             "access_event": access_event,
@@ -221,6 +222,7 @@ class Connector:
             "title": title,
             "group_title": group_title,
             "env": env,
+            "jira_id": jira_id,
             "label": label,
             "parallel": parallel,
             "ci_build_url": ci_build_url,

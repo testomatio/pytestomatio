@@ -307,6 +307,7 @@ class TestConnector:
             group_title="Group 1",
             env="linux,chrome",
             label="smoke",
+            jira_id="tes-1",
             shared_run=False,
             shared_run_timeout="2",
             parallel=True,
@@ -321,6 +322,7 @@ class TestConnector:
                 "title": "Test Run",
                 "group_title": "Group 1",
                 "env": "linux,chrome",
+                "jira_id": "tes-1",
                 "label": "smoke",
                 "shared_run": False,
                 "shared_run_timeout": "2",
@@ -345,6 +347,7 @@ class TestConnector:
             group_title=None,
             env=None,
             label="smoke",
+            jira_id=None,
             shared_run=False,
             shared_run_timeout=None,
             parallel=True,
@@ -366,7 +369,7 @@ class TestConnector:
         """Test HTTP error handled wher create test run"""
         mock_post.side_effect = HTTPError("HTTP Error")
 
-        result = connector.create_test_run("Test", None, None, None, None, False, True, None, None)
+        result = connector.create_test_run("Test", None, None, None, None, None, False, True, None, None)
         assert result is None
 
     @patch('requests.Session.put')
@@ -383,6 +386,7 @@ class TestConnector:
             title="Updated Run",
             group_title="Group",
             env="windows",
+            jira_id="tes-1",
             label="regression",
             shared_run=True,
             shared_run_timeout='2',
@@ -398,6 +402,7 @@ class TestConnector:
                 "title": "Updated Run",
                 "group_title": "Group",
                 "env": "windows",
+                "jira_id": "tes-1",
                 "label": "regression",
                 "shared_run": True,
                 "shared_run_timeout": '2',

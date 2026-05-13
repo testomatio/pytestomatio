@@ -24,6 +24,7 @@ class TestTestRunConfig:
                 assert config.disable_batch is False
                 assert config.batch_size == DEFAULT_BATCH_SIZE
                 assert config.label is None
+                assert config.jira_id is None
                 assert config.group_title is None
                 assert config.parallel is True
                 assert config.shared_run is False
@@ -40,6 +41,7 @@ class TestTestRunConfig:
             'TESTOMATIO_ENV': 'linux,browser:chrome,1920x1080',
             'TESTOMATIO_LABEL': 'smoke,regression',
             'TESTOMATIO_RUNGROUP_TITLE': 'Release 2.0',
+            'TESTOMATIO_JIRA_ID': 'TES-1',
             'TESTOMATIO_UPDATE_CODE': '1',
             'TESTOMATIO_PUBLISH': '1',
             'TESTOMATIO_EXCLUDE_SKIPPED': '1',
@@ -61,6 +63,7 @@ class TestTestRunConfig:
             assert config.group_title == 'Release 2.0'
             assert config.parallel is True
             assert config.shared_run is False
+            assert config.jira_id == 'TES-1'
             assert config.update_code is True
             assert config.meta == {'linux': None, 'browser': 'chrome', '1920x1080': None}
 
@@ -157,6 +160,7 @@ class TestTestRunConfig:
             'TESTOMATIO_LABEL': 'label1,label2',
             'TESTOMATIO_RUNGROUP_TITLE': 'Group 1',
             'TESTOMATIO_SHARED_RUN': 'true',
+            'TESTOMATIO_JIRA_ID': "TES-1",
             'TESTOMATIO_SHARED_RUN_TIMEOUT': "12",
             'TESTOMATIO_PUBLISH': 'true'
         }
@@ -175,6 +179,7 @@ class TestTestRunConfig:
                 'label': 'label1,label2',
                 'parallel': False,
                 'shared_run': True,
+                'jira_id': 'TES-1',
                 'shared_run_timeout': '12',
                 'ci_build_url': None
             }
