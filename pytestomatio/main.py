@@ -3,12 +3,14 @@ import warnings
 
 from pytest import Parser, Session, Config, Item, CallInfo
 from pytestomatio.connect.connector import Connector
+from pytestomatio.connect.exception import ReportFailedException
 from pytestomatio.connect.s3_connector import S3Connector
 from pytestomatio.testing.testItem import TestItem
 from pytestomatio.decor.decorator_updater import update_tests
 
 from pytestomatio.utils.helper import add_and_enrich_tests, get_test_mapping, collect_tests, read_env_s3_keys
 from pytestomatio.utils.parser_setup import parser_options
+from pytestomatio.utils.steps import _step_managers
 from pytestomatio.utils import validations
 
 from pytestomatio.testomatio.testRunConfig import TestRunConfig
@@ -26,6 +28,20 @@ TESTOMATIO_URL = 'https://app.testomat.io'
 
 def pytest_addoption(parser: Parser) -> None:
     parser_options(parser, testomatio)
+
+
+def pytest_runtest_setup(item):
+    """Assign current item for test steps handling, clear step manager for current item if exists"""
+    pytest._current_item = item
+    if item.nodeid in _step_managers:
+        _step_managers.pop(item.nodeid)
+
+
+def pytest_runtest_teardown(item, nextitem):
+    """Clear current item and current item step manager"""
+    if item.nodeid in _step_managers:
+        _step_managers.pop(item.nodeid)
+    pytest._current_item = None
 
 
 def pytest_collection(session):
@@ -123,6 +139,8 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
                 directory=config.getoption('directory')
             )
             testomatio_tests = pytest.testomatio.connector.get_tests(meta)
+            if not testomatio_tests:
+                pytest.exit('Failed to update tests ids')
             add_and_enrich_tests(meta, test_files, test_names, testomatio_tests, decorator_name)
             pytest.exit('Sync completed without test execution')
         case 'remove':
@@ -135,12 +153,16 @@ def pytest_collection_modifyitems(session: Session, config: Config, items: list[
             run: TestRunConfig = pytest.testomatio.test_run_config
             run.get_run_id()
 
+            if not run.test_run_id:
+                log.error('No test run ID found. Reporting skipped')
+                pytest.exit('Reporting skipped')
+
             # send update without status just to get artifact details from the server
             run_details = pytest.testomatio.connector.update_test_run(**run.to_dict())
 
             if run_details is None:
-                log.error('Test run failed to create. Reporting skipped')
-                return
+                log.error('Test run not found. Reporting skipped')
+                pytest.exit('Reporting skipped')
 
             s3_details = read_env_s3_keys(run_details)
 
@@ -184,6 +206,7 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         'artifacts': test_item.artifacts,
         'steps': None,
         'code': None,
+        'timestamp': None,
         'overwrite': None,
         'rid': rid,
         'meta': pytest.testomatio.test_run_config.meta
@@ -209,6 +232,13 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         if hasattr(item, 'callspec'):
             request['example'] = test_item.safe_params(item.callspec.params)
 
+        if not pytest.testomatio.test_run_config.disable_timestamp:
+            request['timestamp'] = time.time()
+            
+        step_manager = _step_managers.get(item.nodeid)
+        if step_manager:
+            request['steps'] = step_manager.get_steps()
+
     if item.nodeid not in pytest.testomatio.test_run_config.status_request:
         pytest.testomatio.test_run_config.status_request[item.nodeid] = request
     else:
@@ -231,12 +261,53 @@ def pytest_runtest_logfinish(nodeid, location):
         return
     elif not pytest.testomatio.test_run_config.test_run_id:
         return
+    if not pytest.testomatio.test_run_config.disable_batch:
+        return
 
-    for nodeid, request in pytest.testomatio.test_run_config.status_request.items():
-        if request['status']:
-            pytest.testomatio.connector.update_test_status(run_id=pytest.testomatio.test_run_config.test_run_id,
-                                                           **request)
-    pytest.testomatio.test_run_config.status_request = {}
+    try:
+        for nodeid, request in pytest.testomatio.test_run_config.status_request.items():
+            if request['status']:
+                pytest.testomatio.connector.update_test_status(run_id=pytest.testomatio.test_run_config.test_run_id,
+                                                               **request)
+        pytest.testomatio.test_run_config.status_request = {}
+    except ReportFailedException:
+        pytest.exit("Aborting test run")
+
+
+@pytest.hookimpl(optionalhook=True)
+def pytest_testnodedown(node, error):
+    if not hasattr(node, 'workeroutput') or not hasattr(pytest, 'testomatio') or \
+            node.config.getoption(testomatio) is None or node.config.getoption(testomatio) != 'report':
+        return
+    if pytest.testomatio.test_run_config.disable_batch:
+        return
+
+    log.info(f"Collecting test results from worker '{node.workerinfo.get('id')}'")
+    worker_results = node.workeroutput.get('testrun_results', {})
+    pytest.testomatio.test_run_config.status_request.update(worker_results)
+    log.info(f"{len(worker_results)} test results added to the master test run")
+
+
+def pytest_sessionfinish(session, exitstatus):
+    if not hasattr(pytest, 'testomatio') or session.config.getoption(testomatio) is None \
+            or session.config.getoption(testomatio) != 'report':
+        return
+    elif not pytest.testomatio.test_run_config.test_run_id:
+        return
+
+    run: TestRunConfig = pytest.testomatio.test_run_config
+    if not run.disable_batch:
+
+        # xdist worker process - write test results to worker output. They will be reported from master process
+        if hasattr(session.config, 'workerinput'):
+            session.config.workeroutput['testrun_results'] = run.status_request
+            return
+
+        try:
+            pytest.testomatio.connector.batch_tests_upload(run.test_run_id, run.batch_size,
+                                                           list(run.status_request.values()))
+        except ReportFailedException:
+            pytest.exit("Aborting test run")
 
 
 def pytest_unconfigure(config: Config):
@@ -248,7 +319,8 @@ def pytest_unconfigure(config: Config):
         run.clear_run_id()
         return
     elif run.proceed:
-        run.clear_run_id()
+        if not hasattr(config, 'workerinput'):  # for xdist, only master clear run id
+            run.clear_run_id()
         return
     # for xdist - main process
     if not hasattr(config, 'workerinput'):

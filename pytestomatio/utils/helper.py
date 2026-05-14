@@ -31,8 +31,8 @@ def collect_tests(items: list[Item]):
     return meta, test_files, test_names
 
 
-def get_test_mapping(tests: list[TestItem]) -> list[tuple[str, int]]:
-    return [(test.title, test.id) for test in tests]
+def get_test_mapping(tests: list[TestItem]) -> list[tuple[str, int, str]]:
+    return [(test.title, test.id, test.file_name) for test in tests]
 
 
 def parse_test_list(raw_response: dict) -> list[TestomatItem]:
