@@ -2,7 +2,8 @@ import pytest
 import os
 from unittest.mock import patch, mock_open
 
-from pytestomatio.testomatio.testRunConfig import TestRunConfig, TESTOMATIO_TEST_RUN_LOCK_FILE
+from pytestomatio.testomatio.testRunConfig import TestRunConfig, TESTOMATIO_TEST_RUN_LOCK_FILE, DEFAULT_BATCH_SIZE
+from pytestomatio.utils.constants import RUN_KINDS
 
 
 class TestTestRunConfig:
@@ -21,12 +22,20 @@ class TestTestRunConfig:
                 assert config.title == "test run at 2024-01-15 10:30:45"
                 assert config.create_tests is None
                 assert config.environment is None
+                assert config.enable_steps_for_passed_test is False
+                assert config.disable_steps is False
+                assert config.kind == 'automated'
+                assert config.disable_timestamp is False
                 assert config.exclude_skipped is False
+                assert config.disable_batch is False
+                assert config.batch_size == DEFAULT_BATCH_SIZE
                 assert config.label is None
+                assert config.jira_id is None
                 assert config.group_title is None
                 assert config.parallel is True
                 assert config.shared_run is False
                 assert config.shared_run_timeout is None
+                assert config.stack_passed is False
                 assert config.status_request == {}
                 assert config.update_code is False
                 assert config.meta is None
@@ -39,10 +48,17 @@ class TestTestRunConfig:
             'TESTOMATIO_ENV': 'linux,browser:chrome,1920x1080',
             'TESTOMATIO_LABEL': 'smoke,regression',
             'TESTOMATIO_RUNGROUP_TITLE': 'Release 2.0',
+            'TESTOMATIO_NO_STEPS': '1',
+            'TESTOMATIO_STEPS_PASSED': '1',
+            'TESTOMATIO_NO_TIMESTAMP': '1',
+            'TESTOMATIO_JIRA_ID': 'TES-1',
             'TESTOMATIO_UPDATE_CODE': '1',
             'TESTOMATIO_PUBLISH': '1',
             'TESTOMATIO_EXCLUDE_SKIPPED': '1',
-            'TESTOMATIO_CREATE': 'True'
+            'TESTOMATIO_CREATE': 'True',
+            'TESTOMATIO_STACK_PASSED': '1',
+            'TESTOMATIO_DISABLE_BATCH_UPLOAD': 'True',
+            'TESTOMATIO_BATCH_SIZE': '12'
         }
 
         with patch.dict(os.environ, env_vars, clear=True):
@@ -52,14 +68,27 @@ class TestTestRunConfig:
             assert config.test_run_id == 'run_12345'
             assert config.title == 'Custom Test Run'
             assert config.create_tests is True
+            assert config.enable_steps_for_passed_test is True
+            assert config.disable_steps is True
+            assert config.disable_timestamp is True
             assert config.environment == 'linux,browser:chrome,1920x1080'
             assert config.exclude_skipped is True
+            assert config.disable_batch is True
+            assert config.batch_size == 12
             assert config.label == 'smoke,regression'
             assert config.group_title == 'Release 2.0'
             assert config.parallel is True
             assert config.shared_run is False
+            assert config.stack_passed is True
+            assert config.jira_id == 'TES-1'
             assert config.update_code is True
             assert config.meta == {'linux': None, 'browser': 'chrome', '1920x1080': None}
+
+    @pytest.mark.parametrize("run_kind", RUN_KINDS)
+    def test_init_with_kind_passed(self, run_kind):
+        config = TestRunConfig(run_kind)
+
+        assert config.kind == run_kind
 
     @pytest.mark.parametrize('value', ['True', 'true', '1'])
     def test_init_shared_run_true_variations(self, value):
@@ -80,6 +109,70 @@ class TestTestRunConfig:
             assert config.shared_run is False
             assert config.shared_run_timeout is None
             assert config.parallel is True
+
+    @pytest.mark.parametrize('value', ['True', 'true', '1'])
+    def test_init_stack_passed_true_variations(self, value):
+        """Test different true values for TESTOMATIO_STACK_PASSED"""
+        with patch.dict(os.environ, {'TESTOMATIO_STACK_PASSED': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.stack_passed is True
+
+    @pytest.mark.parametrize('value', ['False', 'false', '0', 'anything'])
+    def test_init_stack_passed_false_variations(self, value):
+        """Test different false values TESTOMATIO_STACK_PASSED"""
+        with patch.dict(os.environ, {'TESTOMATIO_STACK_PASSED': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.stack_passed is False
+
+    @pytest.mark.parametrize('value', ['True', 'true', '1'])   
+    def test_init_disable_steps_true_variations(self, value):
+        """Test different true values for TESTOMATIO_NO_STEPS"""
+        with patch.dict(os.environ, {'TESTOMATIO_NO_STEPS': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.disable_steps is True
+
+    @pytest.mark.parametrize('value', ['False', 'false', '0', 'anything'])
+    def test_init_disable_steps_false_variations(self, value):
+        """Test different false values TESTOMATIO_NO_STEPS"""
+        with patch.dict(os.environ, {'TESTOMATIO_NO_STEPS': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.disable_steps is False
+
+    @pytest.mark.parametrize('value', ['True', 'true', '1'])
+    def test_enable_passed_steps_run_true_variations(self, value):
+        """Test different true values for TESTOMATIO_STEPS_PASSED"""
+        with patch.dict(os.environ, {'TESTOMATIO_STEPS_PASSED': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.enable_steps_for_passed_test is True
+
+    @pytest.mark.parametrize('value', ['False', 'false', '0', 'anything'])
+    def test_enable_passed_steps_false_variations(self, value):
+        """Test different false values TESTOMATIO_STEPS_PASSED"""
+        with patch.dict(os.environ, {'TESTOMATIO_STEPS_PASSED': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.enable_steps_for_passed_test is False
+
+    @pytest.mark.parametrize('value', ['True', 'true', '1'])
+    def test_init_disable_timestamp_true_variations(self, value):
+        """Test different true values for TESTOMATIO_NO_TIMESTAMP"""
+        with patch.dict(os.environ, {'TESTOMATIO_NO_TIMESTAMP': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.disable_timestamp is True
+
+    @pytest.mark.parametrize('value', ['False', 'false', '0', 'anything'])
+    def test_init_disable_timestamp_false_variations(self, value):
+        """Test different false values TESTOMATIO_NO_TIMESTAMP"""
+        with patch.dict(os.environ, {'TESTOMATIO_NO_TIMESTAMP': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.disable_timestamp is False
 
     @pytest.mark.parametrize('value', ['True', 'true', '1'])
     def test_init_update_code_true_variations(self, value):
@@ -129,8 +222,41 @@ class TestTestRunConfig:
 
             assert config.exclude_skipped is False
 
-    def test_to_dict_full_data(self):
-        """Test to_dict with full data"""
+    @pytest.mark.parametrize('value', ['True', 'true', '1'])
+    def test_init_disable_batch_upload_true_variations(self, value):
+        """Test different true values for TESTOMATIO_DISABLE_BATCH_UPLOAD"""
+        with patch.dict(os.environ, {'TESTOMATIO_DISABLE_BATCH_UPLOAD': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.disable_batch is True
+
+    @pytest.mark.parametrize('value', ['False', 'false', '0', 'anything'])
+    def test_init_disable_batch_upload_false_variations(self, value):
+        """Test different false values TESTOMATIO_DISABLE_BATCH_UPLOAD"""
+        with patch.dict(os.environ, {'TESTOMATIO_DISABLE_BATCH_UPLOAD': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.disable_batch is False
+
+    @pytest.mark.parametrize('value', ['1', '10', '11'])
+    def test_init_batch_size_true_variations(self, value):
+        """Test different true values for TESTOMATIO_BATCH_SIZE"""
+        with patch.dict(os.environ, {'TESTOMATIO_BATCH_SIZE': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.batch_size == int(value)
+
+    @pytest.mark.parametrize('value', ['False', 'false', '101', 'anything'])
+    def test_init_batch_size_false_variations(self, value):
+        """Test different false values TESTOMATIO_BATCH_SIZE"""
+        with patch.dict(os.environ, {'TESTOMATIO_BATCH_SIZE': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.batch_size == DEFAULT_BATCH_SIZE
+
+    @pytest.mark.parametrize("run_kind", RUN_KINDS)
+    def test_to_dict_full_data(self, run_kind):
+        """Test to_dict with full data and different run kinds"""
         env_vars = {
             'TESTOMATIO_RUN_ID': 'run_123',
             'TESTOMATIO_TITLE': 'Test Run',
@@ -138,12 +264,13 @@ class TestTestRunConfig:
             'TESTOMATIO_LABEL': 'label1,label2',
             'TESTOMATIO_RUNGROUP_TITLE': 'Group 1',
             'TESTOMATIO_SHARED_RUN': 'true',
+            'TESTOMATIO_JIRA_ID': "TES-1",
             'TESTOMATIO_SHARED_RUN_TIMEOUT': "12",
             'TESTOMATIO_PUBLISH': 'true'
         }
 
         with patch.dict(os.environ, env_vars, clear=True):
-            config = TestRunConfig()
+            config = TestRunConfig(kind=run_kind)
 
             result = config.to_dict()
 
@@ -153,9 +280,11 @@ class TestTestRunConfig:
                 'title': 'Test Run',
                 'group_title': 'Group 1',
                 'env': 'env1,env2',
+                'kind': run_kind,
                 'label': 'label1,label2',
                 'parallel': False,
                 'shared_run': True,
+                'jira_id': 'TES-1',
                 'shared_run_timeout': '12',
                 'ci_build_url': None
             }
@@ -171,6 +300,15 @@ class TestTestRunConfig:
 
             assert 'id' not in result
             assert result['title'] == 'No ID Run'
+
+    def test_to_dict_without_specifying_run_kind(self):
+        """Test to_dict without run kind passed"""
+        with patch.dict(os.environ, {}, clear=True):
+            config = TestRunConfig()
+
+            result = config.to_dict()
+
+            assert result['kind'] == 'automated'
 
     def test_set_env(self):
         """Test set_env"""

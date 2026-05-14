@@ -4,7 +4,7 @@ from pytestomatio.decor.default import update_tests as update_tests_default
 
 
 def update_tests(file: str,
-                 mapped_tests: list[tuple[str, int]],
+                 mapped_tests: list[tuple[str, int, str]],
                  all_tests: list[str],
                  decorator_name: str,
                  remove=False):
