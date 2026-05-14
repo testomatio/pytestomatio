@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 import os
 
@@ -39,6 +41,35 @@ class TestPytestCollection:
         assert hasattr(mock_session, store_attribute_name)
         assert mock_session._pytestomatio_original_collected_items == []
 
+
+@pytest.mark.smoke
+class TestPytestIgnoreCollect:
+    """Tests for pytest_ignore_collect hook"""
+
+    @pytest.fixture
+    def mock_config(self):
+        config = Mock()
+        config.getoption.return_value = 'report'
+        config.rootpath = 'temp/'
+        return config
+
+    def test_ignores_by_extension(self, mock_config):
+        pattern = '**/*.py'
+        paths = [('directory/test_file.py', True), ('directory/file.py', True), ('new_dir/file.js', None)]
+        with patch.dict(os.environ, {'TESTOMATIO_EXCLUDE_FILES_FROM_REPORT_GLOB_PATTERN': pattern}, clear=True):
+            for path, expected_result in paths:
+                collect_path = Path(mock_config.rootpath + path)
+                result = main.pytest_ignore_collect(collect_path, mock_config)
+                assert result is expected_result
+
+    def test_ignores_by_name(self, mock_config):
+        pattern = '**/test_*.py'
+        paths = [('directory/test_file.py', True), ('directory/file.py', None), ('directory/file.js', None)]
+        with patch.dict(os.environ, {'TESTOMATIO_EXCLUDE_FILES_FROM_REPORT_GLOB_PATTERN': pattern}, clear=True):
+            for path, expected_result in paths:
+                collect_path = Path(mock_config.rootpath + path)
+                result = main.pytest_ignore_collect(collect_path, mock_config)
+                assert result is expected_result
 
 @pytest.mark.smoke
 class TestPytestConfigure:
@@ -233,7 +264,7 @@ class TestPytestCollectionModifyItems:
 
         pytest.testomatio = Mock()
         pytest.testomatio.connector = Mock()
-        pytest.testomatio.connector.get_tests.return_value = []
+        pytest.testomatio.connector.get_tests.return_value = [{}, {}]
 
         with patch('pytestomatio.main.add_and_enrich_tests') as mock_add_enrich:
             main.pytest_collection_modifyitems(mock_session, mock_config, items)
@@ -266,7 +297,7 @@ class TestPytestCollectionModifyItems:
 
         pytest.testomatio = Mock()
         pytest.testomatio.connector = Mock()
-        pytest.testomatio.connector.get_tests.return_value = []
+        pytest.testomatio.connector.get_tests.return_value = [{}, {}]
 
         with patch('pytestomatio.main.add_and_enrich_tests') as mock_add_enrich:
             main.pytest_collection_modifyitems(mock_session, mock_config, items)
@@ -437,6 +468,7 @@ class TestPytestRuntestMakereport:
         pytest.testomatio = Mock()
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.create_tests = None
         pytest.testomatio.test_run_config.status_request = {}
 
         main.pytest_runtest_makereport(item, mock_call)
@@ -472,6 +504,7 @@ class TestPytestRuntestMakereport:
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
         pytest.testomatio.test_run_config.exclude_skipped = False
+        pytest.testomatio.test_run_config.create_tests = None
         pytest.testomatio.test_run_config.status_request = {}
 
         main.pytest_runtest_makereport(item, mock_call)
@@ -526,6 +559,7 @@ class TestPytestRuntestMakereport:
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
         pytest.testomatio.test_run_config.exclude_skipped = True
+        pytest.testomatio.test_run_config.create_tests = None
         pytest.testomatio.test_run_config.status_request = {}
 
         main.pytest_runtest_makereport(item, mock_call)
@@ -566,6 +600,7 @@ class TestPytestRuntestMakereport:
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
         pytest.testomatio.test_run_config.environment = testrun_env
+        pytest.testomatio.test_run_config.create_tests = None
         pytest.testomatio.test_run_config.status_request = {}
 
         main.pytest_runtest_makereport(item, mock_call)
@@ -592,6 +627,7 @@ class TestPytestRuntestMakereport:
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
         pytest.testomatio.test_run_config.environment = testrun_env
+        pytest.testomatio.test_run_config.create_tests = None
         pytest.testomatio.test_run_config.status_request = {}
 
         main.pytest_runtest_makereport(item, mock_call)
@@ -603,6 +639,83 @@ class TestPytestRuntestMakereport:
 
         assert request['test_id'] == '12345678'
         assert request['rid'] == f'{testrun_env}-{item.name}-12345678'
+
+    def test_create_test_when_option_enabled(self, mock_call, single_test_item):
+        item = single_test_item.copy()[0]
+        item.config.option.testomatio = 'report'
+
+        mock_call.duration = 1.5
+        mock_call.when = 'call'
+        mock_call.excinfo = None
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config = Mock()
+        pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.create_tests = True
+        pytest.testomatio.test_run_config.workdir = None
+        pytest.testomatio.test_run_config.status_request = {}
+
+        main.pytest_runtest_makereport(item, mock_call)
+
+        assert item.nodeid in pytest.testomatio.test_run_config.status_request
+        request = pytest.testomatio.test_run_config.status_request[item.nodeid]
+
+        assert 'create' in request.keys()
+
+        assert request['test_id'] == '12345678'
+        assert request['create'] is True
+        assert request['file'] is None
+
+    def test_create_test_when_option_disabled(self, mock_call, single_test_item):
+        item = single_test_item.copy()[0]
+        item.config.option.testomatio = 'report'
+
+        mock_call.duration = 1.5
+        mock_call.when = 'call'
+        mock_call.excinfo = None
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config = Mock()
+        pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.create_tests = None
+        pytest.testomatio.test_run_config.status_request = {}
+
+        main.pytest_runtest_makereport(item, mock_call)
+
+        assert item.nodeid in pytest.testomatio.test_run_config.status_request
+        request = pytest.testomatio.test_run_config.status_request[item.nodeid]
+
+        assert 'create' in request.keys()
+
+        assert request['test_id'] == '12345678'
+        assert request['create'] is None
+
+    def test_add_workdir_for_test_when_option_enabled(self, mock_call, single_test_item):
+        item = single_test_item.copy()[0]
+        item.config.option.testomatio = 'report'
+
+        mock_call.duration = 1.5
+        mock_call.when = 'call'
+        mock_call.excinfo = None
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config = Mock()
+        pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.create_tests = True
+        pytest.testomatio.test_run_config.workdir = 'new_dir'
+        pytest.testomatio.test_run_config.status_request = {}
+
+        main.pytest_runtest_makereport(item, mock_call)
+
+        assert item.nodeid in pytest.testomatio.test_run_config.status_request
+        request = pytest.testomatio.test_run_config.status_request[item.nodeid]
+
+        assert 'create' in request.keys()
+
+        assert request['test_id'] == '12345678'
+        assert request['create'] is True
+        assert request['file']
+        assert request['file'] == pytest.testomatio.test_run_config.workdir + '/' + item.path.name
 
     def test_code_field_when_update_code_option_disabled(self, mock_call, single_test_item):
         """Test code and overwrite fields in request not updated if update_code option disabled"""
@@ -616,6 +729,7 @@ class TestPytestRuntestMakereport:
         pytest.testomatio = Mock()
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.update_code = False
+        pytest.testomatio.test_run_config.create_tests = None
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
         pytest.testomatio.test_run_config.status_request = {}
 
@@ -650,6 +764,7 @@ class TestPytestRuntestMakereport:
         pytest.testomatio = Mock()
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.update_code = True
+        pytest.testomatio.test_run_config.create_tests = None
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
         pytest.testomatio.test_run_config.status_request = {}
 
@@ -685,6 +800,7 @@ class TestPytestRuntestMakereport:
         pytest.testomatio = Mock()
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.update_code = False
+        pytest.testomatio.test_run_config.create_tests = None
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
         pytest.testomatio.test_run_config.status_request = {}
 
@@ -720,6 +836,7 @@ class TestPytestRuntestMakereport:
         pytest.testomatio = Mock()
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.update_code = True
+        pytest.testomatio.test_run_config.create_tests = None
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
         pytest.testomatio.test_run_config.status_request = {}
 
@@ -741,6 +858,74 @@ class TestPytestRuntestMakereport:
         assert request['test_id'] == '12345678'
         assert request['code'] is None
         assert request['overwrite'] is None
+
+    def test_adds_timestamp_to_request(self, mock_call, single_test_item):
+        """Test timestamp added to request by default"""
+        item = single_test_item.copy()[0]
+        item.config.option.testomatio = 'report'
+
+        mock_call.duration = 1.5
+        mock_call.when = 'call'
+        mock_call.excinfo = None
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config = Mock()
+        pytest.testomatio.test_run_config.disable_timestamp = False
+        pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.create_tests = None
+        pytest.testomatio.test_run_config.status_request = {}
+
+        main.pytest_runtest_makereport(item, mock_call)
+
+        assert item.nodeid in pytest.testomatio.test_run_config.status_request
+        request = pytest.testomatio.test_run_config.status_request[item.nodeid]
+
+        expected_keys = [
+            'status', 'title', 'run_time', 'suite_title', 'suite_id', 'timestamp',
+            'test_id', 'message', 'stack', 'example', 'artifacts', 'steps', 'code'
+        ]
+        for key in expected_keys:
+            assert key in request
+
+        assert request['title'] == 'Addition'
+        assert request['run_time'] == 1.5
+        assert request['suite_title'] == item.path.name
+        assert request['test_id'] == '12345678'
+        assert request.get('timestamp') is not None
+
+    def test_timestamp_not_updated_when_option_enabled(self, mock_call, single_test_item):
+        """Test timestamp is None if TESTOMATIO_NO_TIMESTAMP env set"""
+        item = single_test_item.copy()[0]
+        item.config.option.testomatio = 'report'
+
+        mock_call.duration = 1.5
+        mock_call.when = 'call'
+        mock_call.excinfo = None
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config = Mock()
+        pytest.testomatio.test_run_config.disable_timestamp = True
+        pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.create_tests = None
+        pytest.testomatio.test_run_config.status_request = {}
+
+        main.pytest_runtest_makereport(item, mock_call)
+
+        assert item.nodeid in pytest.testomatio.test_run_config.status_request
+        request = pytest.testomatio.test_run_config.status_request[item.nodeid]
+
+        expected_keys = [
+            'status', 'title', 'run_time', 'suite_title', 'suite_id',
+            'test_id', 'message', 'stack', 'example', 'artifacts', 'steps', 'code'
+        ]
+        for key in expected_keys:
+            assert key in request
+
+        assert request['title'] == 'Addition'
+        assert request['run_time'] == 1.5
+        assert request['suite_title'] == item.path.name
+        assert request['test_id'] == '12345678'
+        assert request.get('timestamp') is None
 
 
 @pytest.mark.smoke
