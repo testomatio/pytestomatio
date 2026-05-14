@@ -841,6 +841,7 @@ class TestPytestRuntestMakereport:
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.disable_timestamp = False
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.create_tests = None
         pytest.testomatio.test_run_config.status_request = {}
 
         main.pytest_runtest_makereport(item, mock_call)
@@ -874,6 +875,7 @@ class TestPytestRuntestMakereport:
         pytest.testomatio.test_run_config = Mock()
         pytest.testomatio.test_run_config.disable_timestamp = True
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.create_tests = None
         pytest.testomatio.test_run_config.status_request = {}
 
         main.pytest_runtest_makereport(item, mock_call)

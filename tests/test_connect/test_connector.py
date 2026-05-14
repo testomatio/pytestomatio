@@ -481,6 +481,8 @@ class TestConnector:
                 suite_id="suite_456",
                 test_id="test_789",
                 timestamp=213.5,
+                create=False,
+                file="file",
                 message=None,
                 stack=None,
                 run_time=1.5,
