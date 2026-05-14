@@ -12,6 +12,7 @@ class TestRunConfig:
     def __init__(self, kind: str = 'automated'):
         run_id = os.environ.get('TESTOMATIO_RUN_ID') or os.environ.get('TESTOMATIO_RUN')
         title = os.environ.get('TESTOMATIO_TITLE') if os.environ.get('TESTOMATIO_TITLE') else 'test run at ' + dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        create_tests = os.environ.get('TESTOMATIO_CREATE', False) in ['True', 'true', '1']
         disable_batch_upload = os.environ.get('TESTOMATIO_DISABLE_BATCH_UPLOAD') in ['True', 'true', '1']
         batch_size = os.environ.get('TESTOMATIO_BATCH_SIZE', '')
         shared_run = os.environ.get('TESTOMATIO_SHARED_RUN') in ['True', 'true', '1']
@@ -33,6 +34,7 @@ class TestRunConfig:
         self.environment = safe_string_list(os.environ.get('TESTOMATIO_ENV'))
         self.disable_timestamp = disable_timestamp
         self.exclude_skipped = exclude_skipped
+        self.create_tests = create_tests if create_tests else None
         self.label = safe_string_list(os.environ.get('TESTOMATIO_LABEL'))
         self.group_title = os.environ.get('TESTOMATIO_RUNGROUP_TITLE')
         self.jira_id = os.environ.get('TESTOMATIO_JIRA_ID')
@@ -45,6 +47,7 @@ class TestRunConfig:
         self.proceed = os.getenv('TESTOMATIO_PROCEED', False)
         self.status_request = {}
         self.update_code = update_code
+        self.workdir = os.getenv('TESTOMATIO_WORKDIR', None)
         self.build_url = self.resolve_build_url()
         self.meta = self.update_meta()
 
