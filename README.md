@@ -175,7 +175,7 @@ Note: Test id should be started from letter "T"
 
 The plugin supports dividing tests into separate, trackable steps. When reporting to testomat.io, you can view detailed information for each step including execution status, duration, and any errors that occurred.
 
-**Important**: This plugin only supports **reporting** test steps to testomat.io during test execution. Test steps cannot be imported to testomat.io using **sync** option.
+**Important**: This plugin only supports **reporting** test steps to testomat.io during test execution. Test steps cannot be imported to testomat.io using **sync** option. Steps reported for skipped and failed test by default. To enable steps reporting for passed tests use **TESTOMATIO_STEPS_PASSED** env variable.
 
 Test steps can be implemented using either decorators or context managers, giving you flexibility in how you structure your tests.
 
@@ -232,6 +232,37 @@ def test_book_read():
             check_author(book.author, author_name)
         assert book.read() == text
 ```
+
+**Note:** Step is registered when the step code is executed. Therefore, if test mark as skipped(not executed at all) or test code execution stops before step code is executed, step will not be attached to test:
+```python
+import pytest
+from pytestomatio.utils.steps import step
+
+# Step will not be added in report
+@pytest.mark.skip
+def test_skipped():
+    with step('Step1', 'user'):
+        assert True
+
+# Step will not be added in report
+def test_exception_raised():
+    raise ValueError()
+    with step('Step1', 'user'):
+        assert True
+
+# Step will not be added in report
+def test_early_skip():
+    pytest.skip()
+    with step('Step1', 'user'):
+        assert True
+
+# Step1 will be added in report, Step2 will not be
+def test_nested_step_skip_or_exception():
+    with step('Step1', 'user'):
+        with step('Step2', 'user'):
+            pytest.skip() # or AttributeError()
+```
+
 
 ### Configuration with environment variables
 You can use environment variable to control certain features of testomat.io

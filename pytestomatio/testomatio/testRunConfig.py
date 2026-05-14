@@ -15,6 +15,8 @@ class TestRunConfig:
         disable_batch_upload = os.environ.get('TESTOMATIO_DISABLE_BATCH_UPLOAD') in ['True', 'true', '1']
         batch_size = os.environ.get('TESTOMATIO_BATCH_SIZE', '')
         shared_run = os.environ.get('TESTOMATIO_SHARED_RUN') in ['True', 'true', '1']
+        disable_steps = os.environ.get('TESTOMATIO_NO_STEPS') in ['True', 'true', '1']
+        enable_steps_for_passed_test = os.environ.get('TESTOMATIO_STEPS_PASSED') in ['True', 'true', '1']
         disable_timestamp = os.environ.get('TESTOMATIO_NO_TIMESTAMP') in ['True', 'true', '1']
         update_code = os.environ.get('TESTOMATIO_UPDATE_CODE', False) in ['True', 'true', '1']
         exclude_skipped = os.environ.get('TESTOMATIO_EXCLUDE_SKIPPED', False) in ['True', 'true', '1']
@@ -22,6 +24,8 @@ class TestRunConfig:
         self.access_event = 'publish' if os.environ.get("TESTOMATIO_PUBLISH") else None
         self.test_run_id = run_id
         self.title = title
+        self.enable_steps_for_passed_test = enable_steps_for_passed_test
+        self.disable_steps = disable_steps
         self.kind = kind
         self.disable_batch = disable_batch_upload
         self.batch_size = int(batch_size) if (batch_size.isdigit() and int(batch_size) <= 100) else DEFAULT_BATCH_SIZE
