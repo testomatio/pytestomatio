@@ -2,7 +2,7 @@ import os
 from unittest.mock import Mock, patch, call
 
 from pytestomatio.utils.helper import collect_tests, get_test_mapping, parse_test_list, add_and_enrich_tests, \
-    read_env_s3_keys
+    read_env_s3_keys, parse_env_value
 from pytestomatio.testing.testItem import TestItem
 from pytestomatio.testomatio.testomat_item import TestomatItem
 
@@ -178,10 +178,11 @@ class TestGetTestMapping:
         mock_test_item = Mock(spec=TestItem)
         mock_test_item.title = "Test Addition"
         mock_test_item.id = "@T12345678"
+        mock_test_item.file_name = "file1"
 
         result = get_test_mapping([mock_test_item])
 
-        assert result == [("Test Addition", "@T12345678")]
+        assert result == [("Test Addition", "@T12345678", "file1")]
         assert len(result) == 1
         assert isinstance(result[0], tuple)
 
@@ -190,23 +191,24 @@ class TestGetTestMapping:
         mock_items = []
 
         test_data = [
-            ("Test Login", "@T11111111"),
-            ("Test Logout", "@T22222222"),
-            ("Test Registration", "@T33333333")
+            ("Test Login", "@T11111111", "file1"),
+            ("Test Logout", "@T22222222", "file1"),
+            ("Test Registration", "@T33333333", "file2")
         ]
 
-        for title, test_id in test_data:
+        for title, test_id, filename in test_data:
             mock_item = Mock(spec=TestItem)
             mock_item.title = title
             mock_item.id = test_id
+            mock_item.file_name = filename
             mock_items.append(mock_item)
 
         result = get_test_mapping(mock_items)
 
         expected = [
-            ("Test Login", "@T11111111"),
-            ("Test Logout", "@T22222222"),
-            ("Test Registration", "@T33333333")
+            ("Test Login", "@T11111111", "file1"),
+            ("Test Logout", "@T22222222", "file1"),
+            ("Test Registration", "@T33333333", "file2")
         ]
 
         assert result == expected
@@ -218,10 +220,11 @@ class TestGetTestMapping:
         mock_test_item = Mock(spec=TestItem)
         mock_test_item.title = "Test Without ID"
         mock_test_item.id = None
+        mock_test_item.file_name = "file1"
 
         result = get_test_mapping([mock_test_item])
 
-        assert result == [("Test Without ID", None)]
+        assert result == [("Test Without ID", None, "file1")]
 
 
 class TestParseTestList:
@@ -530,3 +533,16 @@ class TestReadEnvS3Keys:
 
             expected = (None, None, None, None, None, None, "public-read")
             assert result == expected
+
+
+class TestParseENVValue:
+    """Tests for parse_env_value function"""
+
+    def test_parse_key_value_string(self):
+        result = parse_env_value("browser:chrome", ':')
+        assert result[0] == 'browser'
+        assert result[1] == 'chrome'
+
+    def test_parse_flat_string(self):
+        result = parse_env_value("flat", ':')
+        assert result[0] == 'flat'
