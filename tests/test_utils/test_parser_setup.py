@@ -45,6 +45,18 @@ class TestParserOptions:
             help=help_text
         )
 
+    def test_parser_options_adds_kind_option(self, mock_parser):
+        """Test --kind option is added"""
+        mock_group = mock_parser.getgroup.return_value
+
+        parser_options(mock_parser)
+
+        mock_group.addoption.assert_any_call(
+            '--kind',
+            action='store',
+            help="Specify kind of test run to be created"
+        )
+
     def test_parser_options_adds_test_run_env_option(self, mock_parser):
         """Test --testRunEnv option is added"""
         mock_group = mock_parser.getgroup.return_value
@@ -189,7 +201,7 @@ class TestParserOptions:
 
         parser_options(mock_parser)
 
-        assert mock_group.addoption.call_count == 8
+        assert mock_group.addoption.call_count == 9
         assert mock_parser.addini.call_count == 1
 
 
