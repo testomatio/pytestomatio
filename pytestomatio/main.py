@@ -203,6 +203,7 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         'artifacts': test_item.artifacts,
         'steps': None,
         'code': None,
+        'timestamp': None,
         'overwrite': None,
         'rid': rid,
         'meta': pytest.testomatio.test_run_config.meta
@@ -228,6 +229,9 @@ def pytest_runtest_makereport(item: Item, call: CallInfo):
         if hasattr(item, 'callspec'):
             request['example'] = test_item.safe_params(item.callspec.params)
 
+        if not pytest.testomatio.test_run_config.disable_timestamp:
+            request['timestamp'] = time.time()
+            
         step_manager = _step_managers.get(item.nodeid)
         if step_manager:
             request['steps'] = step_manager.get_steps()

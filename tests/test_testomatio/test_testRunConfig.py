@@ -20,6 +20,7 @@ class TestTestRunConfig:
                 assert config.test_run_id is None
                 assert config.title == "test run at 2024-01-15 10:30:45"
                 assert config.environment is None
+                assert config.disable_timestamp is False
                 assert config.exclude_skipped is False
                 assert config.disable_batch is False
                 assert config.batch_size == DEFAULT_BATCH_SIZE
@@ -41,6 +42,7 @@ class TestTestRunConfig:
             'TESTOMATIO_ENV': 'linux,browser:chrome,1920x1080',
             'TESTOMATIO_LABEL': 'smoke,regression',
             'TESTOMATIO_RUNGROUP_TITLE': 'Release 2.0',
+            'TESTOMATIO_NO_TIMESTAMP': '1',
             'TESTOMATIO_JIRA_ID': 'TES-1',
             'TESTOMATIO_UPDATE_CODE': '1',
             'TESTOMATIO_PUBLISH': '1',
@@ -55,6 +57,7 @@ class TestTestRunConfig:
             assert config.access_event == 'publish'
             assert config.test_run_id == 'run_12345'
             assert config.title == 'Custom Test Run'
+            assert config.disable_timestamp is True
             assert config.environment == 'linux,browser:chrome,1920x1080'
             assert config.exclude_skipped is True
             assert config.disable_batch is True
@@ -86,6 +89,22 @@ class TestTestRunConfig:
             assert config.shared_run is False
             assert config.shared_run_timeout is None
             assert config.parallel is True
+
+    @pytest.mark.parametrize('value', ['True', 'true', '1'])
+    def test_init_disable_timestamp_true_variations(self, value):
+        """Test different true values for TESTOMATIO_NO_TIMESTAMP"""
+        with patch.dict(os.environ, {'TESTOMATIO_NO_TIMESTAMP': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.disable_timestamp is True
+
+    @pytest.mark.parametrize('value', ['False', 'false', '0', 'anything'])
+    def test_init_disable_timestamp_false_variations(self, value):
+        """Test different false values TESTOMATIO_NO_TIMESTAMP"""
+        with patch.dict(os.environ, {'TESTOMATIO_NO_TIMESTAMP': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.disable_timestamp is False
 
     @pytest.mark.parametrize('value', ['True', 'true', '1'])
     def test_init_update_code_true_variations(self, value):
