@@ -34,6 +34,7 @@ class TestTestRunConfig:
                 assert config.parallel is True
                 assert config.shared_run is False
                 assert config.shared_run_timeout is None
+                assert config.stack_passed is False
                 assert config.status_request == {}
                 assert config.update_code is False
                 assert config.meta is None
@@ -53,6 +54,7 @@ class TestTestRunConfig:
             'TESTOMATIO_UPDATE_CODE': '1',
             'TESTOMATIO_PUBLISH': '1',
             'TESTOMATIO_EXCLUDE_SKIPPED': '1',
+            'TESTOMATIO_STACK_PASSED': '1',
             'TESTOMATIO_DISABLE_BATCH_UPLOAD': 'True',
             'TESTOMATIO_BATCH_SIZE': '12'
         }
@@ -74,6 +76,7 @@ class TestTestRunConfig:
             assert config.group_title == 'Release 2.0'
             assert config.parallel is True
             assert config.shared_run is False
+            assert config.stack_passed is True
             assert config.jira_id == 'TES-1'
             assert config.update_code is True
             assert config.meta == {'linux': None, 'browser': 'chrome', '1920x1080': None}
@@ -105,6 +108,22 @@ class TestTestRunConfig:
             assert config.parallel is True
 
     @pytest.mark.parametrize('value', ['True', 'true', '1'])
+    def test_init_stack_passed_true_variations(self, value):
+        """Test different true values for TESTOMATIO_STACK_PASSED"""
+        with patch.dict(os.environ, {'TESTOMATIO_STACK_PASSED': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.stack_passed is True
+
+    @pytest.mark.parametrize('value', ['False', 'false', '0', 'anything'])
+    def test_init_stack_passed_false_variations(self, value):
+        """Test different false values TESTOMATIO_STACK_PASSED"""
+        with patch.dict(os.environ, {'TESTOMATIO_STACK_PASSED': value}, clear=True):
+            config = TestRunConfig()
+
+            assert config.stack_passed is False
+
+    @pytest.mark.parametrize('value', ['True', 'true', '1'])   
     def test_init_disable_steps_true_variations(self, value):
         """Test different true values for TESTOMATIO_NO_STEPS"""
         with patch.dict(os.environ, {'TESTOMATIO_NO_STEPS': value}, clear=True):

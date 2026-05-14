@@ -294,6 +294,7 @@ You can use environment variable to control certain features of testomat.io
 | TESTOMATIO_EXCLUDE_SKIPPED         | Exclude skipped tests from the report                                                                                                                                            | TESTOMATIO_EXCLUDE_SKIPPED=1 pytest --testomatio report                                                     |
 | TESTOMATIO_PUBLISH            | Publish run after reporting and provide a public URL                                                                                                                             | TESTOMATIO_PUBLISH=true pytest --testomatio report                                                          |
 | TESTOMATIO_PROCEED            | Do not finalize the run                                                                                                                                                          | TESTOMATIO_PROCEED=1 pytest --testomatio report                                                             |
+| TESTOMATIO_STACK_PASSED       | Enables logs for passed tests. Disabled by default.                                                                                                                              | TESTOMATIO_STACK_PASSED=true pytest --testomatio report                                                          |
 | TESTOMATIO_SHARED_RUN         | Report parallel execution to the same run matching it by title. If the run was created more than 20 minutes ago, a new run will be created instead.                              | TESTOMATIO_TITLE="Run1" TESTOMATIO_SHARED_RUN=1 pytest --testomatio report                                  |
 | TESTOMATIO_SHARED_RUN_TIMEOUT | Changes timeout of shared run. After timeout, shared run won`t accept other runs with same name, and new runs will be created. Timeout is set in minutes, default is 20 minutes. | TESTOMATIO_TITLE="Run1" TESTOMATIO_SHARED_RUN=1 TESTOMATIO_SHARED_RUN_TIMEOUT=10 pytest --testomatio report |
 | TESTOMATIO_DISABLE_BATCH_UPLOAD | Disables batch uploading and uploads each test result one by one.                                                                                                                | TESTOMATIO_DISABLE_BATCH_UPLOAD=True pytest --testomatio report                                             |
@@ -400,6 +401,23 @@ TESTOMATIO=***api_key*** TESTOMATIO_RUN_ID=***run_id*** pytest --testomatio repo
 Executing these commands will include the tests in the same run, but as separate instances. Each test will contain metadata with information about the test run environment.
 
 **Note**: Only key:value envs will be passed into tests metadata
+
+### Attach log to test
+The plugin supports manual addition of logs from the test source code. If a test has attached logs, they will be shown in Testomat.io.
+
+To attach a log, you need to use **add_log** function from pytestomatio.utils.logging module
+
+**Note**: By default logs are only displayed for failed tests. You can enable logs for passed tests using TESTOMATIO_STACK_PASSED env variable
+
+Example:
+```python
+from pytestomatio.utils.logging import add_log
+
+def test_addition():
+    add_log(message='test started', level='DEBUG')
+    value = 2+2
+    assert value == 4
+```
 
 ## Contributing
 Use python 3.12
