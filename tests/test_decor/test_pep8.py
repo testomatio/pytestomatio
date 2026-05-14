@@ -11,18 +11,26 @@ class TestDecoratorUpdaterPep8:
 
     def test_get_id_by_title_found(self):
         """Test found ID by title"""
-        mapped_tests = [("test_login", "@T123"), ("test_logout", "@T456")]
-        updater = DecoratorUpdater(mapped_tests, [], "testomatio")
+        mapped_tests = [("test_login", "@T123", "file1"), ("test_logout", "@T456", "file1")]
+        updater = DecoratorUpdater(mapped_tests, [], "testomatio", "path/file1")
 
         result = updater._get_id_by_title("test_login")
         assert result == "@T123"
 
     def test_get_id_by_title_not_found(self):
         """Test title not found"""
-        mapped_tests = [("test_login", "@T123")]
-        updater = DecoratorUpdater(mapped_tests, [], "testomatio")
+        mapped_tests = [("test_login", "@T123", "file1")]
+        updater = DecoratorUpdater(mapped_tests, [], "testomatio", "path/file1")
 
         result = updater._get_id_by_title("missing_test")
+        assert result is None
+
+    def test_get_id_by_title_not_found_if_filename_not_match(self):
+        """Test title not found"""
+        mapped_tests = [("test_login", "@T123", "file2")]
+        updater = DecoratorUpdater(mapped_tests, [], "testomatio", "path/file1")
+
+        result = updater._get_id_by_title("@T123")
         assert result is None
 
     def test_visit_function_def_adds_decorator(self):
@@ -35,7 +43,7 @@ def test_example():
         tree = ast.parse(source_code)
         assert "mark.testomatio('@T123')" not in tree.body
 
-        updater = DecoratorUpdater([("test_example", "@T123")], ["test_example"], "testomatio")
+        updater = DecoratorUpdater([("test_example", "@T123", "file1")], ["test_example"], "testomatio", "path/file1")
 
         func_node = tree.body[0]
         assert isinstance(func_node, ast.FunctionDef)
@@ -55,7 +63,7 @@ def test_example():
 '''
 
         tree = ast.parse(source_code)
-        updater = DecoratorUpdater([("test_example", "@T123")], [], "testomatio")  # порожній all_tests
+        updater = DecoratorUpdater([("test_example", "@T123", "file1")], [], "testomatio", "path/file1")  # порожній all_tests
 
         func_node = tree.body[0]
         updated_node = updater.visit_FunctionDef(func_node)
@@ -70,7 +78,7 @@ def test_example():
    assert True
 ''')
 
-        updater = DecoratorUpdater([("test_example", "@T123")], ["test_example"], "testomatio")
+        updater = DecoratorUpdater([("test_example", "@T123", "file1")], ["test_example"], "testomatio", "path/file1")
 
         func_node = tree.body[0]
         original_decorators_count = len(func_node.decorator_list)
@@ -87,7 +95,7 @@ def test_example():
    assert True
 ''')
 
-        updater = DecoratorUpdater([], [], "testomatio")
+        updater = DecoratorUpdater([], [], "testomatio", "path/file1")
         func_node = tree.body[0]
 
         updated_node = updater._remove_decorator(func_node)
@@ -107,7 +115,7 @@ def test_two():
    assert False
 ''')
 
-        updater = DecoratorUpdater([], [], "testomatio")
+        updater = DecoratorUpdater([], [], "testomatio", "path/file1")
 
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef):
@@ -144,7 +152,8 @@ def test_subtraction():
 
     def test_update_tests_adds_decorators_and_import(self, temp_test_file):
         """Test update_tests add decorators and import"""
-        mapped_tests = [("test_addition", "@T123"), ("test_subtraction", "@T456")]
+        filename = temp_test_file.split('/')[-1]
+        mapped_tests = [("test_addition", "@T123", filename), ("test_subtraction", "@T456", filename)]
         all_tests = ["test_addition", "test_subtraction"]
 
         update_tests(temp_test_file, mapped_tests, all_tests, "testomatio", remove=False)
@@ -198,7 +207,8 @@ def test_bad_formatting( ):
         with open(temp_test_file, 'w') as f:
             f.write(badly_formatted)
 
-        mapped_tests = [("test_bad_formatting", "@T123")]
+        filename = temp_test_file.split('/')[-1]
+        mapped_tests = [("test_bad_formatting", "@T123", filename)]
         all_tests = ["test_bad_formatting"]
 
         update_tests(temp_test_file, mapped_tests, all_tests, "testomatio", remove=False)
@@ -225,7 +235,8 @@ def test_with_decorators():
         with open(temp_test_file, 'w') as f:
             f.write(content_with_other_decorators)
 
-        mapped_tests = [("test_with_decorators", "@T789")]
+        filename = temp_test_file.split('/')[-1]
+        mapped_tests = [("test_with_decorators", "@T789", filename)]
         all_tests = ["test_with_decorators"]
 
         update_tests(temp_test_file, mapped_tests, all_tests, "testomatio", remove=False)

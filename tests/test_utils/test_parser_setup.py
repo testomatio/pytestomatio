@@ -45,6 +45,18 @@ class TestParserOptions:
             help=help_text
         )
 
+    def test_parser_options_adds_kind_option(self, mock_parser):
+        """Test --kind option is added"""
+        mock_group = mock_parser.getgroup.return_value
+
+        parser_options(mock_parser)
+
+        mock_group.addoption.assert_any_call(
+            '--kind',
+            action='store',
+            help="Specify kind of test run to be created"
+        )
+
     def test_parser_options_adds_test_run_env_option(self, mock_parser):
         """Test --testRunEnv option is added"""
         mock_group = mock_parser.getgroup.return_value
@@ -54,7 +66,7 @@ class TestParserOptions:
         mock_group.addoption.assert_any_call(
             '--testRunEnv',
             action='store',
-            help='specify test run environment for testomat.io. Works only with --testomatio sync'
+            help='specify test run environment for testomat.io. Works only with --testomatio report'
         )
 
     def test_parser_options_adds_create_option(self, mock_parser):
@@ -157,14 +169,31 @@ class TestParserOptions:
             help=expected_help
         )
 
-    def test_parser_options_adds_test_id_option(self, mock_parser):
-        """Test --test-id option is added"""
+    def test_parser_options_adds_testomatio_filter_option(self, mock_parser):
+        """Test --testomatio-filter option is added"""
         mock_group = mock_parser.getgroup.return_value
 
         parser_options(mock_parser)
 
         expected_help = """
-                        help="Filter tests by Test IDs (e.g., single test id 'T00C73028' or multiply 'T00C73028|T00C73029')
+                        help="Filter tests by Test IDs (e.g., single test id 'T00C73028' or multiply 'T00C73028|T00C73029'), Labels, Tags, Plan or Jira issue ids
+                        """
+
+        mock_group.addoption.assert_any_call(
+            '--testomatio-filter',
+            default=None,
+            dest="testomatio_filter",
+            help=expected_help
+        )
+
+    def test_parser_options_adds_test_id_option(self, mock_parser):
+        """Test deprecate --test-id option is added"""
+        mock_group = mock_parser.getgroup.return_value
+
+        parser_options(mock_parser)
+
+        expected_help = """
+                        help="DEPRECATED. Filter tests by Test IDs (e.g., single test id 'T00C73028' or multiply 'T00C73028|T00C73029')
                         """
 
         mock_group.addoption.assert_any_call(
@@ -189,7 +218,7 @@ class TestParserOptions:
 
         parser_options(mock_parser)
 
-        assert mock_group.addoption.call_count == 8
+        assert mock_group.addoption.call_count == 10
         assert mock_parser.addini.call_count == 1
 
 

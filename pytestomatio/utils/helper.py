@@ -1,5 +1,7 @@
+import pytest
 from os import getenv
 from os.path import basename
+
 from pytest import Item
 from pytestomatio.testomatio.testomat_item import TestomatItem
 from pytestomatio.testing.testItem import TestItem
@@ -31,8 +33,8 @@ def collect_tests(items: list[Item]):
     return meta, test_files, test_names
 
 
-def get_test_mapping(tests: list[TestItem]) -> list[tuple[str, int]]:
-    return [(test.title, test.id) for test in tests]
+def get_test_mapping(tests: list[TestItem]) -> list[tuple[str, int, str]]:
+    return [(test.title, test.id, test.file_name) for test in tests]
 
 
 def parse_test_list(raw_response: dict) -> list[TestomatItem]:
@@ -102,3 +104,17 @@ def safe_string_list(param: str):
     if not param:
         return None
     return ",".join([sub(r"\s", "", part) for part in param.split(',')])
+
+
+def parse_env_value(value: str, split_symbol: str):
+    if split_symbol in value:
+        key, value = value.split(split_symbol, 1)
+        return key, value
+    return value, None
+
+
+def get_current_test_id():
+    # TODO: extend after other frameworks added
+    item = pytest._current_item
+    if item:
+        return item.nodeid
