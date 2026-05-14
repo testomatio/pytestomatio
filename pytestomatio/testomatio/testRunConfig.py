@@ -2,7 +2,10 @@ import os
 import datetime as dt
 import tempfile
 from pytestomatio.utils.helper import safe_string_list, parse_env_value
+from dotenv import load_dotenv
 from typing import Optional
+
+load_dotenv()
 
 TESTOMATIO_TEST_RUN_LOCK_FILE = ".testomatio_test_run_id_lock"
 DEFAULT_BATCH_SIZE = 50
