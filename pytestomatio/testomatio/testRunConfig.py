@@ -7,8 +7,9 @@ from typing import Optional
 TESTOMATIO_TEST_RUN_LOCK_FILE = ".testomatio_test_run_id_lock"
 DEFAULT_BATCH_SIZE = 50
 
+
 class TestRunConfig:
-    def __init__(self):
+    def __init__(self, kind: str = 'automated'):
         run_id = os.environ.get('TESTOMATIO_RUN_ID') or os.environ.get('TESTOMATIO_RUN')
         title = os.environ.get('TESTOMATIO_TITLE') if os.environ.get('TESTOMATIO_TITLE') else 'test run at ' + dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         disable_batch_upload = os.environ.get('TESTOMATIO_DISABLE_BATCH_UPLOAD') in ['True', 'true', '1']
@@ -21,6 +22,7 @@ class TestRunConfig:
         self.access_event = 'publish' if os.environ.get("TESTOMATIO_PUBLISH") else None
         self.test_run_id = run_id
         self.title = title
+        self.kind = kind
         self.disable_batch = disable_batch_upload
         self.batch_size = int(batch_size) if (batch_size.isdigit() and int(batch_size) <= 100) else DEFAULT_BATCH_SIZE
         self.environment = safe_string_list(os.environ.get('TESTOMATIO_ENV'))
@@ -50,6 +52,7 @@ class TestRunConfig:
         result['env'] = self.environment
         result['jira_id'] = self.jira_id
         result['label'] = self.label
+        result['kind'] = self.kind
         result['parallel'] = self.parallel
         result['shared_run'] = self.shared_run
         result['shared_run_timeout'] = self.shared_run_timeout

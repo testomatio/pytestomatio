@@ -186,7 +186,7 @@ class Connector:
 
 
     def create_test_run(self, access_event: str, title: str, group_title, jira_id: str, env: str, label: str, shared_run: bool, shared_run_timeout: str,
-                        parallel, ci_build_url: str) -> dict | None:
+                        parallel, ci_build_url: str, kind: str) -> dict | None:
         request = {
             "access_event": access_event,
             "api_key": self.api_key,
@@ -195,6 +195,7 @@ class Connector:
             "env": env,
             "jira_id": jira_id,
             "label": label,
+            "kind": kind,
             "parallel": parallel,
             "ci_build_url": ci_build_url,
             "shared_run": shared_run,
@@ -214,7 +215,7 @@ class Connector:
             return response.json()
         self._show_status_message(response.status_code)
 
-    def update_test_run(self, id: str, access_event: str, title: str, group_title, jira_id: str,
+    def update_test_run(self, id: str, access_event: str, title: str, group_title, jira_id: str, kind: str,
                         env: str, label: str, shared_run: bool, shared_run_timeout: str, parallel, ci_build_url: str) -> dict | None:
         request = {
             "access_event": access_event,
@@ -222,6 +223,7 @@ class Connector:
             "title": title,
             "group_title": group_title,
             "env": env,
+            "kind": kind,
             "jira_id": jira_id,
             "label": label,
             "parallel": parallel,
