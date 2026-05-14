@@ -1,5 +1,7 @@
+import pytest
 from os import getenv
 from os.path import basename
+
 from pytest import Item
 from pytestomatio.testomatio.testomat_item import TestomatItem
 from pytestomatio.testing.testItem import TestItem
@@ -109,3 +111,10 @@ def parse_env_value(value: str, split_symbol: str):
         key, value = value.split(split_symbol, 1)
         return key, value
     return value, None
+
+
+def get_current_test_id():
+    # TODO: extend after other frameworks added
+    item = pytest._current_item
+    if item:
+        return item.nodeid

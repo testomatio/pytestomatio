@@ -24,6 +24,8 @@ A powerful pytest plugin that integrates your tests with testomat.io platform fo
   - [Additional options](#additional-options)
   - [Configuration](#configuration-with-environment-variables)
   - [Test artifacts](#submitting-test-artifacts)
+  - [User functions](#user-functions)
+  - [Cross-Platform Testing](#cross-platform-testing)
 - [Contributing](#contributing)
 
 ## Installation
@@ -339,6 +341,7 @@ You can use environment variable to control certain features of testomat.io. Env
 | TESTOMATIO_STACK_PASSED       | Enables logs for passed tests. Disabled by default.                                                                                                                              | TESTOMATIO_STACK_PASSED=true pytest --testomatio report                                                          |
 | TESTOMATIO_SHARED_RUN         | Report parallel execution to the same run matching it by title. If the run was created more than 20 minutes ago, a new run will be created instead.                              | TESTOMATIO_TITLE="Run1" TESTOMATIO_SHARED_RUN=1 pytest --testomatio report                                  |
 | TESTOMATIO_SHARED_RUN_TIMEOUT | Changes timeout of shared run. After timeout, shared run won`t accept other runs with same name, and new runs will be created. Timeout is set in minutes, default is 20 minutes. | TESTOMATIO_TITLE="Run1" TESTOMATIO_SHARED_RUN=1 TESTOMATIO_SHARED_RUN_TIMEOUT=10 pytest --testomatio report |
+| TESTOMATIO_DISABLE_ARTIFACTS  | Disables artifacts uploading during testrun.                                                                                                                                     | TESTOMATIO_DISABLE_ARTIFACTS=1 pytest --testomatio report                                                   |
 | TESTOMATIO_EXCLUDE_FILES_FROM_REPORT_GLOB_PATTERN            | Excludes tests from report using glob patterns. You can specify multiple patterns using **;** as separator                                                                       | TESTOMATIO_EXCLUDE_FILES_FROM_REPORT_GLOB_PATTERN="**/*_auth.py;directory" pytest --testomatio report      |
 | TESTOMATIO_CREATE             | Create test which are not yet exist in a project                                                                                                                                 | TESTOMATIO_CREATE=1 pytest --testomatio report                                                              |
 | TESTOMATIO_WORKDIR            | Specify a custom working directory for relative file paths in test reports. When tests are created with **TESTOMATIO_CREATE=1**, file paths will be relative to this directory.  | TESTOMATIO_WORKDIR=new_dir pytest --testomatio report                                                       |
@@ -426,12 +429,87 @@ def handle_artifacts(page: Page, request):
 ⚠️ Please take into account s3_connector available only after **pytest_collection_modifyitems()** hook is executed.
 
 2) If you prefer to use pytest hooks - add `pytest_runtest_makereport` hook in your `conftest.py` file.
+3) Automatically upload artifacts using [add_artifact](#add-artifact) function
 
 ```python
 def pytest_runtest_makereport(item, call):
     artifact_url = pytest.testomatio.upload_file(screenshot_path, filename)
     pytest.testomatio.add_artifacts([artifact_url])
 ```
+
+### User functions
+This functions gives you more flexibility in reporting and make your reports more powerful
+
+**Available functions**
+- [add_artifact](#add-artifact)
+- [add_meta](#add-meta)
+- [add_label](#add-label)
+- [link_jira](#link-jira)
+- [link_test](#link-test)
+
+#### Add Artifact
+Adds file to the test report. File will be uploaded during test run. 
+
+**Note:** S3 must be configured
+
+```python
+from pytestomatio.functions import add_artifact
+
+def test_my_test():
+    path_to_file = 'path/to/file/image.png'
+    add_artifact(path_to_file)
+    assert True
+```
+#### Add Meta
+Adds meta information to test. Meta information is a key:value pair(s), which is used to add additional information to the test report. E.g. browser, environment, etc.
+
+**Note:** Test run metadata have higher priority than test metadata. 
+Therefore, if the test metadata and the test run metadata have the same keys, then the values from the test run metadata will be set for these keys
+
+```python
+from pytestomatio.functions import add_meta
+
+def test_my_test():
+    add_meta({'browser': 'chrome', 'server': 'staging'})
+    assert True
+```
+
+#### Add Label
+Adds a label to the reported test. Unlike *meta* label will be persisted to the test case itself, not just to reported run. If the label
+does not exist in Testomat.io, it will be automatically created and linked to the test during the test run.
+You can pass also a label value, if the label was created as a custom field
+
+```python
+from pytestomatio.functions import add_label
+
+def test_my_test():
+    add_label('Browser')
+    add_label('Area', 'Auth')
+    assert True
+```
+
+#### Link Jira
+Links JIRA issue IDs to the test report. This creates a connection between your test execution and JIRA issues.
+
+```python
+from pytestomatio.functions import link_jira
+
+def test_my_test():
+    link_jira('PROJ-456', 'PROJ-564')
+    assert True
+```
+
+#### Link Test
+Links test IDs to the current test in the report. This allows you to associate multiple test cases with the current test execution.
+
+```python
+from pytestomatio.functions import link_test
+
+def test_my_test():
+    link_test('@T5147babc', '47d31979')
+    assert True
+```
+
 
 ### Cross-Platform Testing
 The plugin supports reporting the same test multiple times in a single run. This is especially useful for Cross-Platform

@@ -281,7 +281,8 @@ class Connector:
                            example: dict,
                            file: str | None,
                            overwrite: bool | None,
-                           meta: dict) -> None:
+                           meta: dict,
+                           links: list | None) -> None:
 
         log.info(f'Reporting test. Id: {test_id}. Title: {title}')
         request = {
@@ -302,7 +303,8 @@ class Connector:
             "code": code,
             "overwrite": overwrite,
             "rid": rid,
-            "meta": meta
+            "meta": meta,
+            "links": links
         }
         filtered_request = {k: v for k, v in request.items() if v is not None}
         url = f'{self.base_url}/api/reporter/{run_id}/testrun?api_key={self.api_key}'
