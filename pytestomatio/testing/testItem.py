@@ -88,9 +88,12 @@ class TestItem:
         return self.file_name
 
     # Testomatio resolves test id on BE by parsing test name to find test id
-    def _get_sync_test_title(self, item: Item) -> str:
+    def _get_sync_test_title(self, item: Item, include_tags: bool = True) -> str:
         test_name = self.pytest_title_to_testomatio_title(item.name)
         test_name = self._resolve_parameter_key_in_test_name(item, test_name)
+        tags = self._get_test_tags(item) if include_tags else []
+        if tags:
+            test_name = test_name + ' ' + ' '.join(f'@{tag}' for tag in tags)
         # Test id is present on already synced tests
         # New test don't have testomatio test id.
         test_id = self.id
@@ -98,9 +101,17 @@ class TestItem:
             test_name = f'{test_name} {test_id}'
         # ex. "User adds item to cart"
         # ex. "User adds item to cart @T1234"
+        # ex. "User adds item to cart @smoke @T1234"
         # ex. "User adds ${item} to cart @T1234"
         # ex. "User adds ${variation} ${item} to cart @T1234"
         return test_name
+
+    def _get_test_tags(self, item: Item) -> list:
+        """Returns list of tags assigned via @pytest.mark.testomatio_tags("tag1", "tag2")."""
+        tags = []
+        for marker in item.iter_markers('testomatio_tags'):
+            tags.extend([tag for tag in marker.args if tag not in tags])
+        return tags
 
     #  Fix such example @pytest.mark.parametrize("version", "1.0.0"), ref. https://github.com/testomatio/check-tests/issues/147
     #  that doesn't parse value correctly
@@ -117,7 +128,9 @@ class TestItem:
         return test_name.lower().replace('_', ' ').replace("test", "", 1).strip().capitalize()
 
     def _get_resync_test_title(self, name: str) -> str:
-        name = self._get_sync_test_title(name)
+        # tags from testomatio_tags marker are not present in titles of tests
+        # returned by testomatio BE, so they must be excluded here for matching to work
+        name = self._get_sync_test_title(name, include_tags=False)
         tag_at = name.find("@T")
         if tag_at > 0:
             return name[0:tag_at].strip()

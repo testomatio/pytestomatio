@@ -93,9 +93,13 @@ class TestPytestConfigure:
         mock_validate.return_value = 'debug'
         main.pytest_configure(mock_config)
 
-        mock_config.addinivalue_line.assert_called_with(
+        mock_config.addinivalue_line.assert_any_call(
             "markers",
             "testomatio(arg): built in marker to connect test case with testomat.io by unique id"
+        )
+        mock_config.addinivalue_line.assert_any_call(
+            "markers",
+            "testomatio_tags(*tags): assign one or more tags to a test for testomat.io sync"
         )
 
     @patch('pytestomatio.main.validations.validate_option')
@@ -105,7 +109,7 @@ class TestPytestConfigure:
 
         main.pytest_configure(mock_config)
 
-        assert mock_config.addinivalue_line.call_count == 1
+        assert mock_config.addinivalue_line.call_count == 2
         assert not hasattr(pytest, 'testomatio') or pytest.testomatio is None
 
     @patch('pytestomatio.main.validations.validate_option')

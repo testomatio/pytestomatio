@@ -85,6 +85,21 @@ Clarification:
 - test title in testomat.io == test name in pytest
 - test suit title in testomat.io == test file name in pytest
 
+##### Tagging tests on sync
+Since a Python test function name can't contain special characters like `@tag`, tags are
+assigned via the built-in `testomatio_tags` marker, and are added to the test title on sync:
+
+```python
+import pytest
+
+
+@pytest.mark.testomatio_tags("smoke", "regression")
+def test_example():
+    assert 2 + 2 == 4
+```
+
+This produces a test titled `Example @smoke @regression` in testomat.io.
+
 
 #### Clean up
 Remove all test ids from source code. Tests will not be executed
