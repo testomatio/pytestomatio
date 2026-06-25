@@ -1,5 +1,6 @@
 from re import sub
 from typing import Iterable
+from os import getenv
 import uuid
 import json
 from pytest import Item
@@ -107,11 +108,23 @@ class TestItem:
         return test_name
 
     def _get_test_tags(self, item: Item) -> list:
-        """Returns list of tags assigned via @pytest.mark.testomatio_tags("tag1", "tag2")."""
+        """Returns list of tags assigned via @pytest.mark.testomatio_tags("tag1", "tag2")
+        and via bare markers allowlisted through the TESTOMATIO_TAG_MARKERS env var"""
         tags = []
         for marker in item.iter_markers('testomatio_tags'):
             tags.extend([tag for tag in marker.args if tag not in tags])
+
+        for marker_name in self._get_allowed_tag_markers():
+            if marker_name not in tags and any(item.iter_markers(marker_name)):
+                tags.append(marker_name)
         return tags
+
+    def _get_allowed_tag_markers(self) -> list:
+        """Allowlist of bare marker names treated as tags"""
+        raw = getenv('TESTOMATIO_TAG_MARKERS')
+        if not raw:
+            return []
+        return [name.strip() for name in raw.split(',') if name.strip()]
 
     #  Fix such example @pytest.mark.parametrize("version", "1.0.0"), ref. https://github.com/testomatio/check-tests/issues/147
     #  that doesn't parse value correctly

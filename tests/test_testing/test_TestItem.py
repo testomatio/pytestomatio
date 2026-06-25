@@ -542,3 +542,69 @@ class TestTestItem:
         result = test_item._get_resync_test_title(mock_item_with_tags)
 
         assert result == "Example"
+
+    def test_get_allowed_tag_markers_empty_when_env_not_set(self, monkeypatch):
+        """Test _get_allowed_tag_markers returns empty list when env var is not set"""
+        monkeypatch.delenv('TESTOMATIO_TAG_MARKERS', raising=False)
+        test_item = TestItem.__new__(TestItem)
+
+        result = test_item._get_allowed_tag_markers()
+
+        assert result == []
+
+    def test_get_allowed_tag_markers_parses_comma_separated_list(self, monkeypatch):
+        """Test _get_allowed_tag_markers trims whitespace and drops empty entries"""
+        monkeypatch.setenv('TESTOMATIO_TAG_MARKERS', 'smoke, regression,, api ')
+        test_item = TestItem.__new__(TestItem)
+
+        result = test_item._get_allowed_tag_markers()
+
+        assert result == ["smoke", "regression", "api"]
+
+    def test_get_test_tags_with_allowlisted_bare_marker(self, mock_item, monkeypatch):
+        """Test _get_test_tags picks up a bare marker whose name is allowlisted"""
+        monkeypatch.setenv('TESTOMATIO_TAG_MARKERS', 'smoke')
+        smoke_marker = Mock()
+        mock_item.iter_markers.side_effect = \
+            lambda name=None: iter([smoke_marker]) if name == 'smoke' else iter([])
+        test_item = TestItem.__new__(TestItem)
+
+        result = test_item._get_test_tags(mock_item)
+
+        assert result == ["smoke"]
+
+    def test_get_test_tags_ignores_marker_not_in_allowlist(self, mock_item, monkeypatch):
+        """Test _get_test_tags ignores markers whose name isn't allowlisted"""
+        monkeypatch.setenv('TESTOMATIO_TAG_MARKERS', 'smoke')
+        other_marker = Mock()
+        mock_item.iter_markers.side_effect = \
+            lambda name=None: iter([other_marker]) if name == 'asyncio' else iter([])
+        test_item = TestItem.__new__(TestItem)
+
+        result = test_item._get_test_tags(mock_item)
+
+        assert result == []
+
+    def test_get_test_tags_combines_testomatio_tags_marker_and_allowlisted_bare_markers(self, mock_item, monkeypatch):
+        """Test _get_test_tags merges testomatio_tags marker args with allowlisted bare markers, deduped"""
+        monkeypatch.setenv('TESTOMATIO_TAG_MARKERS', 'regression,api')
+        tags_marker = Mock()
+        tags_marker.args = ("smoke", "regression")
+        regression_marker = Mock()
+        api_marker = Mock()
+
+        def iter_markers(name=None):
+            if name == 'testomatio_tags':
+                return iter([tags_marker])
+            if name == 'regression':
+                return iter([regression_marker])
+            if name == 'api':
+                return iter([api_marker])
+            return iter([])
+
+        mock_item.iter_markers.side_effect = iter_markers
+        test_item = TestItem.__new__(TestItem)
+
+        result = test_item._get_test_tags(mock_item)
+
+        assert result == ["smoke", "regression", "api"]
