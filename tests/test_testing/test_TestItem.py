@@ -40,6 +40,15 @@ class TestTestItem:
         mock_item.iter_markers.return_value = iter([marker])
         return mock_item
 
+    @pytest.fixture
+    def mock_item_with_tags(self, mock_item):
+        """Mock Item with testomatio_tags marker"""
+        tag_marker = Mock()
+        tag_marker.args = ("smoke", "regression")
+        mock_item.iter_markers.side_effect = \
+            lambda name=None: iter([tag_marker]) if name == 'testomatio_tags' else iter([])
+        return mock_item
+
     @patch('inspect.getdoc')
     @patch('inspect.getsource')
     def test_init_basic(self, mock_getsource, mock_getdoc, mock_item):
@@ -463,3 +472,139 @@ class TestTestItem:
         mock_item.function.__scenario__ = scenario_mock
         test_item = TestItem(mock_item)
         assert test_item.suite_title == 'test_file.py'
+
+    def test_get_test_tags_with_marker(self, mock_item_with_tags):
+        """Test _get_test_tags returns tags from testomatio_tags marker"""
+        test_item = TestItem.__new__(TestItem)
+
+        result = test_item._get_test_tags(mock_item_with_tags)
+
+        assert result == ["smoke", "regression"]
+
+    def test_get_test_tags_without_marker(self, mock_item):
+        """Test _get_test_tags returns empty list without marker"""
+        test_item = TestItem.__new__(TestItem)
+
+        result = test_item._get_test_tags(mock_item)
+
+        assert result == []
+
+    def test_get_test_tags_deduplicates_across_multiple_markers(self, mock_item):
+        """Test _get_test_tags merges tags from stacked markers without duplicates"""
+        marker1 = Mock()
+        marker1.args = ("smoke", "regression")
+        marker2 = Mock()
+        marker2.args = ("regression", "api")
+        mock_item.iter_markers.side_effect = \
+            lambda name=None: iter([marker1, marker2]) if name == 'testomatio_tags' else iter([])
+        test_item = TestItem.__new__(TestItem)
+
+        result = test_item._get_test_tags(mock_item)
+
+        assert result == ["smoke", "regression", "api"]
+
+    @patch('inspect.getsource')
+    def test_get_sync_test_title_includes_tags_before_test_id(self, mock_source, mock_item_with_tags):
+        """Test _get_sync_test_title appends tags before the testomatio test id"""
+        test_item = TestItem(mock_item_with_tags)
+        test_item.id = "@T12345678"
+
+        result = test_item._get_sync_test_title(mock_item_with_tags)
+
+        assert result == "Example @smoke @regression @T12345678"
+
+    @patch('inspect.getsource')
+    def test_get_sync_test_title_without_tags_marker(self, mock_source, mock_item):
+        """Test _get_sync_test_title is unchanged when no tags marker is present"""
+        test_item = TestItem(mock_item)
+        test_item.id = "@T12345678"
+
+        result = test_item._get_sync_test_title(mock_item)
+
+        assert result == "Example @T12345678"
+
+    @patch('inspect.getsource')
+    def test_get_sync_test_title_include_tags_false_excludes_tags(self, mock_source, mock_item_with_tags):
+        """Test _get_sync_test_title with include_tags=False ignores the tags marker"""
+        test_item = TestItem(mock_item_with_tags)
+        test_item.id = "@T12345678"
+
+        result = test_item._get_sync_test_title(mock_item_with_tags, include_tags=False)
+
+        assert result == "Example @T12345678"
+
+    @patch('inspect.getsource')
+    def test_get_resync_test_title_excludes_tags(self, mock_source, mock_item_with_tags):
+        """Test _get_resync_test_title strips both tags and test id since BE titles have neither"""
+        test_item = TestItem(mock_item_with_tags)
+        test_item.id = "@T12345678"
+
+        result = test_item._get_resync_test_title(mock_item_with_tags)
+
+        assert result == "Example"
+
+    def test_get_allowed_tag_markers_empty_when_env_not_set(self, monkeypatch):
+        """Test _get_allowed_tag_markers returns empty list when env var is not set"""
+        monkeypatch.delenv('TESTOMATIO_TAG_MARKERS', raising=False)
+        test_item = TestItem.__new__(TestItem)
+
+        result = test_item._get_allowed_tag_markers()
+
+        assert result == []
+
+    def test_get_allowed_tag_markers_parses_comma_separated_list(self, monkeypatch):
+        """Test _get_allowed_tag_markers trims whitespace and drops empty entries"""
+        monkeypatch.setenv('TESTOMATIO_TAG_MARKERS', 'smoke, regression,, api ')
+        test_item = TestItem.__new__(TestItem)
+
+        result = test_item._get_allowed_tag_markers()
+
+        assert result == ["smoke", "regression", "api"]
+
+    def test_get_test_tags_with_allowlisted_bare_marker(self, mock_item, monkeypatch):
+        """Test _get_test_tags picks up a bare marker whose name is allowlisted"""
+        monkeypatch.setenv('TESTOMATIO_TAG_MARKERS', 'smoke')
+        smoke_marker = Mock()
+        mock_item.iter_markers.side_effect = \
+            lambda name=None: iter([smoke_marker]) if name == 'smoke' else iter([])
+        test_item = TestItem.__new__(TestItem)
+
+        result = test_item._get_test_tags(mock_item)
+
+        assert result == ["smoke"]
+
+    def test_get_test_tags_ignores_marker_not_in_allowlist(self, mock_item, monkeypatch):
+        """Test _get_test_tags ignores markers whose name isn't allowlisted"""
+        monkeypatch.setenv('TESTOMATIO_TAG_MARKERS', 'smoke')
+        other_marker = Mock()
+        mock_item.iter_markers.side_effect = \
+            lambda name=None: iter([other_marker]) if name == 'asyncio' else iter([])
+        test_item = TestItem.__new__(TestItem)
+
+        result = test_item._get_test_tags(mock_item)
+
+        assert result == []
+
+    def test_get_test_tags_combines_testomatio_tags_marker_and_allowlisted_bare_markers(self, mock_item, monkeypatch):
+        """Test _get_test_tags merges testomatio_tags marker args with allowlisted bare markers, deduped"""
+        monkeypatch.setenv('TESTOMATIO_TAG_MARKERS', 'regression,api')
+        tags_marker = Mock()
+        tags_marker.args = ("smoke", "regression")
+        regression_marker = Mock()
+        api_marker = Mock()
+
+        def iter_markers(name=None):
+            if name == 'testomatio_tags':
+                return iter([tags_marker])
+            if name == 'regression':
+                return iter([regression_marker])
+            if name == 'api':
+                return iter([api_marker])
+            return iter([])
+
+        mock_item.iter_markers.side_effect = iter_markers
+        test_item = TestItem.__new__(TestItem)
+
+        result = test_item._get_test_tags(mock_item)
+
+        assert result == ["smoke", "regression", "api"]

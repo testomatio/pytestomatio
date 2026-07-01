@@ -63,6 +63,9 @@ def pytest_configure(config: Config):
     config.addinivalue_line(
         "markers", "testomatio(arg): built in marker to connect test case with testomat.io by unique id"
     )
+    config.addinivalue_line(
+        "markers", "testomatio_tags(*tags): assign one or more tags to a test for testomat.io sync"
+    )
 
     option = validations.validate_option(config)
     if option == 'debug':

@@ -85,6 +85,41 @@ Clarification:
 - test title in testomat.io == test name in pytest
 - test suit title in testomat.io == test file name in pytest
 
+##### Tagging tests on sync
+Since a Python test function name can't contain special characters like `@tag`, tags are
+assigned via the built-in `testomatio_tags` marker, and are added to the test title on sync:
+
+```python
+import pytest
+
+
+@pytest.mark.testomatio_tags("smoke", "regression")
+def test_example():
+    assert 2 + 2 == 4
+```
+
+This produces a test titled `Example @smoke @regression` in testomat.io.
+
+You can also reuse plain pytest markers as tags by allowlisting their names via the
+`TESTOMATIO_TAG_MARKERS` env var (comma-separated). We don't pick up every `pytest.mark.*`
+automatically, since that would also catch pytest/plugin service markers like `parametrize`,
+`skip`, `usefixtures`, etc. - only markers explicitly listed are treated as tags:
+
+```bash
+export TESTOMATIO_TAG_MARKERS=smoke,regression
+```
+
+```python
+import pytest
+
+
+@pytest.mark.smoke
+def test_example():
+    assert 2 + 2 == 4
+```
+
+This produces a test titled `Example @smoke` in testomat.io.
+
 
 #### Clean up
 Remove all test ids from source code. Tests will not be executed
@@ -317,6 +352,7 @@ You can use environment variable to control certain features of testomat.io. Env
 | TESTOMATIO               | Provides token for pytestomatio to access and push data to testomat.io. Required for **sync** and **report** commands                                                                                                 | TESTOMATIO=tstmt_***** pytest --testomatio sync                                  |
 | TESTOMATIO_SYNC_LABELS   | Assign labels to a test case when you synchronise test from code with testomat.io. Labels must exist in project and their scope must be enabled for tests                                                             | TESTOMATIO_SYNC_LABELS="number:1,list:one,standalone" pytest --testomatio report |
 | TESTOMATIO_CODE_STYLE    | Code parsing style for test synchronization. If you are not sure, don't set this variable. Default value is 'default'                                                                                                 | TESTOMATIO_CODE_STYLE=pep8 pytest --testomatio sync                              |
+| TESTOMATIO_TAG_MARKERS   | Allowlist of bare pytest marker names to treat as tags and append to the test title on **sync** (comma-separated). See [Tagging tests on sync](#tagging-tests-on-sync)                                               | TESTOMATIO_TAG_MARKERS=smoke,regression pytest --testomatio sync                 |
 | TESTOMATIO_CI_DOWNSTREAM | If set, pytestomatio will not set or update build url for a test run. This is useful in scenarios where build url is already set in the test run by Testomat.io for test runs that a created directly on Testomat.io. | TESTOMATIO_CI_DOWNSTREAM=true pytest --testomatio report                         |
  | TESTOMATIO_URL           | Customize testomat.io url                                                                                                                                                                                             | TESTOMATIO_URL=https://custom.com/ pytest --testomatio report                    |
  | BUILD_URL                | Overrides build url run tests                                                                                                                                                                                         | BUILD_URL=http://custom.com/ pytest --testomatio report                          |
