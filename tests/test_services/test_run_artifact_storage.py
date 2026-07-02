@@ -21,6 +21,12 @@ class TestRunArtifactStorage:
 
         assert storage._paths == ['/path/one.png', '/path/two.png']
 
+    def test_put_deduplicates_same_path(self, storage):
+        storage.put('/path/artifact.png')
+        storage.put('/path/artifact.png')
+
+        assert storage._paths == ['/path/artifact.png']
+
     def test_get_returns_stored_paths(self, storage):
         storage.put('/path/artifact.png')
 

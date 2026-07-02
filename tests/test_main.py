@@ -1291,7 +1291,7 @@ class TestPytestUnconfigure:
     @patch('pytestomatio.main.run_artifact_storage')
     @patch('pytestomatio.main.time.sleep')
     def test_unconfigure_skips_run_artifacts_when_no_s3(self, mock_sleep, mock_storage):
-        """Test run artifacts are not uploaded when s3_connector is not configured"""
+        """Test run artifacts are not uploaded when s3_connector is not configured and fallback also fails"""
         mock_config = Mock(spec=['addinivalue_line', 'getini', 'getoption', 'pluginmanager'])
         mock_config.getoption.return_value = 'report'
 
@@ -1299,7 +1299,9 @@ class TestPytestUnconfigure:
         pytest.testomatio.test_run_config.test_run_id = 'run_123'
         pytest.testomatio.test_run_config.proceed = None
         pytest.testomatio.test_run_config.disable_artifacts = False
+        pytest.testomatio.test_run_config.to_dict.return_value = {'id': 'run_123'}
         pytest.testomatio.s3_connector = None
+        pytest.testomatio.connector.update_test_run.return_value = None
         mock_storage.get.return_value = ['/local/artifact.png']
 
         main.pytest_unconfigure(mock_config)

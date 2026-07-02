@@ -9,7 +9,8 @@ class RunArtifactStorage:
         return cls._instance
 
     def put(self, path: str):
-        self._paths.append(path)
+        if path not in self._paths:
+            self._paths.append(path)
 
     def get(self) -> list:
         return self._paths
