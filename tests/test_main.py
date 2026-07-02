@@ -1248,6 +1248,99 @@ class TestPytestUnconfigure:
         pytest.testomatio.connector.assert_not_called()
         assert pytest.testomatio.test_run_config.clear_run_id.call_count == 1
 
+    @patch('pytestomatio.main.run_artifact_storage')
+    @patch('pytestomatio.main.time.sleep')
+    def test_unconfigure_uploads_run_artifacts(self, mock_sleep, mock_storage):
+        """Test run artifacts are uploaded to S3 and sent to connector in main process"""
+        mock_config = Mock(spec=['addinivalue_line', 'getini', 'getoption', 'pluginmanager'])
+        mock_config.getoption.return_value = 'report'
+        assert not hasattr(mock_config, 'workerinput')
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.proceed = None
+        pytest.testomatio.test_run_config.disable_artifacts = False
+        pytest.testomatio.s3_connector.upload_files.return_value = ['https://s3.example.com/artifact.png']
+        mock_storage.get.return_value = ['/local/artifact.png']
+
+        main.pytest_unconfigure(mock_config)
+
+        pytest.testomatio.s3_connector.upload_files.assert_called_once_with([('/local/artifact.png', None)])
+        pytest.testomatio.connector.upload_run_artifacts.assert_called_once_with(
+            'run_123', ['https://s3.example.com/artifact.png']
+        )
+        mock_storage.clear.assert_called_once()
+
+    @patch('pytestomatio.main.run_artifact_storage')
+    @patch('pytestomatio.main.time.sleep')
+    def test_unconfigure_skips_run_artifacts_when_disabled(self, mock_sleep, mock_storage):
+        """Test run artifacts are not uploaded when disable_artifacts is set"""
+        mock_config = Mock(spec=['addinivalue_line', 'getini', 'getoption', 'pluginmanager'])
+        mock_config.getoption.return_value = 'report'
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.proceed = None
+        pytest.testomatio.test_run_config.disable_artifacts = True
+
+        main.pytest_unconfigure(mock_config)
+
+        mock_storage.get.assert_not_called()
+        pytest.testomatio.connector.upload_run_artifacts.assert_not_called()
+
+    @patch('pytestomatio.main.run_artifact_storage')
+    @patch('pytestomatio.main.time.sleep')
+    def test_unconfigure_skips_run_artifacts_when_no_s3(self, mock_sleep, mock_storage):
+        """Test run artifacts are not uploaded when s3_connector is not configured"""
+        mock_config = Mock(spec=['addinivalue_line', 'getini', 'getoption', 'pluginmanager'])
+        mock_config.getoption.return_value = 'report'
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.proceed = None
+        pytest.testomatio.test_run_config.disable_artifacts = False
+        pytest.testomatio.s3_connector = None
+        mock_storage.get.return_value = ['/local/artifact.png']
+
+        main.pytest_unconfigure(mock_config)
+
+        pytest.testomatio.connector.upload_run_artifacts.assert_not_called()
+
+    @patch('pytestomatio.main.run_artifact_storage')
+    def test_unconfigure_run_artifacts_not_uploaded_from_worker(self, mock_storage):
+        """Test run artifacts are not uploaded from xdist worker process"""
+        mock_config = Mock()
+        mock_config.workerinput = Mock()
+        mock_config.getoption.return_value = 'report'
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config.proceed = None
+
+        main.pytest_unconfigure(mock_config)
+
+        mock_storage.get.assert_not_called()
+        pytest.testomatio.connector.upload_run_artifacts.assert_not_called()
+
+    @patch('pytestomatio.main.run_artifact_storage')
+    def test_unconfigure_uploads_run_artifacts_for_proceed_run(self, mock_storage):
+        """Test run artifacts are uploaded even when proceed is set"""
+        mock_config = Mock(spec=['addinivalue_line', 'getini', 'getoption', 'pluginmanager'])
+        mock_config.getoption.return_value = 'report'
+        assert not hasattr(mock_config, 'workerinput')
+
+        pytest.testomatio = Mock()
+        pytest.testomatio.test_run_config.test_run_id = 'run_123'
+        pytest.testomatio.test_run_config.proceed = True
+        pytest.testomatio.test_run_config.disable_artifacts = False
+        pytest.testomatio.s3_connector.upload_files.return_value = ['https://s3.example.com/artifact.png']
+        mock_storage.get.return_value = ['/local/artifact.png']
+
+        main.pytest_unconfigure(mock_config)
+
+        pytest.testomatio.connector.upload_run_artifacts.assert_called_once_with(
+            'run_123', ['https://s3.example.com/artifact.png']
+        )
+
 @pytest.mark.smoke
 class TestPytestRuntestLogfinish:
     """Tests for pytest_runtest_logfinish hook"""

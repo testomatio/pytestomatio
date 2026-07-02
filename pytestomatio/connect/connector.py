@@ -354,6 +354,19 @@ class Connector:
                 self._is_report_failed(response.status_code)
 
     # TODO: I guess this class should be just an API client and used within testRun (testRunConfig)
+    def upload_run_artifacts(self, run_id: str, artifacts: list) -> None:
+        log.info(f'Uploading run artifacts. Run id: {run_id}')
+        url = f'{self.base_url}/api/reporter/{run_id}?api_key={self.api_key}'
+        try:
+            response = self._send_request_with_retry('put', url, json={"artifacts": artifacts})
+            if response.status_code == 200:
+                log.info(f'Run artifacts uploaded')
+            else:
+                self._show_status_message(response.status_code)
+                log.error(f'Failed to upload run artifacts. Status code: {response.status_code}')
+        except Exception as e:
+            log.error(f'Failed to upload run artifacts: {e}')
+
     def finish_test_run(self, run_id: str, is_final=False) -> None:
         log.info(f'Finishing test run. Run id: {run_id}')
         status_event = 'finish_parallel' if is_final else 'finish'
