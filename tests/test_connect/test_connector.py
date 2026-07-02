@@ -419,6 +419,40 @@ class TestConnector:
 
         assert result == {"uid": "run_123"}
 
+    @patch('requests.Session.put')
+    def test_upload_run_artifacts_success(self, mock_put, connector):
+        """Test successful run artifacts upload"""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_put.return_value = mock_response
+        artifacts = ['https://s3.example.com/run/screenshot.png', 'https://s3.example.com/run/log.txt']
+
+        connector.upload_run_artifacts('run_123', artifacts)
+
+        mock_put.assert_called_once_with(
+            f'{connector.base_url}/api/reporter/run_123?api_key={connector.api_key}',
+            json={"artifacts": artifacts}
+        )
+
+    @patch('requests.Session.put')
+    def test_upload_run_artifacts_http_error(self, mock_put, connector):
+        """Test upload_run_artifacts logs error on non-200 response"""
+        mock_response = Mock()
+        mock_response.status_code = 500
+        mock_response.json.return_value = {}
+        mock_put.return_value = mock_response
+
+        connector.upload_run_artifacts('run_123', ['https://s3.example.com/artifact.png'])
+
+        mock_put.assert_called_once()
+
+    @patch('requests.Session.put')
+    def test_upload_run_artifacts_exception(self, mock_put, connector):
+        """Test upload_run_artifacts handles exception without raising"""
+        mock_put.side_effect = Exception("Connection failed")
+
+        connector.upload_run_artifacts('run_123', ['https://s3.example.com/artifact.png'])
+
     @patch('requests.Session.post')
     def test_update_test_status_success(self, mock_post, connector):
         """Test successful test status update"""

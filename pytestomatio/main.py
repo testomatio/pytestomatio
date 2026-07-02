@@ -20,6 +20,7 @@ from pytestomatio.testomatio.testomatio import Testomatio
 from pytestomatio.testomatio.filter_plugin import TestomatioFilterPlugin
 
 from pytestomatio.services.artifact_storage import artifact_storage
+from pytestomatio.services.run_artifact_storage import run_artifact_storage
 from pytestomatio.services.meta_storage import meta_storage
 from pytestomatio.services.link_storage import link_storage
 
@@ -344,6 +345,9 @@ def pytest_testnodedown(node, error):
     if not hasattr(node, 'workeroutput') or not hasattr(pytest, 'testomatio') or \
             node.config.getoption(testomatio) is None or node.config.getoption(testomatio) != 'report':
         return
+    for path in node.workeroutput.get('run_artifacts', []):
+        run_artifact_storage.put(path)
+
     if pytest.testomatio.test_run_config.disable_batch:
         return
 
@@ -361,6 +365,11 @@ def pytest_sessionfinish(session, exitstatus):
         return
 
     run: TestRunConfig = pytest.testomatio.test_run_config
+
+    # xdist worker process - pass run artifacts to main process regardless of batch mode
+    if hasattr(session.config, 'workerinput'):
+        session.config.workeroutput['run_artifacts'] = run_artifact_storage.get()
+
     if not run.disable_batch:
 
         # xdist worker process - write test results to worker output. They will be reported from master process
@@ -383,7 +392,23 @@ def pytest_unconfigure(config: Config):
     if config.getoption(testomatio) != 'report':
         run.clear_run_id()
         return
-    elif run.proceed:
+
+    # upload run artifacts in main process
+    if not hasattr(config, 'workerinput') and not run.disable_artifacts:
+        attached = run_artifact_storage.get()
+        if attached:
+            if not pytest.testomatio.s3_connector:
+                run_details = pytest.testomatio.connector.update_test_run(**run.to_dict())
+                s3_details = read_env_s3_keys(run_details) if run_details else None
+                if s3_details and all(s3_details):
+                    pytest.testomatio.s3_connector = S3Connector(*s3_details)
+                    pytest.testomatio.s3_connector.login()
+            if pytest.testomatio.s3_connector:
+                urls = pytest.testomatio.s3_connector.upload_files([(path, None) for path in attached])
+                run_artifact_storage.clear()
+                pytest.testomatio.connector.upload_run_artifacts(run.test_run_id, urls)
+
+    if run.proceed:
         if not hasattr(config, 'workerinput'):  # for xdist, only master clear run id
             run.clear_run_id()
         return

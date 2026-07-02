@@ -1,4 +1,5 @@
 from pytestomatio.services.artifact_storage import artifact_storage
+from pytestomatio.services.run_artifact_storage import run_artifact_storage
 from pytestomatio.services.meta_storage import meta_storage
 from pytestomatio.services.link_storage import link_storage
 from pytestomatio.utils.helper import get_current_test_id
@@ -61,3 +62,11 @@ def add_artifact(path: str):
     if not test_id:
         return
     artifact_storage.put(test_id, path)
+
+
+def add_run_artifact(path: str):
+    """
+    Add an artifact to the current test run
+    :param path: path to artifact
+    """
+    run_artifact_storage.put(path)

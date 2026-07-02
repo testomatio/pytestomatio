@@ -478,6 +478,7 @@ This functions gives you more flexibility in reporting and make your reports mor
 
 **Available functions**
 - [add_artifact](#add-artifact)
+- [add_run_artifact](#add-run-artifact)
 - [add_meta](#add-meta)
 - [add_label](#add-label)
 - [link_jira](#link-jira)
@@ -496,6 +497,22 @@ def test_my_test():
     add_artifact(path_to_file)
     assert True
 ```
+#### Add Run Artifact
+Attaches a file to the test run report (not to an individual test). The file will be uploaded to S3 at the end of the run.
+Use this for run-level artifacts such as coverage reports, allure archives, or other files not tied to a specific test.
+
+**Note:** S3 must be configured
+
+```python
+from pytestomatio.functions import add_run_artifact
+
+def test_my_test():
+    add_run_artifact('path/to/coverage-report.html')
+    assert True
+```
+
+Works with pytest-xdist: artifacts collected from all workers are merged and uploaded once by the main process.
+
 #### Add Meta
 Adds meta information to test. Meta information is a key:value pair(s), which is used to add additional information to the test report. E.g. browser, environment, etc.
 
